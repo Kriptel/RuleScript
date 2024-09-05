@@ -1,0 +1,16 @@
+-lib hscript
+
+--macro addMetadata('#if hscriptPos @:build(rulescript.macro.ExprMacro.build()) #end', 'hscript.ExprDef')
+--macro addMetadata('#if !hscriptPos @:build(rulescript.macro.ExprMacro.build()) #end', 'hscript.Expr')
+
+--macro addMetadata('@:build(rulescript.macro.ExprMacro.buildInterpDefaults())', 'hscript.Interp')
+
+--macro addMetadata('@:build(rulescript.macro.ExprMacro.buildToolsDefaults())', 'hscript.Tools')
+
+--macro addMetadata('@:build(rulescript.macro.ExprMacro.buildPrinterDefaults())', 'hscript.Printer')
+
+--macro addMetadata('@:build(rulescript.macro.ExprMacro.buildBytesDefaults())', 'hscript.Bytes')
+
+--macro addMetadata('@:build(rulescript.macro.ExprMacro.buildCheckerDefaults())', 'hscript.Checker')
+
+--macro addMetadata('@:build(rulescript.macro.ExprMacro.buildMacroDefaults())', 'hscript.Macro')
