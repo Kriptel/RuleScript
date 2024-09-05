@@ -54,19 +54,19 @@ abstract StringOrExpr(Dynamic) from String to String from Expr to Expr {}
  * ```haxe
  * import haxe.ds.StringMap in StrMap;
  * 
- * var a = {
- *  "Hello":"World"
- * };
- * trace(a.getProperty("Hello")); // World
+ * var map = new StrMap();
+ * map.set("Hello","World");
+ * trace(map.get("Hello")); // World
  * ```
  * 
  * ### Using:
  * ```haxe
  * using Reflect;
  * 
- * var map = new StrMap();
- * map.set("Hello","World");
- * trace(map.get("Hello")); // World
+ * var a = {
+ *  "Hello":"World"
+ * };
+ * trace(a.getProperty("Hello")); // World
  * ```
  * 
  * ### String interpolation
