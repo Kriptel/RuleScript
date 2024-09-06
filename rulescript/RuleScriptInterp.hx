@@ -6,8 +6,8 @@ class RuleScriptInterp extends hscript.Interp
 {
 	public var scriptPackage:String = '';
 
-	public var imports:Array<Dynamic> = [];
-	public var usings:Array<Dynamic> = [];
+	public var imports:Map<String, Dynamic> = [];
+	public var usings:Map<String, Dynamic> = [];
 
 	override private function resetVariables()
 	{
@@ -62,14 +62,19 @@ class RuleScriptInterp extends hscript.Interp
 						error(ECustom('Type not found : $path'));
 
 					if (func != null && t is Class)
-						variables.set(func, Reflect.getProperty(t, func));
+					{
+						var tag:String = alias ?? func;
+						imports.set(tag, (variables[tag] = Reflect.getProperty(t, func)));
+					}
 					else
+					{
 						variables.set(name, t);
+					}
 				}
 			case EUsing(name):
 				var t:Dynamic = Type.resolveClass(name);
 				if (t != null)
-					usings.push(t);
+					usings.set(name, t);
 			default:
 				return super.expr(expr);
 		}

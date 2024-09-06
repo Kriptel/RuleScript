@@ -26,7 +26,6 @@ var map = new StrMap();
 map.set("Hello","World");
 trace(map.get("Hello")); // World
 ```
-You also can use `in` keyword.
 ```haxe
 import haxe.ds.StringMap in StrMap;
 

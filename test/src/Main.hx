@@ -72,6 +72,26 @@ class Main
         ');
 
 		runScript('
+            import Reflect.getProperty;
+
+            var a = {
+                "hello":"world"
+            };
+
+            return getProperty(a,"hello");
+        ');
+
+		runScript('
+            import Reflect.getProperty as get;
+
+            var a = {
+                "hello":"world"
+            };
+
+            return get(a,"hello");
+        ');
+
+		runScript('
             using Reflect;
 
             var a = {
