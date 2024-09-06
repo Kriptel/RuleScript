@@ -15,6 +15,16 @@ class HxParser extends Parser
 		super();
 	}
 
+	inline public function allowAll():Void
+		setParams(true, true, true);
+
+	public function setParams(?allowJSON:Bool, ?allowMetadata:Bool, ?allowTypes:Bool)
+	{
+		parser.allowJSON = allowJSON;
+		parser.allowMetadata = allowMetadata;
+		parser.allowTypes = allowTypes;
+	}
+
 	override public function parse(code:String):Expr
 	{
 		return parser.parseString(code, 'rulescript:HxParser', 0);

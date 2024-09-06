@@ -17,7 +17,7 @@ abstract StringOrExpr(Dynamic) from String to String from Expr to Expr {}
  * script = new RuleScript(null,new HxParser());
  * 
  * // Get parser as HxParser
- * script.getParser(HxParser).allowJSON = true;
+ * script.getParser(HxParser).allowAll();
  *
  * // Run execute inside try-catch
  * script.tryExecute('trace("Hello World");'); // Hello World

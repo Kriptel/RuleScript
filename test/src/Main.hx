@@ -12,9 +12,7 @@ class Main
 	{
 		script = new RuleScript(null, new HxParser());
 
-		var parser = script.getParser(HxParser).parser;
-
-		parser.allowJSON = parser.allowMetadata = parser.allowTypes = true;
+		script.getParser(HxParser).allowAll();
 
 		trace('Testing Commands:');
 

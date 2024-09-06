@@ -50,11 +50,20 @@ RuleScript supports [String Interpolation](https://haxe.org/manual/lf-string-int
 var a = 'Hello';
 return 'RuleScript: $a World'; // RuleScript: Hello World
 ```
+```haxe
+var a = {
+    a:'RuleScript',
+    b: () -> 'Hello',
+    c:'World'
+};
+        
+return '${a.a}: ${a.b() + " " + a.c}'; // RuleScript: Hello World
+```
 
 More templates in `test/src/Main.hx`.
 # Limitations
 
-- String interpolations don't support many functions.
+- [String interpolations](https://haxe.org/manual/lf-string-interpolation.html) don't support many functions
 - Script `using` callback supports max number of arguments is 8.
 - [Wildcard imports](https://haxe.org/manual/type-system-import.html#wildcard-import) don't support.
 
