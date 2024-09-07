@@ -1,6 +1,8 @@
 package;
 
+import TestAbstract;
 import rulescript.*;
+import test.HelloWorldAbstract;
 
 class Main
 {

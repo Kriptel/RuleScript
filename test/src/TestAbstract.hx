@@ -1,6 +1,5 @@
 package;
 
-@:keep
 abstract TestAbstract(Test) from Test to Test
 {
 	@:from

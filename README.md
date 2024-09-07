@@ -69,7 +69,6 @@ test.HelloWorldAbstract
 
 test/HelloWorldAbstract.hx :
 ```haxe
-@:keep
 abstract HelloWorldAbstract(String) from String to String
 {
 	public static function rulescriptPrint():HelloWorldAbstract

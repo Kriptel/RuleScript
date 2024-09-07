@@ -1,6 +1,5 @@
 package test;
 
-@:keep
 enum abstract HelloWorldAbstract(String) from String to String
 {
 	public static function rulescriptPrint():HelloWorldAbstract
