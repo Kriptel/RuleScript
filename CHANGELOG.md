@@ -15,13 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Abstract statics support
-- Date and Datetools defaults for RuleScriptInterp
+- Abstract statics support.
+- Date and Datetools defaults for RuleScriptInterp.
 
 ### Fixed
 
-- Fixed bug when code ignored properties
+- Fixed bug when code ignored properties.
 
 ## [0.0.1] - 2024-09-06
 
-### Initial Release
+Initial Release.
