@@ -48,25 +48,26 @@ class AbstractMacro
 
 		for (f in fields)
 		{
-			if (isEnum && (f.kind.match(FVar(_, _))))
-			{
+			if (f.access.contains(AStatic) || (isEnum && f.kind.match(FVar(_, _))))
 				cl.fields.push({
 					name: f.name,
 					doc: f.doc,
 					access: [APublic, AStatic],
-					kind: switch (f.kind)
-					{
-						case FVar(t, e) if (e != null):
+					kind: {
+						if (isEnum && (f.kind.match(FVar(_, _))))
+							switch (f.kind)
+							{
+								case FVar(t, e) if (e != null):
+									f.kind;
+								default:
+									FVar(macro :String, macro $v{f.name});
+							}
+						else
 							f.kind;
-						default:
-							FVar(macro :String, macro $v{f.name});
 					},
 					pos: f.pos,
 					meta: f.meta
 				});
-			}
-			else if (f.access.contains(AStatic))
-				cl.fields.push(f);
 		}
 
 		Context.defineModule('$pack._$name', [cl], imports);

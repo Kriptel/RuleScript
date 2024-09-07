@@ -141,6 +141,12 @@ class Main
 	public static function testAbstract()
 	{
 		runScript('
+            import TestAbstract;
+
+            return TestAbstract.helloworld;
+        ');
+
+		runScript('
             import test.HelloWorldAbstract;
 
             return HelloWorldAbstract.rulescriptPrint();
