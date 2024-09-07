@@ -62,7 +62,7 @@ trace('${a.a}: ${a.b() + " " + a.c}'); // RuleScript: Hello World
 
 ### Abstracts in script
 
-RuleScriptAbstracts.txt in any classpath :
+`RuleScriptAbstracts.txt` in any classpath :
 ```
 test.HelloWorldAbstract
 ```
@@ -82,7 +82,7 @@ import test.HelloWorldAbstract;
 
 trace(HelloWorldAbstract.rulescriptPrint()); // 'Hello World'
 ```
-More templates in `test/src/Main.hx`.
+More templates in [`test/src/Main.hx`](https://github.com/Kriptel/RuleScript/blob/master/test/src/Main.hx).
 
 # Limitations
 

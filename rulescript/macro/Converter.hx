@@ -10,6 +10,7 @@ using StringTools;
 
 class Converter
 {
+	#if macro
 	// Language server shows errors...
 	public static function init()
 	{
@@ -28,6 +29,7 @@ class Converter
 		for (name in abstractsList)
 			Compiler.addMetadata('@:build(rulescript.macro.AbstractMacro.buildAbstract("$name","rulescript.__abstracts"))', name);
 	}
+	#end
 
 	static function parseFile(content:String):Array<String>
 	{
