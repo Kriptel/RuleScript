@@ -22,6 +22,7 @@ class Main
 			packageTest();
 			importAndUsingTest();
 			stringInterpolationTest();
+			testAbstract();
 		}
 		catch (e)
 			trace(e?.details());
@@ -132,6 +133,27 @@ class Main
             };
         
             return '${a.a}: ${a.b() + \" \" + a.c}';
+        ");
+	}
+
+	public static function testAbstract()
+	{
+		runScript('
+            import test.HelloWorldAbstract;
+
+            return HelloWorldAbstract.rulescriptPrint();
+        ');
+
+		runScript('
+            import test.HelloWorldAbstract as Hw;
+
+            return Hw.rulescriptPrint();
+        ');
+
+		runScript("
+            import test.HelloWorldAbstract as Hw;
+
+            return '${Hw.RULESCRIPT}: ${Hw.hello} ${Hw.world}';
         ");
 	}
 

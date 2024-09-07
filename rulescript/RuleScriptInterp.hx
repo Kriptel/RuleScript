@@ -23,6 +23,8 @@ class RuleScriptInterp extends hscript.Interp
 		variables.set('Type', Type);
 		variables.set('Reflect', Reflect);
 		variables.set('StringTools', StringTools);
+		variables.set('Date', Date);
+		variables.set('DateTools', DateTools);
 
 		#if sys
 		variables.set('Sys', Sys);
@@ -56,6 +58,9 @@ class RuleScriptInterp extends hscript.Interp
 						t = Type.resolveClass(path);
 
 					if (t == null)
+						t = Abstracts.resolveAbstract(path);
+
+					if (t == null)
 						t = Type.resolveEnum(path);
 
 					if (t == null)
@@ -81,18 +86,22 @@ class RuleScriptInterp extends hscript.Interp
 		return null;
 	}
 
+	/**
+	 * hasField not works for properties
+	 * If getProperty object is null, interp tries to get prop from usings
+	 */
 	override function get(o:Dynamic, f:String):Dynamic
 	{
-		if (Reflect.hasField(o, f))
-			return super.get(o, f);
+		var prop:Dynamic = super.get(o, f);
+		if (prop != null)
+			return prop;
 
 		for (cl in usings)
 		{
-			if (Reflect.hasField(cl, f))
-				return Tools.usingFunction.bind(o, Reflect.getProperty(cl, f), _, _, _, _, _, _, _, _);
+			var prop:Dynamic = Reflect.getProperty(cl, f);
+			if (prop != null)
+				return Tools.usingFunction.bind(o, prop, _, _, _, _, _, _, _, _);
 		}
-
-		error(ECustom('$o has no field $f'));
 
 		return null;
 	}
