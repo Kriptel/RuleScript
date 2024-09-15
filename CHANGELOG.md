@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.1] - 2024-09-15
 
+### Fixed
 - Fixed bug when converted abstracts were not generated.
 - Fixed bug when static inline vars in converted abstracts were not accessible.
 
