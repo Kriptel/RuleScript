@@ -27,7 +27,7 @@ class HxParser extends Parser
 
 	override public function parse(code:String):Expr
 	{
-		return parser.parseString(code, 'rulescript:HxParser', 0);
+		return parser.parseString(code, 'rulescript', 0);
 	}
 }
 
