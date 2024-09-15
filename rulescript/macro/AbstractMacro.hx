@@ -7,7 +7,10 @@ import sys.io.File;
 
 using StringTools;
 
+#if !macro
+@:keep
 @:build(rulescript.macro.TouchMacro.touch())
+#end
 class AbstractMacro
 {
 	/**
