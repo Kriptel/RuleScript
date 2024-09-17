@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Classes (MODULE mode only)
+- HxParserMode
+- `moduleDeclsToExpr` function to HScriptParserPlus
+- `buildModuleDecl` function to ExprMacro
+
+### Fixed
+- Improve `using` resolve function 
+
 ## [0.1.1] - 2024-09-15
 
 ### Fixed

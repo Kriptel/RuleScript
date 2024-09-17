@@ -24,7 +24,8 @@ class Main
 			packageTest();
 			importAndUsingTest();
 			stringInterpolationTest();
-			testAbstract();
+			abstractTest();
+			moduleTest();
 		}
 		catch (e)
 			trace(e?.details());
@@ -138,7 +139,7 @@ class Main
         ");
 	}
 
-	public static function testAbstract()
+	public static function abstractTest()
 	{
 		runScript('
             import TestAbstract;
@@ -165,8 +166,35 @@ class Main
         ");
 	}
 
+	public static function moduleTest()
+	{
+		script.getParser(HxParser).mode = MODULE;
+
+		runScript('
+			package;
+
+			class HelloWorld
+			{
+				function main(){
+					trace("hello world");
+
+					var a = {
+						b: "rulescript class: hello world"
+					}
+					trace(Reflect.getProperty(a,"b"));
+
+				}
+			}
+		');
+
+		script.variables.get('main')();
+	}
+
 	public static function runScript(code:String)
 	{
+		// Reset package, for reusing package keyword
+		script.interp.scriptPackage = '';
+
 		Sys.println('\n[Running code #${++callNum}]: "$code"\n\n         [Result]: ${script.tryExecute(code)}');
 	}
 }

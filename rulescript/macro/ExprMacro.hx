@@ -22,12 +22,39 @@ class ExprMacro
 		fields.push({
 			name: 'EImport',
 			access: [],
-			kind: FFun(toFunction(macro function(name:String, postfix:Bool, alias:String, func:String) {})),
+			kind: FFun(toFunction(macro function(name:String, star:Bool, alias:String, func:String) {})),
 			pos: pos,
 		});
 
 		fields.push({
 			name: 'EUsing',
+			access: [],
+			kind: FFun(toFunction(macro function(name:String) {})),
+			pos: pos,
+		});
+
+		return fields;
+	}
+
+	public static function buildModuleDecl():Array<Field>
+	{
+		var fields:Array<Field> = Context.getBuildFields();
+
+		var pos = Context.currentPos();
+
+		for (field in fields)
+			if (field.name == 'DImport')
+				fields.remove(field);
+
+		fields.push({
+			name: 'DImport',
+			access: [],
+			kind: FFun(toFunction(macro function(name:Array<String>, star:Bool, ?alias:String, ?func:String) {})),
+			pos: pos,
+		});
+
+		fields.push({
+			name: 'DUsing',
 			access: [],
 			kind: FFun(toFunction(macro function(name:String) {})),
 			pos: pos,

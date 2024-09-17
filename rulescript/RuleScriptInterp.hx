@@ -52,19 +52,7 @@ class RuleScriptInterp extends hscript.Interp
 				{
 					var name = alias ?? path.split('.').pop();
 
-					var t:Dynamic = RuleScript.resolveScript(path);
-
-					if (t == null)
-						t = Type.resolveClass(path);
-
-					if (t == null)
-						t = Abstracts.resolveAbstract(path);
-
-					if (t == null)
-						t = Type.resolveEnum(path);
-
-					if (t == null)
-						error(ECustom('Type not found : $path'));
+					var t = resolveType(path);
 
 					if (func != null && t is Class)
 					{
@@ -72,18 +60,32 @@ class RuleScriptInterp extends hscript.Interp
 						imports.set(tag, (variables[tag] = Reflect.getProperty(t, func)));
 					}
 					else
-					{
 						variables.set(name, t);
-					}
 				}
 			case EUsing(name):
-				var t:Dynamic = Type.resolveClass(name);
+				var t:Dynamic = resolveType(name);
 				if (t != null)
 					usings.set(name, t);
 			default:
 				return super.expr(expr);
 		}
 		return null;
+	}
+
+	function resolveType(path:String)
+	{
+		var t:Dynamic = RuleScript.resolveScript(path);
+
+		t ??= Type.resolveClass(path);
+
+		t ??= Abstracts.resolveAbstract(path);
+
+		t ??= Type.resolveEnum(path);
+
+		if (t == null)
+			error(ECustom('Type not found : $path'));
+
+		return t;
 	}
 
 	/**
@@ -104,5 +106,13 @@ class RuleScriptInterp extends hscript.Interp
 		}
 
 		return null;
+	}
+
+	override function cnew(cl:String, args:Array<Dynamic>):Dynamic
+	{
+		var c:Dynamic = Type.resolveClass(cl);
+		if (c == null)
+			c = resolve(cl);
+		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : Type.createInstance(c, args);
 	}
 }

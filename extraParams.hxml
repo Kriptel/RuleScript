@@ -2,6 +2,7 @@
 
 --macro addMetadata('#if hscriptPos @:build(rulescript.macro.ExprMacro.build()) #end', 'hscript.ExprDef')
 --macro addMetadata('#if !hscriptPos @:build(rulescript.macro.ExprMacro.build()) #end', 'hscript.Expr')
+--macro addMetadata('@:build(rulescript.macro.ExprMacro.buildModuleDecl())', 'hscript.ModuleDecl')
 
 --macro addMetadata('@:build(rulescript.macro.ExprMacro.buildInterpDefaults())', 'hscript.Interp')
 
