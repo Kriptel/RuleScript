@@ -9,7 +9,9 @@ class RuleScriptInterp extends hscript.Interp
 	public var imports:Map<String, Dynamic> = [];
 	public var usings:Map<String, Dynamic> = [];
 
-	override private function resetVariables()
+	public var superInstance:Dynamic;
+
+	override private function resetVariables():Void
 	{
 		super.resetVariables();
 
@@ -29,6 +31,21 @@ class RuleScriptInterp extends hscript.Interp
 		#if sys
 		variables.set('Sys', Sys);
 		#end
+	}
+
+	override function resolve(id:String):Dynamic
+	{
+		if (id == 'super' && superInstance != null)
+			return superInstance;
+
+		var l:Dynamic = locals.get(id);
+		if (l != null)
+			return l.r;
+		var v:Dynamic = variables.get(id);
+
+		if (v == null && !variables.exists(id))
+			v = Reflect.getProperty(superInstance, id) ?? error(EUnknownVariable(id));
+		return v;
 	}
 
 	override public function expr(expr:Expr):Dynamic
@@ -72,7 +89,7 @@ class RuleScriptInterp extends hscript.Interp
 		return null;
 	}
 
-	function resolveType(path:String)
+	function resolveType(path:String):Dynamic
 	{
 		var t:Dynamic = RuleScript.resolveScript(path);
 

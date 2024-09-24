@@ -168,6 +168,11 @@ class Main
 
 	public static function moduleTest()
 	{
+		trace(script.getParser(HxParser).parse('
+		import Reflect;
+		var Reflect = Reflect;
+		'));
+
 		script.getParser(HxParser).mode = MODULE;
 
 		runScript('
@@ -183,6 +188,21 @@ class Main
 					}
 					trace(Reflect.getProperty(a,"b"));
 
+				}
+			}
+		');
+
+		script.variables.get('main')();
+
+		script.interp.superInstance = {"test": () -> trace('testing super instance')};
+
+		runScript('
+			package;
+
+			class HelloWorld
+			{
+				function main(){
+					test();
 				}
 			}
 		');
