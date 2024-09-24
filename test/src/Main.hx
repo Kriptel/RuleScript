@@ -8,7 +8,7 @@ class Main
 {
 	public static var script:RuleScript;
 
-	static var callNum:Int;
+	static var callNum:Int = 0;
 
 	public static function main():Void
 	{

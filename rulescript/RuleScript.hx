@@ -1,6 +1,5 @@
 package rulescript;
 
-import cpp.Function;
 import hscript.Expr;
 
 /**
