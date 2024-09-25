@@ -10,9 +10,8 @@ using StringTools;
 
 class Converter
 {
-	#if macro
 	// Language server shows errors...
-	public static function init()
+	public static macro function init()
 	{
 		var files:Array<String> = [];
 
@@ -28,8 +27,8 @@ class Converter
 
 		for (name in abstractsList)
 			Compiler.addMetadata('@:build(rulescript.macro.AbstractMacro.buildAbstract("$name","rulescript.__abstracts"))', name);
+		return null;
 	}
-	#end
 
 	static function parseFile(content:String):Array<String>
 	{
