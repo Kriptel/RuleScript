@@ -208,6 +208,21 @@ class Main
 		');
 
 		script.variables.get('main')();
+
+		runScript('
+			package;
+
+			using StringTools;
+
+			class HelloWorld
+			{
+				function main(){
+					trace("hello".replace("hello","world"));
+				}
+			}
+		');
+
+		script.variables.get('main')();
 	}
 
 	public static function runScript(code:String)

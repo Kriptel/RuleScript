@@ -95,6 +95,11 @@ class RuleScriptInterp extends hscript.Interp
 
 		t ??= Type.resolveClass(path);
 
+		#if interp
+		if (t is Class && Type.getClassFields(t).length == 0)
+			t = null;
+		#end
+
 		t ??= Abstracts.resolveAbstract(path);
 
 		t ??= Type.resolveEnum(path);

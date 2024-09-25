@@ -8,12 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Super instance var to RuleScriptInterp
 - Classes (MODULE mode only)
 - HxParserMode
 - `moduleDeclsToExpr` function to HScriptParserPlus
 - `buildModuleDecl` function to ExprMacro
 
 ### Fixed
+- Fixed `using` error on Haxe Interpreter
 - Fixed compile error on non-cpp targets
 - Improve `using` resolve function 
 

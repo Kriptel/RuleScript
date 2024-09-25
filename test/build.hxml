@@ -1,13 +1,8 @@
--main Main
-
 --cwd ./test
 
 --define hscriptPos
 -lib rulescript
 
 -cp src
-
---macro keep("Main")
-
 
 --run Main

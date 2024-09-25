@@ -16,8 +16,10 @@ class AbstractMacro
 	/**
 	 * Converts abstract to class
 	 */
-	#if !macro macro #end public static function buildAbstract(name:String, pack:String):Array<Field>
+	macro public static function buildAbstract(name:String, pack:String):Array<Field>
 	{
+		trace('macro!');
+
 		var fields = Context.getBuildFields();
 		var pos = Context.currentPos();
 
@@ -74,6 +76,8 @@ class AbstractMacro
 				});
 		}
 
+		var a:Array<Dynamic> = ['$pack._$name', [cl], imports];
+		trace('define: $a');
 		Context.defineModule('$pack._$name', [cl], imports);
 
 		return fields;
