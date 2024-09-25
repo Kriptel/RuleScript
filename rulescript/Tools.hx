@@ -21,7 +21,6 @@ class Tools
 				break;
 			i--;
 		}
-		trace(args);
 		return Reflect.callMethod(o, f, args);
 		#else
 		return Reflect.callMethod(o, f, [o, a1, a2, a3, a4, a5, a6, a7, a8]);
