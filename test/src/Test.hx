@@ -8,5 +8,17 @@ class Test
 	{
 		if (test != null)
 			this.test = test;
+
+		LocalHelloClass.init();
+	}
+}
+
+class LocalHelloClass
+{
+	public static function init() {}
+
+	public static function hello()
+	{
+		return 'world';
 	}
 }

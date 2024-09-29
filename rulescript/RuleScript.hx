@@ -1,6 +1,7 @@
 package rulescript;
 
 import hscript.Expr;
+import rulescript.parsers.*;
 
 /**
  * Type limit
@@ -101,7 +102,7 @@ class RuleScript
 
 	public function execute(code:StringOrExpr):Dynamic
 	{
-		return interp.execute(code is String ? parser.parse(code) : code);
+		return interp.execute(code is String ? parser.parse(cast code) : cast code);
 	}
 
 	public function tryExecute(code:StringOrExpr, ?customCatch:haxe.Exception->Dynamic):Dynamic

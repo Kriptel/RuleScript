@@ -11,7 +11,6 @@ class Tools
 		#if interp
 		var args:Array<Dynamic> = [o, a1, a2, a3, a4, a5, a6, a7, a8];
 		var i:Int = 8;
-		trace(args);
 
 		while (i >= 0)
 		{
@@ -54,4 +53,70 @@ class Tools
 	inline public static function toExpr(e:Expr):Expr
 		return e;
 	#end
+
+	inline public static function isEmptyClass(cl:Class<Dynamic>)
+	{
+		#if interp
+		// Because interp returns an empty class instead of null
+		return cl != null ? Type.getClassFields(cl).length == 0 : false;
+		#else
+		return false;
+		#end
+	}
+
+	public static function moduleDeclsToExpr(moduleDecls:Array<ModuleDecl>):Expr
+	{
+		var fields:Array<Expr> = [];
+
+		#if hscriptPos
+		var pushExpr = (e:ExprDef) -> fields.push(toExpr(e));
+		#else
+		var pushExpr = (e:Expr) -> fields.push(e);
+		#end
+
+		for (moduleDecl in moduleDecls)
+			switch (moduleDecl)
+			{
+				case DPackage(path):
+					pushExpr(EPackage(path.join('.')));
+				case DImport(path, star, alias, func):
+					pushExpr(EImport(path.join('.'), star, alias, func));
+				case DUsing(path):
+					pushExpr(EUsing(path));
+				case DClass(c):
+					for (field in c.fields)
+					{
+						switch (field.kind)
+						{
+							case KFunction(f):
+								pushExpr(EFunction(f.args, f.expr, field.name, f.ret));
+							case KVar(v):
+								if (v.get == null && v.set == null)
+								{
+									pushExpr(EVar(field.name, v.type, v.expr));
+								}
+								else
+								{
+									pushExpr(EProp(field.name, v.get, v.set, v.type, v.expr));
+								}
+						}
+					}
+
+				case DTypedef(c):
+
+				default:
+			}
+
+		#if hscriptPos
+		return {
+			e: EBlock(fields),
+			pmin: fields[0].pmin,
+			pmax: fields[fields.length - 1].pmax,
+			origin: 'rulescript',
+			line: 0
+		};
+		#else
+		return EBlock(fields);
+		#end
+	}
 }

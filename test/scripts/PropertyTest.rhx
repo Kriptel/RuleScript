@@ -1,0 +1,19 @@
+
+
+var a(get,set):String;
+
+var _a = 'Test';
+
+function get_a():String
+{
+	return _a;
+}
+
+function set_a(v:String):String
+{
+	return _a = v;
+}
+
+a = 'Hello World';
+
+return _a;

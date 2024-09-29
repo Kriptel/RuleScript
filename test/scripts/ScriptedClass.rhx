@@ -1,0 +1,16 @@
+package;
+
+class ScriptedClass extends ScriptedClassTest
+{
+	override public function info(){
+		return 'I Scripted!!!!';
+	}
+
+	public function argFunction(a1:Bool, a2:String, a3:String)
+	{
+		return '
+		argument1: $a1, 
+		argument2: $a2, 
+		argument3: $a3';
+	}
+}

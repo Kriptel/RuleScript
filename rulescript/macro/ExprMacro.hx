@@ -3,7 +3,9 @@ package rulescript.macro;
 #if macro
 import haxe.macro.Context;
 import haxe.macro.Expr;
+#end
 
+#if macro
 class ExprMacro
 {
 	public static function build():Array<Field>
@@ -12,26 +14,28 @@ class ExprMacro
 
 		var pos = Context.currentPos();
 
-		fields.push({
-			name: 'EPackage',
-			access: [],
-			kind: FFun(toFunction(macro function(path:String) {})),
-			pos: pos,
-		});
+		for (field in fields)
+			if (field.name == 'EFor')
+				fields.remove(field);
 
-		fields.push({
-			name: 'EImport',
-			access: [],
-			kind: FFun(toFunction(macro function(name:String, star:Bool, alias:String, func:String) {})),
-			pos: pos,
-		});
+		var newFields:Map<String, Expr> = [
+			'EPackage' => macro function(path:String) {},
 
-		fields.push({
-			name: 'EUsing',
-			access: [],
-			kind: FFun(toFunction(macro function(name:String) {})),
-			pos: pos,
-		});
+			'EImport' => macro function(name:String, star:Bool, alias:String, func:String) {},
+			'EUsing' => macro function(name:String) {},
+
+			'EProp' => macro function(n:String, g:String, s:String, ?t:CType, ?e:Expr) {},
+
+			'EFor' => macro function(key:String, it:Expr, e:Expr, ?value:String) {}
+		];
+
+		for (key => value in newFields)
+			fields.push({
+				name: key,
+				access: [],
+				kind: FFun(MacroTools.toFunction(value)),
+				pos: pos,
+			});
 
 		return fields;
 	}
@@ -49,14 +53,14 @@ class ExprMacro
 		fields.push({
 			name: 'DImport',
 			access: [],
-			kind: FFun(toFunction(macro function(name:Array<String>, star:Bool, ?alias:String, ?func:String) {})),
+			kind: FFun(MacroTools.toFunction(macro function(name:Array<String>, star:Bool, ?alias:String, ?func:String) {})),
 			pos: pos,
 		});
 
 		fields.push({
 			name: 'DUsing',
 			access: [],
-			kind: FFun(toFunction(macro function(name:String) {})),
+			kind: FFun(MacroTools.toFunction(macro function(name:String) {})),
 			pos: pos,
 		});
 
@@ -140,20 +144,6 @@ class ExprMacro
 				};
 
 		return fields;
-	}
-
-	/**
-	 * Convert Expr function to function
-	 */
-	static function toFunction(f:Expr):Function
-	{
-		return switch (f.expr)
-		{
-			case EFunction(kind, f):
-				f;
-			default:
-				null;
-		}
 	}
 }
 #end

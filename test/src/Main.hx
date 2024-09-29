@@ -2,13 +2,20 @@ package;
 
 import TestAbstract;
 import rulescript.*;
+import rulescript.parsers.*;
+import rulescript.scriptedClass.RuleScriptedClassUtil;
+import sys.io.File;
 import test.HelloWorldAbstract;
+import test.ScriptedClassTest;
 
 class Main
 {
 	public static var script:RuleScript;
 
 	static var callNum:Int = 0;
+	static var errorsNum:Int = 0;
+
+	public static function restTest(hello:String, ...rest:Int) {}
 
 	public static function main():Void
 	{
@@ -18,6 +25,9 @@ class Main
 
 		trace('Testing Commands:');
 
+		Test.LocalHelloClass.init();
+		HelloWorldAbstract.RULESCRIPT;
+
 		try
 		{
 			mathTest();
@@ -26,9 +36,16 @@ class Main
 			stringInterpolationTest();
 			abstractTest();
 			moduleTest();
+			fileScriptTest();
+			scriptClassesTest();
 		}
 		catch (e)
 			trace(e?.details());
+
+		trace('
+			Tests: $callNum,
+			Errors: $errorsNum
+		');
 	}
 
 	public static function mathTest()
@@ -164,15 +181,16 @@ class Main
 
             return '${Hw.RULESCRIPT}: ${Hw.hello} ${Hw.world}';
         ");
+
+		runScript('
+            import Test.LocalHelloClass;
+
+            return LocalHelloClass.hello();
+        ');
 	}
 
 	public static function moduleTest()
 	{
-		trace(script.getParser(HxParser).parse('
-		import Reflect;
-		var Reflect = Reflect;
-		'));
-
 		script.getParser(HxParser).mode = MODULE;
 
 		runScript('
@@ -209,6 +227,8 @@ class Main
 
 		script.variables.get('main')();
 
+		script.interp.superInstance = {"replace": () -> trace('testing super instance')};
+
 		runScript('
 			package;
 
@@ -217,10 +237,41 @@ class Main
 			class HelloWorld
 			{
 				function main(){
-					trace("hello".replace("hello","world"));
+					var a = {
+						b:{
+							c:{
+								text:"hello"
+							}
+						}
+					};
+					trace(a.b.c.text.replace("hello","world"));
 				}
 			}
 		');
+
+		script.variables.get('main')();
+	}
+
+	public static function scriptClassesTest()
+	{
+		RuleScriptedClassUtil.registerRuleScriptedClass('scripted', script.getParser(HxParser).parse(File.getContent('scripts/ScriptedClass.rhx')));
+
+		var srcClass = new SrcClassTest(),
+			scriptClass = new ScriptedClassTest('scripted');
+		trace(srcClass.info());
+		trace(scriptClass.info());
+
+		trace(srcClass.argFunction(true, 'hello', 'world'));
+		trace(scriptClass.argFunction(true, 'hello', 'world'));
+	}
+
+	static function fileScriptTest()
+	{
+		script.getParser(HxParser).mode = DEFAULT;
+		runScript(File.getContent('scripts/PropertyTest.rhx'));
+
+		script.getParser(HxParser).mode = MODULE;
+		runScript(File.getContent('scripts/test.rhc'));
 
 		script.variables.get('main')();
 	}
@@ -230,6 +281,12 @@ class Main
 		// Reset package, for reusing package keyword
 		script.interp.scriptPackage = '';
 
-		Sys.println('\n[Running code #${++callNum}]: "$code"\n\n         [Result]: ${script.tryExecute(code)}');
+		Sys.println('\n[Running code #${++callNum}]: "$code"\n\n         [Result]: ${script.tryExecute(code, onError)}');
+	}
+
+	public static function onError(e:haxe.Exception):Dynamic
+	{
+		errorsNum++;
+		return e.details();
 	}
 }

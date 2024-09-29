@@ -27,6 +27,8 @@ class AbstractMacro
 
 		var cl = macro class {};
 
+		cl.meta.push({pos: pos, name: ':keep'});
+
 		var imports = Context.getLocalImports();
 
 		imports.push({
@@ -74,7 +76,6 @@ class AbstractMacro
 				});
 		}
 
-		var a:Array<Dynamic> = ['$pack._$name', [cl], imports];
 		Context.defineModule('$pack._$name', [cl], imports);
 
 		return fields;
