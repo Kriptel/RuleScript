@@ -17,7 +17,7 @@ class RuleScriptedClassUtil
 		else
 		{
 			var rulescript = new rulescript.RuleScript();
-			rulescript.interp.superInstance = superInstance;
+			rulescript.superInstance = superInstance;
 			rulescript.execute(types[typeName]);
 			rulescript;
 		}

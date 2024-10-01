@@ -68,7 +68,7 @@ class RuleScriptInterp extends hscript.Interp
 			case EIdent(id):
 				var l = locals.get(id);
 				if (l == null)
-					setVar(id, v)
+					setVar(id, v);
 				else
 				{
 					if (l.r is RuleScriptProperty)

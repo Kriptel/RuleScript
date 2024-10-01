@@ -13,4 +13,9 @@ class ScriptedClass extends ScriptedClassTest
 		argument2: $a2, 
 		argument3: $a3';
 	}
+
+		public function string(arg:T)
+	{
+		return 'Script:' + arg.v;
+	}
 }

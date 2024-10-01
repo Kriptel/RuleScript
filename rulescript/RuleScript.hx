@@ -1,6 +1,7 @@
 package rulescript;
 
 import hscript.Expr;
+import rulescript.Tools;
 import rulescript.parsers.*;
 
 /**
@@ -80,7 +81,7 @@ class RuleScript
 {
 	/**
 	 * Edit, if you want make importable script
-	 * @see [Dynamic Keyword](https://haxe.org/manual/class-field-dynamic.html)
+	 * @see [dynamic keyword](https://haxe.org/manual/class-field-dynamic.html)
 	 */
 	public static dynamic function resolveScript(name:String):Dynamic
 	{
@@ -88,6 +89,8 @@ class RuleScript
 	}
 
 	public var interp:RuleScriptInterp;
+
+	public var superInstance(get, set):Dynamic;
 
 	public var variables(get, set):Map<String, Dynamic>;
 
@@ -116,6 +119,16 @@ class RuleScript
 
 	public function getParser<T:Parser>(?parserClass:Class<T>):T
 		return cast parser;
+
+	function get_superInstance():Dynamic
+	{
+		return interp.superInstance;
+	}
+
+	function set_superInstance(v:Dynamic):Dynamic
+	{
+		return interp.superInstance = v;
+	}
 
 	function get_variables():Map<String, Dynamic>
 	{

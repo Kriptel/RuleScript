@@ -4,6 +4,7 @@ package rulescript.macro;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 import haxe.macro.Type.ClassField;
+import haxe.macro.Type.ClassType;
 import rulescript.macro.MacroTools;
 
 class RuleScriptedClass
@@ -17,6 +18,7 @@ class RuleScriptedClass
 
 		var curType = Context.getLocalClass().get();
 
+		var constructor = curType.constructor?.get();
 		while (curType != null)
 		{
 			for (field in curType.fields.get())
@@ -25,6 +27,8 @@ class RuleScriptedClass
 					typefields.set(field.name, field);
 			}
 			curType = curType.superClass?.t.get();
+
+			constructor ??= curType.constructor?.get();
 		}
 
 		for (name => field in typefields)
@@ -35,14 +39,7 @@ class RuleScriptedClass
 		fields.push({
 			name: 'new',
 			access: [APublic],
-			kind: FFun(MacroTools.toFunction(macro function(typeName:String) $
-			{
-				Context.getLocalClass().get().superClass != null ? macro
-					{
-						__rulescript = rulescript.scriptedClass.RuleScriptedClassUtil.buildRuleScript(typeName, this);
-						super();
-					} : macro {}
-			})),
+			kind: FFun(createConstructor(constructor)),
 			pos: Context.currentPos()
 		});
 
@@ -54,6 +51,63 @@ class RuleScriptedClass
 		});
 
 		return fields;
+	}
+
+	static function createConstructor(constructor:ClassField):Function
+	{
+		var args = null;
+
+		var ret = null;
+
+		switch (constructor.type)
+		{
+			case TFun(_args, ret):
+				args = _args;
+			case TLazy(type):
+				switch (type())
+				{
+					case TFun(_args, ret):
+						args = _args;
+					default:
+				};
+			default:
+		}
+
+		var fieldArgs = [for (argument in args) macro $i{argument.name}];
+
+		var funcArgs:Array<FunctionArg> = [
+			{
+				name: 'typeName',
+				type: macro :String
+			}
+		];
+
+		funcArgs = funcArgs.concat([
+			for (arg in args)
+				{
+					name: arg.name,
+					opt: arg.opt,
+					type: getOverrideType(arg.t)
+				}
+		]);
+
+		return {
+			args: funcArgs,
+			expr: Context.getLocalClass().get().superClass != null ? macro
+				{
+					__rulescript = rulescript.scriptedClass.RuleScriptedClassUtil.buildRuleScript(typeName, this);
+
+					if (__rulescript.interp.variables.exists('new'))
+					{
+						__rulescript.interp.variables.get('new')($a{fieldArgs});
+					}
+					else
+					{
+						super($a{fieldArgs});
+					}
+				} : macro {},
+			params: [for (param in constructor.params) {name: param.name}]
+		}
 	}
 
 	static function overrideField(field:ClassField):Field
@@ -73,10 +127,10 @@ class RuleScriptedClass
 						{
 							name: arg.name,
 							opt: arg.opt,
-							type: Context.toComplexType(arg.t)
+							type: getOverrideType(arg.t)
 						}
 				],
-				ret: Context.toComplexType(ret),
+				ret: getOverrideType(ret),
 				expr: macro
 				{
 					return if (__rulescript.interp.variables.exists($v{field.name}))
@@ -112,6 +166,43 @@ class RuleScriptedClass
 			kind: FFun(kind),
 			pos: Context.currentPos()
 		};
+	}
+
+	static function getOverrideType(type:haxe.macro.Type):ComplexType
+	{
+		var t:ClassType = Context.getLocalClass().get();
+
+		var aliasMap:Map<String, haxe.macro.Type> = [];
+
+		while (t != null)
+		{
+			for (id => param in t.superClass?.params ?? [])
+			{
+				switch (param)
+				{
+					case TInst(_t, params):
+						aliasMap.set(switch (t.superClass?.t.get().params[id].t)
+						{
+							case TInst(t, params):
+								t.toString();
+							default: null;
+						}, param);
+					default:
+				}
+			}
+			t = t.superClass?.t.get();
+		}
+
+		switch (type)
+		{
+			case TInst(t, params):
+				if (aliasMap.exists(t.toString()))
+					type = aliasMap.get(t.toString());
+			default:
+				null;
+		}
+
+		return Context.toComplexType(type);
 	}
 }
 #end

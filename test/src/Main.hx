@@ -1,46 +1,61 @@
 package;
 
-import TestAbstract;
 import rulescript.*;
 import rulescript.parsers.*;
 import rulescript.scriptedClass.RuleScriptedClassUtil;
 import sys.io.File;
 import test.HelloWorldAbstract;
 import test.ScriptedClassTest;
+import test.TestAbstract;
 
 class Main
 {
-	public static var script:RuleScript;
+	static var script:RuleScript;
 
 	static var callNum:Int = 0;
 	static var errorsNum:Int = 0;
 
-	public static function restTest(hello:String, ...rest:Int) {}
+	static function restTest(hello:String, ...rest:Int) {}
 
-	public static function main():Void
+	static function main():Void
 	{
-		script = new RuleScript(null, new HxParser());
+		var language:String = 'haxe'; // 'lua';
 
-		script.getParser(HxParser).allowAll();
+		test.Test.LocalHelloClass.init();
+		HelloWorldAbstract.RULESCRIPT;
 
 		trace('Testing Commands:');
 
-		Test.LocalHelloClass.init();
-		HelloWorldAbstract.RULESCRIPT;
-
-		try
+		switch (language)
 		{
-			mathTest();
-			packageTest();
-			importAndUsingTest();
-			stringInterpolationTest();
-			abstractTest();
-			moduleTest();
-			fileScriptTest();
-			scriptClassesTest();
+			case 'haxe':
+				script = new RuleScript(null, new HxParser());
+
+				script.getParser(HxParser).allowAll();
+
+				try
+				{
+					mathTest();
+					packageTest();
+					importAndUsingTest();
+					stringInterpolationTest();
+					abstractTest();
+					moduleTest();
+					fileScriptTest();
+					scriptClassesTest();
+				}
+				catch (e)
+					trace(e?.details());
+			case 'lua':
+				script = new RuleScript(null, new LuaParser());
+
+				try
+				{
+					luaTest();
+				}
+				catch (e)
+					trace(e?.details());
 		}
-		catch (e)
-			trace(e?.details());
 
 		trace('
 			Tests: $callNum,
@@ -48,7 +63,7 @@ class Main
 		');
 	}
 
-	public static function mathTest()
+	static function mathTest()
 	{
 		runScript('1 + 7');
 		runScript('1 - 2');
@@ -63,7 +78,7 @@ class Main
 		runScript('1.153');
 	}
 
-	public static function packageTest()
+	static function packageTest()
 	{
 		runScript('
             package;
@@ -78,7 +93,7 @@ class Main
         ');
 	}
 
-	public static function importAndUsingTest()
+	static function importAndUsingTest()
 	{
 		runScript('
             import Reflect as AliasReflect;
@@ -121,7 +136,7 @@ class Main
         ');
 	}
 
-	public static function stringInterpolationTest()
+	static function stringInterpolationTest()
 	{
 		runScript("
             var a = 'Hello';
@@ -156,10 +171,10 @@ class Main
         ");
 	}
 
-	public static function abstractTest()
+	static function abstractTest()
 	{
 		runScript('
-            import TestAbstract;
+            import test.TestAbstract;
 
             return TestAbstract.helloworld;
         ');
@@ -183,13 +198,13 @@ class Main
         ");
 
 		runScript('
-            import Test.LocalHelloClass;
+            import test.Test.LocalHelloClass;
 
             return LocalHelloClass.hello();
         ');
 	}
 
-	public static function moduleTest()
+	static function moduleTest()
 	{
 		script.getParser(HxParser).mode = MODULE;
 
@@ -212,7 +227,7 @@ class Main
 
 		script.variables.get('main')();
 
-		script.interp.superInstance = {"test": () -> trace('testing super instance')};
+		script.superInstance = {"test": () -> trace('testing super instance')};
 
 		runScript('
 			package;
@@ -227,7 +242,7 @@ class Main
 
 		script.variables.get('main')();
 
-		script.interp.superInstance = {"replace": () -> trace('testing super instance')};
+		script.superInstance = {"replace": () -> trace('testing super instance')};
 
 		runScript('
 			package;
@@ -252,31 +267,42 @@ class Main
 		script.variables.get('main')();
 	}
 
-	public static function scriptClassesTest()
+	static function scriptClassesTest()
 	{
-		RuleScriptedClassUtil.registerRuleScriptedClass('scripted', script.getParser(HxParser).parse(File.getContent('scripts/ScriptedClass.rhx')));
+		script.getParser(HxParser).mode = MODULE;
 
-		var srcClass = new SrcClassTest(),
-			scriptClass = new ScriptedClassTest('scripted');
+		RuleScriptedClassUtil.registerRuleScriptedClass('scripted', script.getParser(HxParser).parse(File.getContent('scripts/haxe/ScriptedClass.rhx')));
+
+		var srcClass = new SrcClassTest<Hello<Int>, Int>(''),
+			scriptClass = new ScriptedClassTest('scripted', '');
 		trace(srcClass.info());
 		trace(scriptClass.info());
 
 		trace(srcClass.argFunction(true, 'hello', 'world'));
 		trace(scriptClass.argFunction(true, 'hello', 'world'));
+
+		trace(srcClass.string(new Hello<Int>(12)));
+		trace(scriptClass.string(new Hello<String>('hello')));
 	}
 
 	static function fileScriptTest()
 	{
 		script.getParser(HxParser).mode = DEFAULT;
-		runScript(File.getContent('scripts/PropertyTest.rhx'));
+		runFileScript('haxe/PropertyTest.rhx');
 
 		script.getParser(HxParser).mode = MODULE;
-		runScript(File.getContent('scripts/test.rhc'));
+		runFileScript('haxe/test.rhc');
 
 		script.variables.get('main')();
 	}
 
-	public static function runScript(code:String)
+	static function luaTest()
+	{
+		runFileScript('lua/Script.lua');
+		script.variables.get('main')();
+	}
+
+	static function runScript(code:String)
 	{
 		// Reset package, for reusing package keyword
 		script.interp.scriptPackage = '';
@@ -284,7 +310,17 @@ class Main
 		Sys.println('\n[Running code #${++callNum}]: "$code"\n\n         [Result]: ${script.tryExecute(code, onError)}');
 	}
 
-	public static function onError(e:haxe.Exception):Dynamic
+	static function runFileScript(path:String)
+	{
+		// Reset package, for reusing package keyword
+		script.interp.scriptPackage = '';
+
+		var code:String = File.getContent('scripts/' + path);
+
+		Sys.println('\n[Running code #${++callNum}]: "$code"\n\n         [Result]: ${script.tryExecute(code, onError)}');
+	}
+
+	static function onError(e:haxe.Exception):Dynamic
 	{
 		errorsNum++;
 		return e.details();

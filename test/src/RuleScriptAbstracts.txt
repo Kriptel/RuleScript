@@ -1,2 +1,2 @@
-TestAbstract
+test.TestAbstract
 test.HelloWorldAbstract

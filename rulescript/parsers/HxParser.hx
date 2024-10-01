@@ -916,7 +916,7 @@ class HScriptParserPlus extends hscript.Parser
 		return null;
 	}
 
-	@:deprecated('rulescript.HxParser.HScriptParserPlus.moduleDeclsToExpr was moved to rulescript.Tools.moduleDeclsToExpr')
+	@:deprecated('rulescript.parsers.HxParser.HScriptParserPlus.moduleDeclsToExpr was moved to rulescript.Tools.moduleDeclsToExpr')
 	public function moduleDeclsToExpr(moduleDecls:Array<ModuleDecl>):Expr
 	{
 		return Tools.moduleDeclsToExpr(moduleDecls);
