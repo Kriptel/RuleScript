@@ -99,6 +99,7 @@ class RuleScriptInterp extends hscript.Interp
 	override function setVar(name:String, v:Dynamic)
 	{
 		var v = variables.get(name);
+
 		if (v is RuleScriptProperty)
 			cast(v, RuleScriptProperty).value = v;
 		else
@@ -287,7 +288,6 @@ class RuleScriptInterp extends hscript.Interp
 			case 'never':
 				NEVER;
 			default:
-				null;
 				error(ECustom('$n: Custom property accessor is no longer supported, please use `get`'));
 		}
 
@@ -304,7 +304,6 @@ class RuleScriptInterp extends hscript.Interp
 			case 'never':
 				NEVER;
 			default:
-				null;
 				error(ECustom('$n: Custom property accessor is no longer supported, please use `set`'));
 		}
 
