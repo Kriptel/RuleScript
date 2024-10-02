@@ -43,6 +43,11 @@ class SrcClassTest<T:Hello<K>, K>
 		return '$a1, $a2, $a3';
 	}
 
+	public function argFunction2(a1:Bool = true, a2:String, a3:String)
+	{
+		return '$a1, $a2, $a3';
+	}
+
 	public function string(arg:T)
 	{
 		return Std.string(arg);

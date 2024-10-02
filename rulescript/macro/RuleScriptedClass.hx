@@ -3,6 +3,7 @@ package rulescript.macro;
 #if macro
 import haxe.macro.Context;
 import haxe.macro.Expr;
+import haxe.macro.Printer;
 import haxe.macro.Type.ClassField;
 import haxe.macro.Type.ClassType;
 import rulescript.macro.MacroTools;
@@ -127,11 +128,17 @@ class RuleScriptedClass
 			var fieldArgs = [for (argument in args) macro $i{argument.name}];
 			return {
 				args: [
-					for (arg in args)
+					for (id => arg in args)
 						{
 							name: arg.name,
-							opt: arg.opt,
-							type: getOverrideType(arg.t)
+							type: getOverrideType(arg.t),
+							value: switch (Context.getTypedExpr(field.expr()).expr)
+							{
+								case EFunction(kind, f):
+									f.args[id].value;
+								default:
+									null;
+							}
 						}
 				],
 				ret: getOverrideType(ret),
@@ -185,7 +192,8 @@ class RuleScriptedClass
 				var _t = t;
 				var _params = params;
 
-				if (aliasMap.exists(_t.toString()))
+				while (aliasMap.exists(_t.toString()))
+				{
 					_t = switch (aliasMap.get(_t.toString()))
 					{
 						case TInst(t, params):
@@ -193,11 +201,24 @@ class RuleScriptedClass
 							t;
 						default: null;
 					};
+				}
 
 				for (id => param in _params)
 					_params[id] = transformTypeParams(param);
 
 				type = TInst(_t, _params);
+			case TFun(args, ret):
+				var _args = args;
+				var _ret = ret;
+
+				for (arg in _args)
+				{
+					arg.t = transformTypeParams(arg.t);
+				}
+
+				type = TFun(_args, transformTypeParams(_ret));
+			case TAbstract(t, params):
+				type = TAbstract(t, [for (param in params) transformTypeParams(param)]);
 			default:
 				null;
 		}
