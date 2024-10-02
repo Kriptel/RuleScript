@@ -174,10 +174,10 @@ class RuleScriptedClass
 
 	inline static function getOverrideType(type:haxe.macro.Type):ComplexType
 	{
-		return Context.toComplexType(transfromTypeParams(type));
+		return Context.toComplexType(transformTypeParams(type));
 	}
 
-	static function transfromTypeParams(type:haxe.macro.Type):haxe.macro.Type
+	static function transformTypeParams(type:haxe.macro.Type):haxe.macro.Type
 	{
 		switch (type)
 		{
@@ -195,7 +195,7 @@ class RuleScriptedClass
 					};
 
 				for (id => param in _params)
-					_params[id] = transfromTypeParams(param);
+					_params[id] = transformTypeParams(param);
 
 				type = TInst(_t, _params);
 			default:
