@@ -9,6 +9,8 @@ import rulescript.macro.MacroTools;
 
 class RuleScriptedClass
 {
+	static var aliasMap:Map<String, haxe.macro.Type> = [];
+
 	public static macro function build():Array<Field>
 	{
 		var pos = Context.currentPos();
@@ -23,13 +25,15 @@ class RuleScriptedClass
 		{
 			for (field in curType.fields.get())
 			{
-				if (!typefields.exists(field.name) && !field.kind.match(FMethod(MethInline)))
+				if (!typefields.exists(field.name) && !field.isFinal && field.kind.match(FMethod(_)) && !field.kind.match(FMethod(MethInline)))
 					typefields.set(field.name, field);
 			}
 			curType = curType.superClass?.t.get();
 
 			constructor ??= curType.constructor?.get();
 		}
+
+		createAliasMap();
 
 		for (name => field in typefields)
 		{
@@ -168,11 +172,42 @@ class RuleScriptedClass
 		};
 	}
 
-	static function getOverrideType(type:haxe.macro.Type):ComplexType
+	inline static function getOverrideType(type:haxe.macro.Type):ComplexType
+	{
+		return Context.toComplexType(transfromTypeParams(type));
+	}
+
+	static function transfromTypeParams(type:haxe.macro.Type):haxe.macro.Type
+	{
+		switch (type)
+		{
+			case TInst(t, params):
+				var _t = t;
+				var _params = params;
+
+				if (aliasMap.exists(_t.toString()))
+					_t = switch (aliasMap.get(_t.toString()))
+					{
+						case TInst(t, params):
+							_params = params;
+							t;
+						default: null;
+					};
+
+				for (id => param in _params)
+					_params[id] = transfromTypeParams(param);
+
+				type = TInst(_t, _params);
+			default:
+				null;
+		}
+
+		return type;
+	}
+
+	static function createAliasMap():Void
 	{
 		var t:ClassType = Context.getLocalClass().get();
-
-		var aliasMap:Map<String, haxe.macro.Type> = [];
 
 		while (t != null)
 		{
@@ -192,17 +227,6 @@ class RuleScriptedClass
 			}
 			t = t.superClass?.t.get();
 		}
-
-		switch (type)
-		{
-			case TInst(t, params):
-				if (aliasMap.exists(t.toString()))
-					type = aliasMap.get(t.toString());
-			default:
-				null;
-		}
-
-		return Context.toComplexType(type);
 	}
 }
 #end

@@ -14,7 +14,19 @@ class Hello<T>
 
 class SrcClassTest<T:Hello<K>, K>
 {
+	var a:Int = 1;
+	var b:T;
+	var c:Array<T>;
+	var d:() -> T;
+
 	public function new(arg1:String) {}
+
+	final finalVar:Int = 1;
+
+	final public function finalFunc():Int
+	{
+		return finalVar;
+	}
 
 	public function info()
 	{
@@ -35,6 +47,14 @@ class SrcClassTest<T:Hello<K>, K>
 	{
 		return Std.string(arg);
 	}
+
+	public function t(arg:T):T
+	{
+		return arg;
+	}
+
+	public function stringArray(arg:Array<T>)
+		return Std.string(arg);
 
 	public static function staticField() {}
 }

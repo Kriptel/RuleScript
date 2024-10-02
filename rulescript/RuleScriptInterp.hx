@@ -98,10 +98,10 @@ class RuleScriptInterp extends hscript.Interp
 
 	override function setVar(name:String, v:Dynamic)
 	{
-		var v = variables.get(name);
+		var lastValue = variables.get(name);
 
-		if (v is RuleScriptProperty)
-			cast(v, RuleScriptProperty).value = v;
+		if (lastValue is RuleScriptProperty)
+			cast(lastValue, RuleScriptProperty).value = v;
 		else
 			variables.set(name, v);
 	}

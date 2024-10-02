@@ -283,6 +283,9 @@ class Main
 
 		trace(srcClass.string(new Hello<Int>(12)));
 		trace(scriptClass.string(new Hello<String>('hello')));
+
+		trace(srcClass.stringArray([new Hello<Int>(12)]));
+		trace(scriptClass.stringArray([new Hello<String>('hello')]));
 	}
 
 	static function fileScriptTest()

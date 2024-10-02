@@ -14,8 +14,12 @@ class ScriptedClass extends ScriptedClassTest
 		argument3: $a3';
 	}
 
-		public function string(arg:T)
+	public function string(arg:T)
 	{
 		return 'Script:' + arg.v;
+	}
+
+	public function stringArray(arg:Array<T>){
+		return 'Script: stringArray -' + Std.string(arg);
 	}
 }
