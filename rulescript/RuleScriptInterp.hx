@@ -16,6 +16,8 @@ class RuleScriptInterp extends hscript.Interp
 
 	public var onMeta:(name:String, arr:Array<Expr>, e:Expr) -> Expr;
 
+	public var isSuperCall:Bool = false;
+
 	override private function resetVariables():Void
 	{
 		super.resetVariables();
@@ -404,6 +406,18 @@ class RuleScriptInterp extends hscript.Interp
 		}
 
 		return null;
+	}
+
+	override function call(o:Dynamic, f:Dynamic, args:Array<Dynamic>):Dynamic
+	{
+		if (o == superInstance)
+			isSuperCall = true;
+
+		var result:Dynamic = super.call(o, f, args);
+
+		isSuperCall = false;
+
+		return result;
 	}
 
 	override function cnew(cl:String, args:Array<Dynamic>):Dynamic

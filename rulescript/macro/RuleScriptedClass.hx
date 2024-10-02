@@ -144,7 +144,7 @@ class RuleScriptedClass
 				ret: getOverrideType(ret),
 				expr: macro
 				{
-					return if (__rulescript.interp.variables.exists($v{field.name}))
+					return if (!__rulescript.interp.isSuperCall && __rulescript.interp.variables.exists($v{field.name}))
 					{
 						__rulescript.interp.variables.get($v{field.name})($a{fieldArgs});
 					}

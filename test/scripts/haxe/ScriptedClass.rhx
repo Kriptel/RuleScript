@@ -3,7 +3,7 @@ package;
 class ScriptedClass extends ScriptedClassTest
 {
 	override public function info(){
-		return 'I Scripted!!!!';
+		return 'I Scripted!!!!, super info: ${super.info()}';
 	}
 
 	public function argFunction(a1:Bool, a2:String, a3:String)
