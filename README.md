@@ -98,10 +98,17 @@ More templates in [`test/src/Main.hx`](https://github.com/Kriptel/RuleScript/blo
 # Install
 
 1. Installing lib: 
-    
-    Haxelib : `haxelib git rulescript https://github.com/Kriptel/RuleScript.git`
-    
-    Hmm : `hmm git rulescript https://github.com/Kriptel/RuleScript.git`
+- haxelib version
+    - Haxelib : `haxelib install rulescript`
+    - Hmm : `hmm haxelib rulescript`
+- github version
+
+    - Haxelib : `haxelib git rulescript https://github.com/Kriptel/RuleScript.git`
+    - Hmm : `hmm git rulescript https://github.com/Kriptel/RuleScript.git`
+- github version (dev)
+
+    - Haxelib : `haxelib git rulescript https://github.com/Kriptel/RuleScript.git dev`
+    - Hmm : `hmm git rulescript https://github.com/Kriptel/RuleScript.git dev`
 2. Adding lib to your project:
     
     Hxml :
