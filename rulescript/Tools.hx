@@ -96,7 +96,11 @@ class Tools
 									{
 										if (meta.name == ':constructor')
 										{
+											#if hscriptPos
 											switch (meta.params[0].e)
+											#else
+											switch (meta.params[0])
+											#end
 											{
 												case EIdent('pre'):
 													fieldName = '__pre_new';
