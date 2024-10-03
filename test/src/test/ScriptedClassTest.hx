@@ -19,7 +19,10 @@ class SrcClassTest<T:Hello<K>, K>
 	var c:Array<T>;
 	var d:() -> T;
 
-	public function new(arg1:String) {}
+	public function new(arg1:String)
+	{
+		trace('SrcClassTest created with arg: $arg1');
+	}
 
 	final finalVar:Int = 1;
 

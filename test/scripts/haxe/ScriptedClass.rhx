@@ -2,6 +2,16 @@ package;
 
 class ScriptedClass extends ScriptedClassTest
 {
+	@:constructor(pre)
+	public function new(arg1:String){
+		trace('Constructor.pre: $arg1');
+	}
+
+	@:constructor(post)
+	public function new(arg1:String){
+		trace('Constructor.post: $arg1');
+	}
+
 	override public function info(){
 		return 'I Scripted!!!!, super info: ${super.info()}';
 	}

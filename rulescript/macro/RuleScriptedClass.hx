@@ -102,13 +102,30 @@ class RuleScriptedClass
 				{
 					__rulescript = rulescript.scriptedClass.RuleScriptedClassUtil.buildRuleScript(typeName, this);
 
-					if (__rulescript.interp.variables.exists('new'))
+					var hasPreNew:Bool = __rulescript.variables.exists('__pre_new');
+					var hasPostNew:Bool = __rulescript.variables.exists('__post_new');
+
+					switch [hasPreNew, hasPostNew]
 					{
-						__rulescript.interp.variables.get('new')($a{fieldArgs});
-					}
-					else
-					{
-						super($a{fieldArgs});
+						case [true, true]:
+							__rulescript.variables.get('__pre_new')($a{fieldArgs});
+							super($a{fieldArgs});
+							__rulescript.variables.get('__post_new')($a{fieldArgs});
+						case [true, false]:
+							__rulescript.variables.get('__pre_new')($a{fieldArgs});
+							super($a{fieldArgs});
+						case [false, true]:
+							super($a{fieldArgs});
+							__rulescript.variables.get('__post_new')($a{fieldArgs});
+						default:
+							if (__rulescript.variables.exists('new'))
+							{
+								__rulescript.variables.get('new')($a{fieldArgs});
+							}
+							else
+							{
+								super($a{fieldArgs});
+							}
 					}
 				} : macro {},
 			params: [for (param in constructor.params) {name: param.name}]

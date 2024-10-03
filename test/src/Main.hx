@@ -273,8 +273,8 @@ class Main
 
 		RuleScriptedClassUtil.registerRuleScriptedClass('scripted', script.getParser(HxParser).parse(File.getContent('scripts/haxe/ScriptedClass.rhx')));
 
-		var srcClass = new SrcClassTest<Hello<Int>, Int>(''),
-			scriptClass = new ScriptedClassTest('scripted', '');
+		var srcClass = new SrcClassTest<Hello<Int>, Int>('Src'),
+			scriptClass = new ScriptedClassTest('scripted', 'Script');
 		trace(srcClass.info());
 		trace(scriptClass.info());
 

@@ -89,7 +89,25 @@ class Tools
 						switch (field.kind)
 						{
 							case KFunction(f):
-								pushExpr(EFunction(f.args, f.expr, field.name, f.ret));
+								var fieldName = field.name;
+								if (fieldName == 'new')
+								{
+									for (meta in field.meta)
+									{
+										if (meta.name == ':constructor')
+										{
+											switch (meta.params[0].e)
+											{
+												case EIdent('pre'):
+													fieldName = '__pre_new';
+												case EIdent('post'):
+													fieldName = '__post_new';
+												default:
+											}
+										}
+									}
+								}
+								pushExpr(EFunction(f.args, f.expr, fieldName, f.ret));
 							case KVar(v):
 								if (v.get == null && v.set == null)
 								{
