@@ -33,6 +33,7 @@ class Main
 
 				script.getParser(HxParser).allowAll();
 
+				script.errorHandler = onError;
 				try
 				{
 					mathTest();
@@ -310,7 +311,7 @@ class Main
 		// Reset package, for reusing package keyword
 		script.interp.scriptPackage = '';
 
-		Sys.println('\n[Running code #${++callNum}]: "$code"\n\n         [Result]: ${script.tryExecute(code, onError)}');
+		Sys.println('\n[Running code #${++callNum}]: "$code"\n\n         [Result]: ${script.tryExecute(code)}');
 	}
 
 	static function runFileScript(path:String)
@@ -320,7 +321,7 @@ class Main
 
 		var code:String = File.getContent('scripts/' + path);
 
-		Sys.println('\n[Running code #${++callNum}]: "$code"\n\n         [Result]: ${script.tryExecute(code, onError)}');
+		Sys.println('\n[Running code #${++callNum}]: "$code"\n\n         [Result]: ${script.tryExecute(code)}');
 	}
 
 	static function onError(e:haxe.Exception):Dynamic

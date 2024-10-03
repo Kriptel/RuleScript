@@ -18,6 +18,9 @@ class RuleScriptInterp extends hscript.Interp
 
 	public var isSuperCall:Bool = false;
 
+	public var hasErrorHandler:Bool = false;
+	public var errorHandler(default, set):haxe.Exception->Dynamic;
+
 	override private function resetVariables():Void
 	{
 		super.resetVariables();
@@ -111,6 +114,22 @@ class RuleScriptInterp extends hscript.Interp
 	inline private function getScriptProp(v:Dynamic):Dynamic
 	{
 		return v is RuleScriptProperty ? cast(v, RuleScriptProperty).value : v;
+	}
+
+	override function exprReturn(e):Dynamic
+	{
+		if (hasErrorHandler)
+			try
+			{
+				return super.exprReturn(e);
+			}
+			catch (exception:haxe.Exception)
+			{
+				errorHandler(exception);
+			}
+		else
+			return super.exprReturn(e);
+		return null;
 	}
 
 	override public function expr(expr:Expr):Dynamic
@@ -426,5 +445,12 @@ class RuleScriptInterp extends hscript.Interp
 		if (c == null)
 			c = resolve(cl);
 		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : Type.createInstance(c, args);
+	}
+
+	function set_errorHandler(v:haxe.Exception->Dynamic):haxe.Exception->Dynamic
+	{
+		hasErrorHandler = v != null;
+
+		return errorHandler = v;
 	}
 }

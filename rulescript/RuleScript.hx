@@ -96,6 +96,10 @@ class RuleScript
 
 	public var parser:Parser;
 
+	public var hasErrorHandler(get, set):Bool;
+
+	public var errorHandler(get, set):haxe.Exception->Dynamic;
+
 	public function new(?interp:RuleScriptInterp, ?parser:Parser)
 	{
 		// You can register custom parser in a child class
@@ -138,5 +142,25 @@ class RuleScript
 	function set_variables(v:Map<String, Dynamic>):Map<String, Dynamic>
 	{
 		return interp.variables = v;
+	}
+
+	function get_hasErrorHandler():Bool
+	{
+		return interp.hasErrorHandler;
+	}
+
+	function set_hasErrorHandler(v:Bool):Bool
+	{
+		return interp.hasErrorHandler = v;
+	}
+
+	function get_errorHandler():haxe.Exception->Dynamic
+	{
+		return interp.errorHandler;
+	}
+
+	function set_errorHandler(v:haxe.Exception->Dynamic):haxe.Exception->Dynamic
+	{
+		return interp.errorHandler = v;
 	}
 }
