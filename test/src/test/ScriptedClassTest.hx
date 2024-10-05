@@ -67,5 +67,12 @@ class SrcClassTest<T:Hello<K>, K>
 	public static function staticField() {}
 }
 
-class SrcClassTest2 extends SrcClassTest<Hello<Dynamic>, Dynamic> {}
+class SrcClassTest2 extends SrcClassTest<Hello<Dynamic>, Dynamic>
+{
+	inline override public function t(arg:Hello<Dynamic>):Hello<Dynamic>
+	{
+		return arg;
+	}
+}
+
 class ScriptedClassTest implements RuleScriptedClass extends SrcClassTest2 {}

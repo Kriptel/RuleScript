@@ -22,11 +22,18 @@ class RuleScriptedClass
 		var curType = Context.getLocalClass().get();
 
 		var constructor = curType.constructor?.get();
+
+		var inlinedFields:Array<String> = [];
 		while (curType != null)
 		{
 			for (field in curType.fields.get())
 			{
-				if (!typefields.exists(field.name) && !field.isFinal && field.kind.match(FMethod(_)) && !field.kind.match(FMethod(MethInline)))
+				if (!inlinedFields.contains(field.name) && field.kind.match(FMethod(MethInline)))
+				{
+					inlinedFields.push(field.name);
+				}
+
+				if (!typefields.exists(field.name) && !field.isFinal && field.kind.match(FMethod(_)) && !inlinedFields.contains(field.name))
 					typefields.set(field.name, field);
 			}
 			curType = curType.superClass?.t.get();

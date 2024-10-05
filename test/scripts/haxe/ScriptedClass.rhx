@@ -43,6 +43,6 @@ class ScriptedClass extends ScriptedClassTest
 	}
 
 	public function stringArray(arg:Array<T>){
-		return 'Script: stringArray -' + Std.string(arg);
+		return 'Script: stringArray - ' + Std.string(arg);
 	}
 }
