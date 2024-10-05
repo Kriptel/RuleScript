@@ -118,7 +118,7 @@ class RuleScriptInterp extends hscript.Interp
 
 	override function exprReturn(e):Dynamic
 	{
-		if (hasErrorHandler)
+		if (!inTry && hasErrorHandler)
 			try
 			{
 				return super.exprReturn(e);
