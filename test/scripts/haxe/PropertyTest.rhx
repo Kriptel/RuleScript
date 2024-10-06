@@ -1,8 +1,8 @@
-
-
-var a(get,set):String;
+package;
 
 var _a = 'Test';
+
+var a(get,set):String;
 
 function get_a():String
 {

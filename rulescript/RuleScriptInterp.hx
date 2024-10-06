@@ -180,6 +180,9 @@ class RuleScriptInterp extends hscript.Interp
 					forLoopKeyValue(key, value, it, e);
 				return null;
 			case EFunction(params, fexpr, name, _):
+				if (name == 'new')
+					__constructor = expr;
+
 				var capturedLocals = duplicate(locals);
 				var me = this;
 				var hasOpt:Bool = false, hasRest:Bool = false, minParams = 0;
@@ -388,7 +391,7 @@ class RuleScriptInterp extends hscript.Interp
 		return v;
 	}
 
-	function forLoopKeyValue(key:String, value:Null<String>, it:Expr, e:Expr)
+	function forLoopKeyValue(key:String, value:String, it:Expr, e:Expr)
 	{
 		var old = declared.length;
 
@@ -452,5 +455,86 @@ class RuleScriptInterp extends hscript.Interp
 		hasErrorHandler = v != null;
 
 		return errorHandler = v;
+	}
+
+	// for RuleScriptedClass
+	@:noCompletion
+	public var __constructor:Expr;
+
+	@:noCompletion
+	public function makeSuperFunction(params:Array<Argument>, args:Array<Dynamic>)
+	{
+		var capturedLocals = duplicate(locals);
+		var me = this;
+		var hasOpt:Bool = false, hasRest:Bool = false, minParams = 0;
+		for (p in params)
+		{
+			if (p.t.match(CTPath(["haxe", "Rest"], _)))
+			{
+				if (params.indexOf(p) == params.length - 1)
+					hasRest = true;
+				else
+					error(ECustom("Rest should only be used for the last function argument"));
+			}
+
+			if (p.opt)
+				hasOpt = true;
+			else
+				minParams++;
+		}
+
+		if (((args == null) ? 0 : args.length) != params.length)
+		{
+			if (args.length < minParams && (!hasRest && args.length + 1 < minParams))
+			{
+				var str = "Invalid number of parameters. Got " + args.length + ", required " + minParams + " for function 'new'";
+				error(ECustom(str));
+			}
+
+			var args2 = [];
+			var extraParams = args.length - minParams;
+			var pos = 0;
+			for (p in params)
+			{
+				if (hasRest && p.t.match(CTPath(["haxe", "Rest"], _)))
+					args2.push([for (i in pos...args.length) args[i]]);
+				else
+				{
+					if (p.opt)
+					{
+						if (extraParams > 0)
+						{
+							args2.push(args[pos++]);
+							extraParams--;
+						}
+						else
+							args2.push(null);
+					}
+					else
+						args2.push(args[pos++]);
+				}
+			}
+			args = args2;
+		}
+		else if (hasRest)
+			args.push([args.pop()]);
+
+		var old = me.locals, depth = me.depth;
+		me.depth++;
+		me.locals = me.duplicate(capturedLocals);
+		for (i in 0...params.length)
+			me.locals.set(params[i].name, {r: args[i]});
+		var r:Dynamic = null;
+		var oldDecl = declared.length;
+
+		return {
+			f: (e:Expr) -> me.exprReturn(e),
+			finish: () ->
+			{
+				restore(oldDecl);
+				me.locals = old;
+				me.depth = depth;
+			}
+		};
 	}
 }

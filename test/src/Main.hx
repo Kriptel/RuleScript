@@ -327,6 +327,9 @@ class Main
 	static function onError(e:haxe.Exception):Dynamic
 	{
 		errorsNum++;
+
+		trace('[ERROR] : ${e.details()}');
+
 		return e.details();
 	}
 }

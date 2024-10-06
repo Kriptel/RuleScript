@@ -87,6 +87,8 @@ class RuleScriptedClass
 
 		var fieldArgs = [for (argument in args) macro $i{argument.name}];
 
+		var scriptSuperCall = [for (i in 0...args.length) macro __rulescript.interp.expr(superCallArgs[$v{i}])];
+
 		var funcArgs:Array<FunctionArg> = [
 			{
 				name: 'typeName',
@@ -109,30 +111,52 @@ class RuleScriptedClass
 				{
 					__rulescript = rulescript.scriptedClass.RuleScriptedClassUtil.buildRuleScript(typeName, this);
 
-					var hasPreNew:Bool = __rulescript.variables.exists('__pre_new');
-					var hasPostNew:Bool = __rulescript.variables.exists('__post_new');
-
-					switch [hasPreNew, hasPostNew]
+					switch (rulescript.Tools.getExpr(__rulescript.interp.__constructor))
 					{
-						case [true, true]:
-							__rulescript.variables.get('__pre_new')($a{fieldArgs});
-							super($a{fieldArgs});
-							__rulescript.variables.get('__post_new')($a{fieldArgs});
-						case [true, false]:
-							__rulescript.variables.get('__pre_new')($a{fieldArgs});
-							super($a{fieldArgs});
-						case [false, true]:
-							super($a{fieldArgs});
-							__rulescript.variables.get('__post_new')($a{fieldArgs});
+						case EFunction(params, fexpr, name, _):
+							var c = __rulescript.interp.makeSuperFunction(params, $a{fieldArgs});
+
+							var exprs = switch (rulescript.Tools.getExpr(fexpr))
+							{
+								case EBlock(exprs):
+									exprs;
+								default:
+									null;
+							}
+
+							var superID = 0;
+
+							for (expr in exprs)
+							{
+								switch (rulescript.Tools.getExpr(expr))
+								{
+									case ECall(e, _):
+										if (rulescript.Tools.getExpr(e).match(EIdent('super'))) break;
+									default:
+										null;
+								}
+								superID++;
+							}
+
+							// Pre exprs
+							c.f(rulescript.Tools.toExpr(EBlock(exprs.slice(0, superID))));
+
+							var superCallArgs = switch (rulescript.Tools.getExpr(exprs[superID]))
+							{
+								case ECall(_, params):
+									params;
+								default:
+									null;
+							};
+
+							super($a{scriptSuperCall});
+							// Post exprs
+							c.f(rulescript.Tools.toExpr(EBlock(exprs.slice(superID + 1))));
+
+							c.finish();
+
 						default:
-							if (__rulescript.variables.exists('new'))
-							{
-								__rulescript.variables.get('new')($a{fieldArgs});
-							}
-							else
-							{
-								super($a{fieldArgs});
-							}
+							null;
 					}
 				} : macro {},
 			params: [for (param in constructor.params) {name: param.name}]

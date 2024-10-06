@@ -54,6 +54,16 @@ class Tools
 		return e;
 	#end
 
+	#if hscriptPos
+	inline public static function getExpr(e:Expr):ExprDef
+	{
+		return e.e;
+	}
+	#else
+	inline public static function getExpr(e:Expr):Expr
+		return e;
+	#end
+
 	inline public static function isEmptyClass(cl:Class<Dynamic>)
 	{
 		#if interp
@@ -89,29 +99,7 @@ class Tools
 						switch (field.kind)
 						{
 							case KFunction(f):
-								var fieldName = field.name;
-								if (fieldName == 'new')
-								{
-									for (meta in field.meta)
-									{
-										if (meta.name == ':constructor')
-										{
-											#if hscriptPos
-											switch (meta.params[0].e)
-											#else
-											switch (meta.params[0])
-											#end
-											{
-												case EIdent('pre'):
-													fieldName = '__pre_new';
-												case EIdent('post'):
-													fieldName = '__post_new';
-												default:
-											}
-										}
-									}
-								}
-								pushExpr(EFunction(f.args, f.expr, fieldName, f.ret));
+								pushExpr(EFunction(f.args, f.expr, field.name, f.ret));
 							case KVar(v):
 								if (v.get == null && v.set == null)
 								{
