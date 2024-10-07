@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `buildModuleDecl` function to ExprMacro.
 
 ### Changed
+- New String Interpolation.
 - Resolve now can find local classes from modules.
 - Parser and HxParser was moved to rulescript.parsers package.
 

@@ -294,6 +294,8 @@ class Main
 		script.getParser(HxParser).mode = DEFAULT;
 		runFileScript('haxe/PropertyTest.rhx');
 
+		runFileScript('haxe/StringInterpolation.rhx');
+
 		script.getParser(HxParser).mode = MODULE;
 		runFileScript('haxe/test.rhc');
 

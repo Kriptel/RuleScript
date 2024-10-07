@@ -26,13 +26,14 @@ class HxParser extends Parser
 	}
 
 	inline public function allowAll():Void
-		setParams(true, true, true);
+		setParams(true, true, true, true);
 
-	public function setParams(?allowJSON:Bool, ?allowMetadata:Bool, ?allowTypes:Bool)
+	public function setParams(?allowJSON:Bool, ?allowMetadata:Bool, ?allowTypes:Bool, ?allowStringInterpolation:Bool)
 	{
 		parser.allowJSON = allowJSON;
 		parser.allowMetadata = allowMetadata;
 		parser.allowTypes = allowTypes;
+		parser.allowStringInterpolation = allowStringInterpolation;
 	}
 
 	override public function parse(code:String):Expr
@@ -44,6 +45,8 @@ class HxParser extends Parser
 
 class HScriptParserPlus extends hscript.Parser
 {
+	public var allowStringInterpolation:Bool = true;
+
 	#if !hscriptPos
 	static inline final p1:Int = 0;
 	static inline final tokenMin:Int = 0;
@@ -218,6 +221,7 @@ class HScriptParserPlus extends hscript.Parser
 						case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
 							var n = char - 48;
 							var exp = 1;
+
 							while (true)
 							{
 								char = readChar();
@@ -248,10 +252,9 @@ class HScriptParserPlus extends hscript.Parser
 					return TBkOpen;
 				case "]".code:
 					return TBkClose;
-				case "'".code:
-					var str:String = readString(char);
-					return str.contains('$') ? parseStringInterpolation(str) : TConst(CString(str));
-				case '"'.code:
+				case "'".code if (allowStringInterpolation):
+					return TApostr;
+				case "'".code, '"'.code:
 					return TConst(CString(readString(char)));
 				case "?".code:
 					char = readChar();
@@ -363,24 +366,19 @@ class HScriptParserPlus extends hscript.Parser
 		}
 		return null;
 	}
-	/*//
-		#if hscriptPos
-		override function _token():Token
-		#else
-		override function token():Token
-		#end
-
+	override function parseExpr()
+	{
+		var tk = token();
+		return switch (tk)
 		{
-			var interpolationableString:Bool = input.fastCodeAt(readPos) == "'".code;
+			case TApostr:
+				parseExprNext(parseStringInterpolation());
+			default:
+				push(tk);
+				super.parseExpr();
+		}
+	}
 
-			return switch (#if hscriptPos super._token() #else super.token() #end)
-			{
-				case TConst(CString(s)):
-					(s.contains('$') && interpolationableString) ? parseStringInterpolation(s) : TConst(CString(s));
-				case t:
-					t;
-			};
-	}*/
 	override function parseStructure(id:String)
 	{
 		#if hscriptPos
@@ -547,148 +545,136 @@ class HScriptParserPlus extends hscript.Parser
 		}
 	}
 
-	function parseStringInterpolation(s:String):Token
+	function parseStringInterpolation():Expr
 	{
-		var parts:Array<Token> = [];
+		var char:Int = 0;
+		var backslash = false, dollar = false;
+		var parts:Array<rulescript.RuleScript.StringOrExpr> = [];
+		var currentPart:Int = 0;
 
-		var isId:Bool = false, insideBraces:Bool = false;
+		var old = line;
 
-		var currentPart:String = '';
+		#if hscriptPos
+		var p1 = currentPos - 1;
+		#end
 
-		function addPart()
+		while (true)
 		{
-			if (currentPart != '')
+			if (this.char < 0)
+				char = readChar();
+			else
 			{
-				if (insideBraces)
-				{
-					var parsedParts = parseLocalStringInterpolation(currentPart);
-					if (parsedParts.length > 0)
-						parsedParts.push(TOp('+'));
+				char = this.char;
+				this.char = -1;
+			}
 
-					for (tk in parsedParts)
-						parts.push(tk);
+			if (StringTools.isEof(char))
+			{
+				line = old;
+				error(EUnterminatedString, p1, p1);
+				break;
+			}
+
+			if (backslash)
+			{
+				backslash = false;
+				switch (char)
+				{
+					case 'n'.code:
+						this.char = '\n'.code;
+					case 'r'.code:
+						this.char = '\r'.code;
+					case 't'.code:
+						this.char = '\t'.code;
+					case "'".code, '"'.code, '\\'.code:
+						this.char = char;
+					case '/'.code:
+						if (allowJSON)
+							this.char = char;
+						else
+							invalidChar(char);
+					case "u".code:
+						if (!allowJSON)
+							invalidChar(char);
+						var k = 0;
+						for (i in 0...4)
+						{
+							k <<= 4;
+							var char = readChar();
+							switch (char)
+							{
+								case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57: // 0-9
+									k += char - 48;
+								case 65, 66, 67, 68, 69, 70: // A-F
+									k += char - 55;
+								case 97, 98, 99, 100, 101, 102: // a-f
+									k += char - 87;
+								default:
+									if (StringTools.isEof(char))
+									{
+										line = old;
+										error(EUnterminatedString, p1, p1);
+									}
+									invalidChar(char);
+							}
+						}
+						this.char = k;
+					default:
+						invalidChar(char);
+				}
+			}
+			else if (char == '$'.code && !dollar)
+			{
+				var c = readChar();
+				this.char = c;
+				if (c == '$'.code)
+				{
+					dollar = true;
 				}
 				else
-				{
-					parts.push(isId ? TId(currentPart) : TConst(CString(currentPart)));
-					parts.push(TOp('+'));
-				}
-				currentPart = '';
-			}
-		}
-
-		for (pos => char in s)
-			switch (char)
-			{
-				case(idents[char] && isId) => true:
-					currentPart += String.fromCharCode(char);
-
-				case('$'.code == char && s.charCodeAt(pos + 1) == '$'.code) => true:
-					if (isId)
-						currentPart += String.fromCharCode(char);
-
-					isId = !isId;
-
-				case('$'.code == char && idents[s.charCodeAt(pos + 1)]) => true:
-					addPart();
-					isId = true;
-				case('$'.code == char && s.charCodeAt(pos + 1) == '{'.code) => true: // Because the $ after '${}' is saved
-
-				case('{'.code == char && s.charCodeAt(pos - 1) == '$'.code) => true:
-					addPart();
-					isId = insideBraces = true;
-				case '}'.code:
-					if (isId)
-						addPart();
-					insideBraces = false;
-				default:
-					if (isId && !insideBraces)
-						addPart();
-
-					if (!insideBraces)
-						isId = false;
-					currentPart += String.fromCharCode(char);
-			}
-
-		addPart();
-
-		// Remove last unusable operator
-		parts.pop();
-
-		parts.reverse();
-
-		for (part in parts)
-			push(part);
-
-		var tk = token();
-
-		return tk;
-	}
-
-	function parseLocalStringInterpolation(s:String):Array<Token>
-	{
-		var currentPart:String = '';
-
-		var parts:Array<Token> = [];
-
-		var isId:Bool = false, isCall:Bool = false, insideString:Bool = false;
-
-		function addPart()
-		{
-			if (currentPart != '')
-			{
-				if (isId)
-				{
-					parts.push((TId(currentPart.trim())));
-					if (isCall)
+					switch (token())
 					{
-						isCall = false;
-						parts.push(TPOpen);
-						parts.push(TPClose);
+						case TBrOpen:
+							currentPart = parts.push(parseExpr());
+							ensure(TBrClose);
+						case TId(s):
+							currentPart = parts.push(mk(EIdent(s)));
+						default:
 					}
-				}
-				else
-				{
-					parts.push(TConst(CString(currentPart)));
-				}
-				currentPart = '';
 			}
-		}
-
-		for (pos => char in s)
-		{
-			switch (char)
+			else if (char == '\\'.code)
 			{
-				case(("'".code == char || '"'.code == char) && s.charCodeAt(pos - 1) != '\\'.code) => true:
-					isId = false;
+				backslash = true;
+			}
+			else if (char == "'".code)
+			{
+				break;
+			}
+			else
+			{
+				parts[currentPart] ??= '';
 
-					insideString = !insideString;
+				if (char == '\n'.code)
+					line++;
 
-				// More priority
-				case(insideString) => true:
-					currentPart += String.fromCharCode(char);
-
-				case(idents[char]) => true:
-					currentPart += String.fromCharCode(char);
-
-				case '.'.code:
-					isId = true;
-					addPart();
-					parts.push(TDot);
-					isId = true;
-				case '+'.code:
-					addPart();
-
-					parts.push(TOp('+'));
-				case '('.code:
-					isCall = true;
-				case ')'.code:
-				default:
+				parts[currentPart] += String.fromCharCode(char);
 			}
 		}
-		addPart();
 
-		return parts;
+		var e:Expr = null;
+
+		var currentPart:Int = 0;
+		while (parts.length > currentPart)
+		{
+			var part:Dynamic = parts[currentPart++];
+			if (part is String)
+				part = mk(EConst(CString(cast part)));
+			if (e == null)
+				e = part;
+			else
+				e = makeBinop('+', e, part);
+		}
+		return e ?? mk(EConst(CString('')));
 	}
 
 	override function parseFunctionArgs()
@@ -920,5 +906,31 @@ class HScriptParserPlus extends hscript.Parser
 	public function moduleDeclsToExpr(moduleDecls:Array<ModuleDecl>):Expr
 	{
 		return Tools.moduleDeclsToExpr(moduleDecls);
+	}
+
+	override function tokenString(t)
+	{
+		return switch (t)
+		{
+			case TEof: "<eof>";
+			case TConst(c): constString(c);
+			case TId(s): s;
+			case TOp(s): s;
+			case TPOpen: "(";
+			case TPClose: ")";
+			case TBrOpen: "{";
+			case TBrClose: "}";
+			case TDot: ".";
+			case TQuestionDot: "?.";
+			case TComma: ",";
+			case TSemicolon: ";";
+			case TBkOpen: "[";
+			case TBkClose: "]";
+			case TQuestion: "?";
+			case TDoubleDot: ":";
+			case TMeta(id): "@" + id;
+			case TPrepro(id): "#" + id;
+			case TApostr: "<apostrophe>";
+		}
 	}
 }

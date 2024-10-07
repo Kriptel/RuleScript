@@ -1,0 +1,7 @@
+package;
+
+a = 'rulescript';
+b = () -> 'hello';
+c = (w) -> !w ? 'hello' : 'world';
+
+return '$a: ${b()} ${c(true)}';

@@ -32,9 +32,26 @@ class ExprMacro
 		for (key => value in newFields)
 			fields.push({
 				name: key,
-				access: [],
 				kind: FFun(MacroTools.toFunction(value)),
-				pos: pos,
+				pos: pos
+			});
+
+		return fields;
+	}
+
+	public static function buildToken():Array<Field>
+	{
+		var fields:Array<Field> = Context.getBuildFields();
+
+		var pos = Context.currentPos();
+
+		var newFields:Map<String, Expr> = ['TApostr' => macro function() {},];
+
+		for (key => value in newFields)
+			fields.push({
+				name: key,
+				kind: FFun(MacroTools.toFunction(value)),
+				pos: pos
 			});
 
 		return fields;
@@ -69,6 +86,9 @@ class ExprMacro
 
 	public static function buildInterpDefaults():Array<Field>
 		return addDefaultPattern('expr');
+
+	public static function buildParserDefaults():Array<Field>
+		return addDefaultPattern('tokenString', null, macro '');
 
 	public static function buildToolsDefaults():Array<Field>
 		return addDefaultPattern('map', addDefaultPattern('iter'), macro expr(e));
@@ -123,6 +143,8 @@ class ExprMacro
 														default:
 													}
 												}
+											case ESwitch(_e, cases, edef):
+												e.expr = ESwitch(_e, cases, edef ?? expr ?? macro {});
 											default:
 										}
 									case EVars(vars):

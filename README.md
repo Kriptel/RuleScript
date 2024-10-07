@@ -44,7 +44,7 @@ var a = {
 trace(a.getProperty("Hello")); // World
 ```
 
-### String interpolation (Experimental)
+### String interpolation
 RuleScript supports [String Interpolation](https://haxe.org/manual/lf-string-interpolation.html), but you can only use identifiers, double quotes string, calls without arguments and `+` operator.
 ```haxe
 var a = 'Hello';
@@ -54,10 +54,10 @@ trace('RuleScript: $a World'); // RuleScript: Hello World
 var a = {
     a:'RuleScript',
     b: () -> 'Hello',
-    c:'World'
+    c: (a) -> a ? 'World' : '';
 };
         
-trace('${a.a}: ${a.b() + " " + a.c}'); // RuleScript: Hello World
+trace('${a.a}: ${a.b() + ' ' + a.c(true)}'); // RuleScript: Hello World
 ```
 
 ### Abstracts in script
@@ -85,14 +85,12 @@ More templates in [`test/src/Main.hx`](https://github.com/Kriptel/RuleScript/blo
 
 # Limitations
 
-- [String interpolations](https://haxe.org/manual/lf-string-interpolation.html) don't support many functions
 - Script `using` callback supports max number of arguments is 8.
 - [Wildcard imports](https://haxe.org/manual/type-system-import.html#wildcard-import) don't support.
 - AbstractMacro ports only static fields
 
 # To Do
 - Lua Parser
-- Improve String Interpolation
 - Improve hscript module parser
 
 # Install
