@@ -15,6 +15,9 @@ class RuleScriptProperty
 	var _get:Property;
 	var _set:Property;
 
+	@:allow(rulescript.RuleScriptInterp)
+	var _lazyValue:() -> Dynamic;
+
 	@:isVar public var value(get, set):Dynamic;
 
 	public function new(?get:Property = DEFAULT, ?set:Property = DEFAULT)
@@ -25,6 +28,8 @@ class RuleScriptProperty
 
 	function get_value():Dynamic
 	{
+		initLazy();
+
 		return switch (_get)
 		{
 			case DEFAULT | NULL: this.value;
@@ -37,6 +42,8 @@ class RuleScriptProperty
 
 	function set_value(v:Dynamic):Dynamic
 	{
+		initLazy();
+
 		return switch (_set)
 		{
 			case DEFAULT | NULL: this.value = v;
@@ -44,6 +51,16 @@ class RuleScriptProperty
 			case SET(f): f(v);
 			case DYNAMIC(f): f(v);
 			case NEVER: throw 'This expression cannot be accessed for writing';
+		}
+	}
+
+	inline function initLazy()
+	{
+		if (_lazyValue != null)
+		{
+			var newValue = _lazyValue();
+			_lazyValue = null;
+			set_value(newValue);
 		}
 	}
 }

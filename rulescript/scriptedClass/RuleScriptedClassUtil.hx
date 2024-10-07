@@ -18,6 +18,7 @@ class RuleScriptedClassUtil
 		{
 			var rulescript = new rulescript.RuleScript();
 			rulescript.superInstance = superInstance;
+			rulescript.interp.skipNextRestore = true;
 			rulescript.execute(types[typeName]);
 			rulescript;
 		}

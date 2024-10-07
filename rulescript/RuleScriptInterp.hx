@@ -171,7 +171,10 @@ class RuleScriptInterp extends hscript.Interp
 				return onMeta(name, args, e);
 			case EProp(n, g, s, type, e):
 				declared.push({n: n, old: locals.get(n)});
-				locals.set(n, {r: createScriptProperty(n, g, s, type, e)});
+				var prop = createScriptProperty(n, g, s, type);
+				locals.set(n, {r: prop});
+				if (e != null)
+					prop._lazyValue = () -> this.expr(e);
 				return null;
 			case EFor(key, it, e, value):
 				if (value == null)
@@ -297,7 +300,7 @@ class RuleScriptInterp extends hscript.Interp
 		return null;
 	}
 
-	function createScriptProperty(n:String, g:String, s:String, type:Null<CType>, e:Null<Expr>)
+	function createScriptProperty(n:String, g:String, s:String, type:Null<CType>)
 	{
 		var getter:Property = switch (g)
 		{
@@ -332,8 +335,7 @@ class RuleScriptInterp extends hscript.Interp
 		}
 
 		var prop = new RuleScriptProperty(getter, setter);
-		if (e != null)
-			prop.value = expr(e);
+
 		return prop;
 	}
 
@@ -455,6 +457,17 @@ class RuleScriptInterp extends hscript.Interp
 		hasErrorHandler = v != null;
 
 		return errorHandler = v;
+	}
+
+	@:noCompletion
+	public var skipNextRestore:Bool = false;
+
+	override function restore(old:Int)
+	{
+		if (skipNextRestore)
+			skipNextRestore = false;
+		else
+			super.restore(old);
 	}
 
 	// for RuleScriptedClass
