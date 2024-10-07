@@ -111,53 +111,56 @@ class RuleScriptedClass
 				{
 					__rulescript = rulescript.scriptedClass.RuleScriptedClassUtil.buildRuleScript(typeName, this);
 
-					switch (rulescript.Tools.getExpr(__rulescript.interp.__constructor))
-					{
-						case EFunction(params, fexpr, name, _):
-							var c = __rulescript.interp.makeSuperFunction(params, $a{fieldArgs});
+					if (__rulescript.interp.__constructor != null)
+						switch (rulescript.Tools.getExpr(__rulescript.interp.__constructor))
+						{
+							case EFunction(params, fexpr, name, _):
+								var c = __rulescript.interp.makeSuperFunction(params, $a{fieldArgs});
 
-							var exprs = switch (rulescript.Tools.getExpr(fexpr))
-							{
-								case EBlock(exprs):
-									exprs;
-								default:
-									null;
-							}
-
-							var superID = 0;
-
-							for (expr in exprs)
-							{
-								switch (rulescript.Tools.getExpr(expr))
+								var exprs = switch (rulescript.Tools.getExpr(fexpr))
 								{
-									case ECall(e, _):
-										if (rulescript.Tools.getExpr(e).match(EIdent('super'))) break;
+									case EBlock(exprs):
+										exprs;
 									default:
 										null;
 								}
-								superID++;
-							}
 
-							// Pre exprs
-							c.f(rulescript.Tools.toExpr(EBlock(exprs.slice(0, superID))));
+								var superID = 0;
 
-							var superCallArgs = switch (rulescript.Tools.getExpr(exprs[superID]))
-							{
-								case ECall(_, params):
-									params;
-								default:
-									null;
-							};
+								for (expr in exprs)
+								{
+									switch (rulescript.Tools.getExpr(expr))
+									{
+										case ECall(e, _):
+											if (rulescript.Tools.getExpr(e).match(EIdent('super'))) break;
+										default:
+											null;
+									}
+									superID++;
+								}
 
-							super($a{scriptSuperCall});
-							// Post exprs
-							c.f(rulescript.Tools.toExpr(EBlock(exprs.slice(superID + 1))));
+								// Pre exprs
+								c.f(rulescript.Tools.toExpr(EBlock(exprs.slice(0, superID))));
 
-							c.finish();
+								var superCallArgs = switch (rulescript.Tools.getExpr(exprs[superID]))
+								{
+									case ECall(_, params):
+										params;
+									default:
+										null;
+								};
 
-						default:
-							null;
-					}
+								super($a{scriptSuperCall});
+								// Post exprs
+								c.f(rulescript.Tools.toExpr(EBlock(exprs.slice(superID + 1))));
+
+								c.finish();
+
+							default:
+								null;
+						}
+					else
+						super($a{fieldArgs});
 				} : macro {},
 			params: [for (param in constructor.params) {name: param.name}]
 		}
