@@ -43,6 +43,8 @@ class RuleScriptedClass
 
 		createAliasMap();
 
+		curType = Context.getLocalClass().get();
+
 		for (name => field in typefields)
 		{
 			fields.push(overrideField(field));
@@ -51,7 +53,7 @@ class RuleScriptedClass
 		fields.push({
 			name: 'new',
 			access: [APublic],
-			kind: FFun(createConstructor(constructor)),
+			kind: FFun(createConstructor(constructor, curType.meta.has(':strictScriptedConstructor'))),
 			pos: Context.currentPos()
 		});
 
@@ -62,10 +64,33 @@ class RuleScriptedClass
 			pos: Context.currentPos()
 		});
 
+		var functions = [
+			'variableExists' => macro function(name:String):Bool
+			{
+				return __rulescript.variables.exists(name);
+			},
+			'getVariable' => macro function(name:String):Dynamic
+			{
+				return __rulescript.variables[name];
+			},
+			'setVariable' => macro function(name:String, value:Dynamic):Dynamic
+			{
+				return __rulescript.variables[name] = value;
+			}
+		];
+
+		for (name => func in functions)
+			fields.push({
+				name: name,
+				access: [APublic],
+				kind: FFun(MacroTools.toFunction(func)),
+				pos: Context.currentPos()
+			});
+
 		return fields;
 	}
 
-	static function createConstructor(constructor:ClassField):Function
+	static function createConstructor(constructor:ClassField, strict:Bool = false):Function
 	{
 		var args = null;
 
@@ -85,9 +110,12 @@ class RuleScriptedClass
 			default:
 		}
 
-		var fieldArgs = [for (argument in args) macro $i{argument.name}];
+		var fieldArgs = strict ? [for (argument in args) macro $i{argument.name}] : [macro args];
 
-		var scriptSuperCall = [for (i in 0...args.length) macro __rulescript.interp.expr(superCallArgs[$v{i}])];
+		var scriptSuperCall = [
+			for (i in 0...args.length)
+				macro superCallArgs[$v{i}] != null ? __rulescript.interp.expr(superCallArgs[$v{i}]) : null
+		];
 
 		var funcArgs:Array<FunctionArg> = [
 			{
@@ -96,14 +124,21 @@ class RuleScriptedClass
 			}
 		];
 
-		funcArgs = funcArgs.concat([
-			for (arg in args)
-				{
-					name: arg.name,
-					opt: arg.opt,
-					type: getOverrideType(arg.t)
-				}
-		]);
+		if (strict)
+			funcArgs = funcArgs.concat([
+				for (arg in args)
+					{
+						name: arg.name,
+						opt: arg.opt,
+						type: getOverrideType(arg.t)
+					}
+			]);
+		else
+			funcArgs.push({
+				name: 'args',
+				opt: true,
+				type: macro :Array<Dynamic>
+			});
 
 		return {
 			args: funcArgs,
@@ -115,7 +150,13 @@ class RuleScriptedClass
 						switch (rulescript.Tools.getExpr(__rulescript.interp.__constructor))
 						{
 							case EFunction(params, fexpr, name, _):
-								var c = __rulescript.interp.makeSuperFunction(params, $a{fieldArgs});
+								var c = __rulescript.interp.makeSuperFunction(params, $
+									{
+										if (strict)
+											macro $a{fieldArgs}
+										else
+											macro args
+									});
 
 								var exprs = switch (rulescript.Tools.getExpr(fexpr))
 								{
@@ -160,7 +201,7 @@ class RuleScriptedClass
 								null;
 						}
 					else
-						super($a{fieldArgs});
+						$e{strict ? macro super($a{fieldArgs}) : macro super(args[0])};
 				} : macro {},
 			params: [for (param in constructor.params) {name: param.name}]
 		}

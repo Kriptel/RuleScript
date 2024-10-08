@@ -12,10 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RuleScriptedClassUtil.
 - RuleScriptedClass interface.
 - Script Properties.
-- `hasErrorHandler` variable to RuleScript and RuleScriptInterp
-- `errorHandler` variable to RuleScript and RuleScriptInterp
+- `hasErrorHandler` variable to RuleScript and RuleScriptInterp.
+- `errorHandler` variable to RuleScript and RuleScriptInterp.
 - Key => value iterator.
-- Super instance var to RuleScriptInterp.
+- `superInstance` variable to RuleScriptInterp.
 - `onMeta` callback in RuleScriptInterp.
 - Classes (MODULE mode only).
 - HxParserMode.

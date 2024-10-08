@@ -8,6 +8,8 @@ import test.HelloWorldAbstract;
 import test.ScriptedClassTest;
 import test.TestAbstract;
 
+using StringTools;
+
 class Main
 {
 	static var script:RuleScript;
@@ -58,9 +60,9 @@ class Main
 					trace(e?.details());
 		}
 
-		trace('
-			Tests: $callNum,
-			Errors: $errorsNum
+		Sys.println('\n	
+	Tests: $callNum,
+	Errors: $errorsNum
 		');
 	}
 
@@ -273,9 +275,15 @@ class Main
 		script.getParser(HxParser).mode = MODULE;
 
 		RuleScriptedClassUtil.registerRuleScriptedClass('scripted', script.getParser(HxParser).parse(File.getContent('scripts/haxe/ScriptedClass.rhx')));
+		RuleScriptedClassUtil.registerRuleScriptedClass('scriptedStrict',
+			script.getParser(HxParser).parse(File.getContent('scripts/haxe/ScriptedClassStrict.rhx')));
+
+		// Custom constructor can't have extra args
+
+		new ScriptedClassTestStrict('scriptedStrict', 'Script');
 
 		var srcClass = new SrcClassTest<Hello<Int>, Int>('Src'),
-			scriptClass = new ScriptedClassTest('scripted', 'Script');
+			scriptClass = new ScriptedClassTest('scripted', [4, 'Script']);
 		trace(srcClass.info());
 		trace(scriptClass.info());
 
@@ -287,6 +295,30 @@ class Main
 
 		trace(srcClass.stringArray([new Hello<Int>(12)]));
 		trace(scriptClass.stringArray([new Hello<String>('hello')]));
+
+		if (scriptClass.variableExists('scriptFunction'))
+			trace(scriptClass.getVariable('scriptFunction')());
+
+		RuleScriptedClassUtil.buildBridge = customBuildRuleScript;
+
+		Sys.println('\n[Custom RuleScriptedClass Builder]\n');
+
+		var srcClass = new SrcClassTest<Hello<Int>, Int>('Src'),
+			scriptClass = new ScriptedClassTest('haxe.ScriptedClass', ['Script']);
+		trace(srcClass.info());
+		trace(scriptClass.info());
+	}
+
+	public static function customBuildRuleScript(typeName:String, superInstance:Dynamic):RuleScript
+	{
+		var rulescript = new rulescript.RuleScript();
+		rulescript.getParser(HxParser).allowAll();
+		rulescript.getParser(HxParser).mode = MODULE;
+
+		rulescript.superInstance = superInstance;
+		rulescript.interp.skipNextRestore = true;
+		rulescript.execute(File.getContent('scripts/${typeName.replace('.', '/')}.rhx'));
+		return rulescript;
 	}
 
 	static function fileScriptTest()

@@ -2,13 +2,13 @@ package;
 
 class ScriptedClass extends ScriptedClassTest
 {
-	public function new(arg1:String)
+	public function new(customArg:Int,arg1:String)
 	{
-		trace('Constructor.pre: $arg1');
+		trace('Constructor.pre: $customArg, $arg1');
+		
+		super('Super Arg');
 
-		super('super arg');
-
-		trace('Constructor.post: $arg1');	
+		trace('Constructor.post: $customArg, $arg1');	
 	}
 
 	override public function info()
@@ -16,7 +16,7 @@ class ScriptedClass extends ScriptedClassTest
 		return 'I Scripted!!!!, super info: ${super.info()}';
 	}
 
-	public function argFunction(a1:Bool, a2:String, a3:String)
+	override public function argFunction(a1:Bool, a2:String, a3:String)
 	{
 		return '
 		argument1: $a1, 
@@ -24,12 +24,16 @@ class ScriptedClass extends ScriptedClassTest
 		argument3: $a3';
 	}
 
-	public function string(arg:T)
+	override public function string(arg:T)
 	{
 		return 'Script:' + arg.v;
 	}
 
-	public function stringArray(arg:Array<T>){
+	override public function stringArray(arg:Array<T>){
 		return 'Script: stringArray - ' + Std.string(arg);
+	}
+
+	public function scriptFunction(){
+		return 'scriptFunction: Hello World!';
 	}
 }
