@@ -203,7 +203,7 @@ class RuleScriptedClass
 					else
 						super($a
 							{
-								strict ? fieldArgs : [for (i in 0...fieldArgs.length) macro args[$v{i}]]
+								strict ? fieldArgs : [for (i in 0...args.length) macro args[$v{i}]]
 							});
 				} : macro {},
 			params: [for (param in constructor.params) {name: param.name}]
