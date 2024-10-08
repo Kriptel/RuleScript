@@ -201,7 +201,10 @@ class RuleScriptedClass
 								null;
 						}
 					else
-						$e{strict ? macro super($a{fieldArgs}) : macro super(args[0])};
+						super($a
+							{
+								strict ? fieldArgs : [for (i in 0...fieldArgs.length) macro args[$v{i}]]
+							});
 				} : macro {},
 			params: [for (param in constructor.params) {name: param.name}]
 		}
