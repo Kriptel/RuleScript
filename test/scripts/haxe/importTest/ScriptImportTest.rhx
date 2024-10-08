@@ -1,0 +1,11 @@
+package importTest;
+
+import importTest.Script;
+
+class ScriptImportTest{
+	function main(){
+		trace(Script.helloWorld());
+
+		new ScriptedClass(1,'ScriptImportTest');
+	}
+}

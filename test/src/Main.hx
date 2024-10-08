@@ -1,8 +1,11 @@
 package;
 
+import hscript.Expr.ModuleDecl;
+import hscript.Printer;
 import rulescript.*;
 import rulescript.parsers.*;
 import rulescript.scriptedClass.RuleScriptedClassUtil;
+import sys.FileSystem;
 import sys.io.File;
 import test.HelloWorldAbstract;
 import test.ScriptedClassTest;
@@ -44,8 +47,8 @@ class Main
 					stringInterpolationTest();
 					abstractTest();
 					moduleTest();
-					fileScriptTest();
 					scriptClassesTest();
+					fileScriptTest();
 				}
 				catch (e)
 					trace(e?.details());
@@ -274,16 +277,16 @@ class Main
 	{
 		script.getParser(HxParser).mode = MODULE;
 
-		RuleScriptedClassUtil.registerRuleScriptedClass('scripted', script.getParser(HxParser).parse(File.getContent('scripts/haxe/ScriptedClass.rhx')));
-		RuleScriptedClassUtil.registerRuleScriptedClass('scriptedStrict',
+		RuleScriptedClassUtil.registerRuleScriptedClass('ScriptedClass', script.getParser(HxParser).parse(File.getContent('scripts/haxe/ScriptedClass.rhx')));
+		RuleScriptedClassUtil.registerRuleScriptedClass('ScriptedClassStrict',
 			script.getParser(HxParser).parse(File.getContent('scripts/haxe/ScriptedClassStrict.rhx')));
 
 		// Custom constructor can't have extra args
 
-		new ScriptedClassTestStrict('scriptedStrict', 'Script');
+		new ScriptedClassTestStrict('ScriptedClass', 'Script');
 
 		var srcClass = new SrcClassTest<Hello<Int>, Int>('Src'),
-			scriptClass = new ScriptedClassTest('scripted', [4, 'Script']);
+			scriptClass = new ScriptedClassTest('ScriptedClass', [4, 'Script']);
 		trace(srcClass.info());
 		trace(scriptClass.info());
 
@@ -304,7 +307,7 @@ class Main
 		Sys.println('\n[Custom RuleScriptedClass Builder]\n');
 
 		var srcClass = new SrcClassTest<Hello<Int>, Int>('Src'),
-			scriptClass = new ScriptedClassTest('haxe.ScriptedClass', [1, 'Script']);
+			scriptClass = new ScriptedClassTest('ScriptedClass', [1, 'Script']);
 		trace(srcClass.info());
 		trace(scriptClass.info());
 	}
@@ -317,7 +320,7 @@ class Main
 
 		rulescript.superInstance = superInstance;
 		rulescript.interp.skipNextRestore = true;
-		rulescript.execute(File.getContent('scripts/${typeName.replace('.', '/')}.rhx'));
+		rulescript.execute(File.getContent('scripts/haxe/${typeName.replace('.', '/')}.rhx'));
 		return rulescript;
 	}
 
@@ -329,9 +332,75 @@ class Main
 		runFileScript('haxe/StringInterpolation.rhx');
 
 		script.getParser(HxParser).mode = MODULE;
-		runFileScript('haxe/test.rhc');
+		runFileScript('haxe/test.rhx');
 
 		script.variables.get('main')();
+
+		var old = RuleScript.resolveScript;
+
+		RuleScript.resolveScript = function(name:String):Dynamic
+		{
+			if (!FileSystem.exists('scripts/haxe/${name.replace('.', '/')}.rhx'))
+				return null;
+
+			var parser = new HxParser();
+			parser.allowAll();
+			parser.mode = MODULE;
+
+			var module:Array<ModuleDecl> = parser.parseModule(File.getContent('scripts/haxe/${name.replace('.', '/')}.rhx'));
+
+			var newModule:Array<ModuleDecl> = [];
+
+			var extend:String = null;
+			for (decl in module)
+			{
+				switch (decl)
+				{
+					case DPackage(_), DUsing(_), DImport(_):
+						newModule.push(decl);
+					case DClass(c):
+						if (name.split('.').pop() == c.name)
+						{
+							newModule.push(decl);
+							if (c.extend != null)
+							{
+								extend = new Printer().typeToString(c.extend);
+							}
+						}
+					default:
+				}
+			}
+
+			var obj:Dynamic = null;
+
+			if (extend == null)
+			{
+				var script = new RuleScript();
+				script.execute(Tools.moduleDeclsToExpr(newModule));
+
+				obj = {};
+				for (key => value in script.variables)
+					Reflect.setField(obj, key, value);
+			}
+			else
+			{
+				var cl = Type.resolveClass(extend);
+				var f = function(args:Array<Dynamic>)
+				{
+					return Type.createInstance(cl, [name, args]);
+				}
+
+				obj = Reflect.makeVarArgs(f);
+			}
+
+			return obj;
+		}
+
+		runFileScript('haxe/importTest/ScriptImportTest.rhx');
+
+		script.variables.get('main')();
+
+		RuleScript.resolveScript = old;
 	}
 
 	static function luaTest()

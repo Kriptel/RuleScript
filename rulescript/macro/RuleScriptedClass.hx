@@ -146,6 +146,8 @@ class RuleScriptedClass
 				{
 					__rulescript = rulescript.scriptedClass.RuleScriptedClassUtil.buildRuleScript(typeName, this);
 
+					$e{!strict ? macro args ??= [] : macro {}} // If args equals null
+
 					if (__rulescript.interp.__constructor != null)
 						switch (rulescript.Tools.getExpr(__rulescript.interp.__constructor))
 						{

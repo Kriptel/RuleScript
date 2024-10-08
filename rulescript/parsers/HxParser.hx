@@ -41,6 +41,12 @@ class HxParser extends Parser
 		parser.line = 1;
 		return mode == DEFAULT ? parser.parseString(code, 'rulescript', 0) : Tools.moduleDeclsToExpr(parser.parseModule(code, 'rulescript', 0));
 	}
+
+	public function parseModule(code:String):Array<ModuleDecl>
+	{
+		parser.line = 1;
+		return parser.parseModule(code, 'rulescript', 0);
+	}
 }
 
 class HScriptParserPlus extends hscript.Parser

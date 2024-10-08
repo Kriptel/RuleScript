@@ -343,6 +343,9 @@ class RuleScriptInterp extends hscript.Interp
 	{
 		var t:Dynamic = RuleScript.resolveScript(path);
 
+		if (t != null)
+			return t;
+
 		var shortPath:String = null;
 
 		if (StringTools.contains(path, '.'))
@@ -447,9 +450,11 @@ class RuleScriptInterp extends hscript.Interp
 	override function cnew(cl:String, args:Array<Dynamic>):Dynamic
 	{
 		var c:Dynamic = Type.resolveClass(cl);
-		if (c == null)
-			c = resolve(cl);
-		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : Type.createInstance(c, args);
+
+		c ??= RuleScript.resolveScript(cl);
+		c ??= resolve(cl);
+
+		return Reflect.Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : c is Class ? Type.createInstance(c, args) : c;
 	}
 
 	function set_errorHandler(v:haxe.Exception->Dynamic):haxe.Exception->Dynamic
@@ -552,8 +557,8 @@ class RuleScriptInterp extends hscript.Interp
 	}
 
 	@:noCompletion
-	inline public function argExpr(expr:Expr):Dynamic
+	inline public function argExpr(e:Expr):Dynamic
 	{
-		return expr != null ? expr : null;
+		return e != null ? expr(e) : null;
 	}
 }

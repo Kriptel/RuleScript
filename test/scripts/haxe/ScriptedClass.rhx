@@ -1,6 +1,6 @@
 package;
 
-class ScriptedClass extends ScriptedClassTest
+class ScriptedClass extends test.ScriptedClassTest
 {
 	public function new(customArg:Int,arg1:String)
 	{
