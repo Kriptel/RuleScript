@@ -114,16 +114,7 @@ class RuleScriptedClass
 
 		var scriptSuperCall = [
 			for (i in 0...args.length)
-				macro superCallArgs[$v{i}] != null ? __rulescript.interp.expr(superCallArgs[$v{i}]) : $
-				{
-					switch (args[i].t)
-					{
-						case TAbstract(t, params):
-							t.get().name == 'Int' ? macro 0 : t.get().name == 'Float' ? macro 0.0 : null;
-						default:
-							macro null;
-					}
-				}
+				macro __rulescript.interp.argExpr(superCallArgs[$v{i}])
 		];
 
 		var funcArgs:Array<FunctionArg> = [

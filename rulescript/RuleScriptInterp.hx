@@ -550,4 +550,10 @@ class RuleScriptInterp extends hscript.Interp
 			}
 		};
 	}
+
+	@:noCompletion
+	inline public function argExpr(expr:Expr):Dynamic
+	{
+		return expr != null ? expr : null;
+	}
 }
