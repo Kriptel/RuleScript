@@ -119,7 +119,7 @@ class RuleScriptedClass
 					switch (args[i].t)
 					{
 						case TAbstract(t, params):
-							t.get().name == 'Int' ? macro 0 : macro 0.0;
+							t.get().name == 'Int' ? macro 0 : t.get().name == 'Float' ? macro 0.0 : null;
 						default:
 							macro null;
 					}
