@@ -4,10 +4,10 @@ class ScriptedClass extends ScriptedClassTest
 {
 	public function new(arg1:String)
 	{
-		trace('Constructor.pre: $customArg, $arg1');
+		trace('Constructor.pre: $arg1');
 		
 		super('Super Arg');
 
-		trace('Constructor.post: $customArg, $arg1');	
+		trace('Constructor.post: $arg1');
 	}
 }

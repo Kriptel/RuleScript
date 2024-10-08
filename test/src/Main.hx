@@ -304,7 +304,7 @@ class Main
 		Sys.println('\n[Custom RuleScriptedClass Builder]\n');
 
 		var srcClass = new SrcClassTest<Hello<Int>, Int>('Src'),
-			scriptClass = new ScriptedClassTest('haxe.ScriptedClass', ['Script']);
+			scriptClass = new ScriptedClassTest('haxe.ScriptedClass', [1, 'Script']);
 		trace(srcClass.info());
 		trace(scriptClass.info());
 	}
