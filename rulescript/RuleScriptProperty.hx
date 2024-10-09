@@ -20,6 +20,8 @@ class RuleScriptProperty
 
 	@:isVar public var value(get, set):Dynamic;
 
+	var _inProperty:Bool = false;
+
 	public function new(?get:Property = DEFAULT, ?set:Property = DEFAULT)
 	{
 		this._get = get;
@@ -28,9 +30,14 @@ class RuleScriptProperty
 
 	function get_value():Dynamic
 	{
+		if (_inProperty)
+			return this.value;
+
 		initLazy();
 
-		return switch (_get)
+		_inProperty = true;
+
+		var v:Dynamic = switch (_get)
 		{
 			case DEFAULT | NULL: this.value;
 			case GET(f): f();
@@ -38,13 +45,22 @@ class RuleScriptProperty
 			case DYNAMIC(f): f();
 			case NEVER: throw 'This expression cannot be accessed for reading';
 		}
+
+		_inProperty = false;
+
+		return v;
 	}
 
 	function set_value(v:Dynamic):Dynamic
 	{
+		if (_inProperty)
+			return this.value = v;
+
 		initLazy();
 
-		return switch (_set)
+		_inProperty = true;
+
+		var v:Dynamic = switch (_set)
 		{
 			case DEFAULT | NULL: this.value = v;
 			case GET(f): throw 'Custom property accessor is no longer supported, please use `set`';
@@ -52,6 +68,10 @@ class RuleScriptProperty
 			case DYNAMIC(f): f(v);
 			case NEVER: throw 'This expression cannot be accessed for writing';
 		}
+
+		_inProperty = false;
+
+		return v;
 	}
 
 	inline function initLazy()

@@ -283,7 +283,7 @@ class Main
 
 		// Custom constructor can't have extra args
 
-		new ScriptedClassTestStrict('ScriptedClass', 'Script');
+		new ScriptedClassTestStrict('ScriptedClassStrict', 'Script');
 
 		var srcClass = new SrcClassTest<Hello<Int>, Int>('Src'),
 			scriptClass = new ScriptedClassTest('ScriptedClass', [4, 'Script']);

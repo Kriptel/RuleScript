@@ -176,6 +176,11 @@ class RuleScriptInterp extends hscript.Interp
 				if (e != null)
 					prop._lazyValue = () -> this.expr(e);
 				return null;
+			case EIdent(id):
+				var l = locals.get(id);
+				if (l != null)
+					return getScriptProp(l.r);
+				return resolve(id);
 			case EFor(key, it, e, value):
 				if (value == null)
 					forLoop(key, it, e);

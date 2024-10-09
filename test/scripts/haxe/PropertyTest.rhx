@@ -16,4 +16,4 @@ function set_a(v:String):String
 
 a = 'Hello World';
 
-return _a;
+return a;
