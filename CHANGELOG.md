@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RuleScripted Classes.
 - RuleScriptedClassUtil.
 - RuleScriptedClass interface.
+- `this` in script.
 - Script Properties.
 - `hasErrorHandler` variable to RuleScript and RuleScriptInterp.
 - `errorHandler` variable to RuleScript and RuleScriptInterp.

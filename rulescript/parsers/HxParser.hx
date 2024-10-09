@@ -675,6 +675,16 @@ class HScriptParserPlus extends hscript.Parser
 			var part:Dynamic = parts[currentPart++];
 			if (part is String)
 				part = mk(EConst(CString(cast part)));
+			else
+			{
+				switch (Tools.getExpr(part))
+				{
+					case EConst(c):
+					default:
+						part = mk(EParent(part));
+				}
+			}
+
 			if (e == null)
 				e = part;
 			else

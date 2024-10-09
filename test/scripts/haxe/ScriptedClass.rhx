@@ -2,6 +2,8 @@ package;
 
 class ScriptedClass extends test.ScriptedClassTest
 {
+	public var variable1(default,default) = 'variable1: Hello World';
+
 	public function new(customArg:Int,arg1:String)
 	{
 		trace('Constructor.pre: $customArg, $arg1');

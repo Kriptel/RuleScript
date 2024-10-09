@@ -56,9 +56,7 @@ class Tools
 
 	#if hscriptPos
 	inline public static function getExpr(e:Expr):ExprDef
-	{
 		return e.e;
-	}
 	#else
 	inline public static function getExpr(e:Expr):Expr
 		return e;
@@ -94,6 +92,16 @@ class Tools
 				case DUsing(path):
 					pushExpr(EUsing(path));
 				case DClass(c):
+					c.fields.sort((f1:FieldDecl, f2:FieldDecl) ->
+					{
+						return switch [f1.kind.match(KVar(_)), f2.kind.match(KVar(_))]
+						{
+							case [true, true], [false, false]: 0;
+							case [true, false]: -1;
+							case [false, true]: 1;
+						};
+					});
+
 					for (field in c.fields)
 					{
 						switch (field.kind)

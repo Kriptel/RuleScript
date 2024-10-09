@@ -2,6 +2,7 @@ package rulescript;
 
 import hscript.Expr;
 import rulescript.RuleScriptProperty.Property;
+import rulescript.scriptedClass.RuleScriptedClass;
 
 using rulescript.Tools;
 
@@ -52,6 +53,9 @@ class RuleScriptInterp extends hscript.Interp
 
 	override function resolve(id:String):Dynamic
 	{
+		if (id == 'this')
+			return this;
+
 		if (id == 'super' && superInstance != null)
 			return superInstance;
 
@@ -440,9 +444,25 @@ class RuleScriptInterp extends hscript.Interp
 	 */
 	override function get(o:Dynamic, f:String):Dynamic
 	{
+		if (o == this)
+		{
+			if (variables.exists(f))
+				return getScriptProp(variables.get(f));
+			else
+				o = superInstance;
+		}
+
 		var prop:Dynamic = super.get(o, f);
+
 		if (prop != null)
-			return prop;
+			return getScriptProp(prop);
+
+		if (o is RuleScriptedClass)
+		{
+			var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
+			if (cl.variableExists(f))
+				return getScriptProp(cl.getVariable(f));
+		}
 
 		for (cl in usings)
 		{
