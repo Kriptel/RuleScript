@@ -15,7 +15,7 @@ class ExprMacro
 		var pos = Context.currentPos();
 
 		for (field in fields)
-			if (field.name == 'EFor')
+			if (field.name == 'EFor' || field.name == 'EVar')
 				fields.remove(field);
 
 		var newFields:Map<String, Expr> = [
@@ -24,7 +24,8 @@ class ExprMacro
 			'EImport' => macro function(name:String, star:Bool, alias:String, func:String) {},
 			'EUsing' => macro function(name:String) {},
 
-			'EProp' => macro function(n:String, g:String, s:String, ?t:CType, ?e:Expr) {},
+			'EVar' => macro function(n:String, ?t:CType, ?e:Expr, ?global:Bool) {},
+			'EProp' => macro function(n:String, g:String, s:String, ?t:CType, ?e:Expr, ?global:Bool) {},
 
 			'EFor' => macro function(key:String, it:Expr, e:Expr, ?value:String) {}
 		];

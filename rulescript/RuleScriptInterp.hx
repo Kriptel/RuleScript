@@ -169,10 +169,24 @@ class RuleScriptInterp extends hscript.Interp
 					usings.set(name, t);
 			case EMeta(name, args, e) if (onMeta != null):
 				return onMeta(name, args, e);
-			case EProp(n, g, s, type, e):
-				declared.push({n: n, old: locals.get(n)});
+			case EVar(n, _, e, global):
+				if (global)
+					variables.set(n, (e == null) ? null : this.expr(e));
+				else
+				{
+					declared.push({n: n, old: locals.get(n)});
+					locals.set(n, {r: (e == null) ? null : this.expr(e)});
+				}
+				return null;
+			case EProp(n, g, s, type, e, global):
 				var prop = createScriptProperty(n, g, s, type);
-				locals.set(n, {r: prop});
+				if (global)
+					variables.set(n, prop);
+				else
+				{
+					declared.push({n: n, old: locals.get(n)});
+					locals.set(n, {r: prop});
+				}
 				if (e != null)
 					prop._lazyValue = () -> this.expr(e);
 				return null;

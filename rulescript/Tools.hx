@@ -103,11 +103,11 @@ class Tools
 							case KVar(v):
 								if (v.get == null && v.set == null)
 								{
-									pushExpr(EVar(field.name, v.type, v.expr));
+									pushExpr(EVar(field.name, v.type, v.expr, field.access.contains(APublic)));
 								}
 								else
 								{
-									pushExpr(EProp(field.name, v.get, v.set, v.type, v.expr));
+									pushExpr(EProp(field.name, v.get, v.set, v.type, v.expr, field.access.contains(APublic)));
 								}
 						}
 					}
