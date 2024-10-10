@@ -474,6 +474,37 @@ class RuleScriptInterp extends hscript.Interp
 		return null;
 	}
 
+	override function set(o:Dynamic, f:String, v:Dynamic):Dynamic
+	{
+		if (o == null)
+			error(EInvalidAccess(f));
+
+		if (o == this)
+		{
+			if (variables.exists(f))
+			{
+				var variable:Dynamic = variables.get(f);
+				variable is RuleScriptProperty ? cast(variable, RuleScriptProperty).value = v : variables.set(f, v);
+				return v;
+			}
+			else
+				o = superInstance;
+		}
+
+		if (o is RuleScriptedClass)
+		{
+			var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
+			if (cl.variableExists(f))
+			{
+				var o = cl.getVariable(f);
+				return o is RuleScriptProperty ? cast(o, RuleScriptProperty).value = v : cl.setVariable(f, v);
+			}
+		}
+
+		Reflect.setProperty(o, f, v);
+		return v;
+	}
+
 	override function call(o:Dynamic, f:Dynamic, args:Array<Dynamic>):Dynamic
 	{
 		if (o == superInstance)

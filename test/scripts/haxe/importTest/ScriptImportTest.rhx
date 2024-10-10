@@ -3,10 +3,23 @@ package importTest;
 import importTest.Script;
 
 class ScriptImportTest{
+	public var a = 'hello';
+
 	function main(){
 		trace(Script.helloWorld());
 
 		var scriptedClass = new ScriptedClass(1,'ScriptImportTest');
+
 		trace(scriptedClass.variable1);
+
+		scriptedClass.variable1 += ' 2';
+		
+		trace(scriptedClass.variable1);
+
+		trace(this.a);
+
+		this.a = 'world';
+
+		trace(this.a);
 	}
 }
