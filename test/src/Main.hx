@@ -24,7 +24,7 @@ class Main
 
 	static function main():Void
 	{
-		var language:String = 'haxe'; // 'lua';
+		var language:String = 'haxe';
 
 		test.Test.LocalHelloClass.init();
 		HelloWorldAbstract.RULESCRIPT;
@@ -49,15 +49,6 @@ class Main
 					moduleTest();
 					scriptClassesTest();
 					fileScriptTest();
-				}
-				catch (e)
-					trace(e?.details());
-			case 'lua':
-				script = new RuleScript(null, new LuaParser());
-
-				try
-				{
-					luaTest();
 				}
 				catch (e)
 					trace(e?.details());
@@ -401,12 +392,6 @@ class Main
 		script.variables.get('main')();
 
 		RuleScript.resolveScript = old;
-	}
-
-	static function luaTest()
-	{
-		runFileScript('lua/Script.lua');
-		script.variables.get('main')();
 	}
 
 	static function runScript(code:String)
