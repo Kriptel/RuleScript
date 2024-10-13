@@ -13,8 +13,8 @@ Hscript addon with script classes, imports, usings, properties, string interpola
 - [String interpolation](#string-interpolation)
 - [Script Class](#rulescriptedclass)
 - [Abstracts in script](#abstracts-in-script)
-- [Key => value Iterator](#key--value-iterator)
-- [`??` and `??=` operators](#-and--operators)
+- [Key => value iterator](#key--value-iterator)
+- [`??` and `??=` operators](#and--operators)
 
 ### Package
 ```haxe
@@ -147,7 +147,7 @@ import test.HelloWorldAbstract;
 
 trace(HelloWorldAbstract.rulescriptPrint()); // 'Hello World'
 ```
-More templates in [`test/src/Main.hx`](https://github.com/Kriptel/RuleScript/blob/master/test/src/Main.hx).
+More templates in [`test/src/Main.hx`](./test//src/Main.hx).
 
 ### Key => value iterator
 ```haxe
