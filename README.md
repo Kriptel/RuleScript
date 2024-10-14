@@ -15,6 +15,7 @@ Hscript addon with script classes, imports, usings, properties, string interpola
 - [Abstracts in script](#abstracts-in-script)
 - [Key => value iterator](#key--value-iterator)
 - [`??` and `??=` operators](#and--operators)
+- [Rest](#rest)
 
 ### Package
 ```haxe
@@ -82,7 +83,6 @@ trace(a); // Hello World
 ```
 
 ### String interpolation
-RuleScript supports [String Interpolation](https://haxe.org/manual/lf-string-interpolation.html), but you can only use identifiers, double quotes string, calls without arguments and `+` operator.
 ```haxe
 var a = 'Hello';
 trace('RuleScript: $a World'); // RuleScript: Hello World
@@ -173,6 +173,19 @@ a = null;
 a ??= 'world';
 trace(a) // world
 ```
+
+# Rest
+```haxe
+var f = function(hello:String, ...rest:Dynamic)
+{
+	return '$hello: ' + rest.join(' ');
+}
+
+trace(f('Rulescript','Hello','World','!')); // Rulescript: Hello World !
+
+trace(f('Rulescript',...['Hello','World','!'])); // Rulescript: Hello World !
+```
+
 # Limitations
 
 - Script `using` callback supports max number of arguments is 8.

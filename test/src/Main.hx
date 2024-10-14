@@ -20,8 +20,6 @@ class Main
 	static var callNum:Int = 0;
 	static var errorsNum:Int = 0;
 
-	static function restTest(hello:String, ...rest:Int) {}
-
 	static function main():Void
 	{
 		var language:String = 'haxe';
@@ -35,6 +33,8 @@ class Main
 		{
 			case 'haxe':
 				script = new RuleScript(null, new HxParser());
+
+				script.scriptName = ' [[RULESCRIPT TEST]] ';
 
 				script.getParser(HxParser).allowAll();
 

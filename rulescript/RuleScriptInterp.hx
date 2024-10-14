@@ -8,6 +8,8 @@ using rulescript.Tools;
 
 class RuleScriptInterp extends hscript.Interp
 {
+	public var scriptName:String;
+
 	public var scriptPackage:String = '';
 
 	public var imports:Map<String, Dynamic> = [];
@@ -42,6 +44,18 @@ class RuleScriptInterp extends hscript.Interp
 		#if sys
 		variables.set('Sys', Sys);
 		#end
+	}
+
+	override public function posInfos():haxe.PosInfos
+	{
+		#if hscriptPos
+		if (curExpr != null)
+			return cast {fileName: scriptName ?? curExpr.origin, lineNumber: curExpr.line};
+		#end
+		return cast {
+			fileName: scriptName ?? "hscript",
+			lineNumber: 0
+		};
 	}
 
 	override function initOps()
@@ -205,6 +219,31 @@ class RuleScriptInterp extends hscript.Interp
 				else
 					forLoopKeyValue(key, value, it, e);
 				return null;
+			case ECall(e, params):
+				var args = new Array();
+				for (p in params)
+				{
+					if (p.getExpr().match(EUnop('...', true, _)))
+						for (arg in cast(this.expr(switch (p.getExpr())
+						{
+							case EUnop(op, prefix, e): e;
+							default: null;
+						}), Array<Dynamic>))
+							args.push(arg);
+					else
+						args.push(this.expr(p));
+				}
+
+				switch (hscript.Tools.expr(e))
+				{
+					case EField(e, f):
+						var obj = this.expr(e);
+						if (obj == null)
+							error(EInvalidAccess(f));
+						return fcall(obj, f, args);
+					default:
+						return call(null, this.expr(e), args);
+				}
 			case EFunction(params, fexpr, name, _):
 				if (name == 'new')
 					__constructor = expr;

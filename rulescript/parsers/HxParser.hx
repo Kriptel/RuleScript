@@ -59,6 +59,12 @@ class HScriptParserPlus extends hscript.Parser
 	static inline final tokenMax:Int = 0;
 	#end
 
+	public function new()
+	{
+		super();
+		opPriority.set('...', -2);
+	}
+
 	#if hscriptPos
 	override function token()
 	{
@@ -375,14 +381,90 @@ class HScriptParserPlus extends hscript.Parser
 	override function parseExpr()
 	{
 		var tk = token();
+		#if hscriptPos
+		var p1 = tokenMin;
+		#end
 		return switch (tk)
 		{
+			case TPOpen:
+				tk = token();
+				if (tk == TPClose)
+				{
+					ensureToken(TOp("->"));
+					var eret = parseExpr();
+					return mk(EFunction([], mk(EReturn(eret), p1)), p1);
+				}
+				push(tk);
+
+				var rest = maybe(TOp('...'));
+
+				var e = parseExpr();
+				tk = token();
+				switch (tk)
+				{
+					case TPClose:
+						return parseExprNext(mk(EParent(e), p1, tokenMax));
+					case TDoubleDot:
+						var t = rest ? CTPath(["haxe", "Rest"], [parseType()]) : parseType();
+
+						tk = token();
+						switch (tk)
+						{
+							case TPClose:
+								return parseExprNext(mk(ECheckType(e, t), p1, tokenMax));
+							case TComma:
+								switch (expr(e))
+								{
+									case EIdent(v):
+										return parseLambda([{name: v, t: t}], pmin(e));
+									default:
+								}
+							default:
+						}
+					case TComma:
+						switch (expr(e))
+						{
+							case EIdent(v):
+								return parseLambda([{name: v}], pmin(e));
+							default:
+						}
+
+					default:
+				}
+				return unexpected(tk);
+
 			case TApostr:
 				parseExprNext(parseStringInterpolation());
 			default:
 				push(tk);
 				super.parseExpr();
 		}
+	}
+
+	override function parseLambda(args:Array<Argument>, pmin):Expr
+	{
+		while (true)
+		{
+			var rest:Bool = maybe(TOp('...'));
+			var id:String = getIdent();
+			var t = maybe(TDoubleDot) ? parseType() : null;
+			if (rest)
+				t = CTPath(["haxe", "Rest"], [t]);
+			args.push({name: id, t: t});
+			var tk = token();
+			switch (tk)
+			{
+				case TComma:
+				case TPClose:
+					break;
+				default:
+					unexpected(tk);
+					break;
+			}
+		}
+		ensureToken(TOp("->"));
+		var eret = parseExpr();
+		return mk(EFunction(args, mk(EReturn(eret), pmin)), pmin);
 	}
 
 	override function parseStructure(id:String)

@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `hasErrorHandler` variable to RuleScript and RuleScriptInterp.
 - `errorHandler` variable to RuleScript and RuleScriptInterp.
 - Key => value iterator.
+- Rest.
 - `superInstance` variable to RuleScriptInterp.
 - `onMeta` callback in RuleScriptInterp.
 - Classes (MODULE mode only).
@@ -33,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - rulescript.parsers.HxParser.HScriptParserPlus.moduleDeclsToExpr.
 
 ### Fixed
+- Fixed bug when AbstractMacro can't find abstracts in a module other than it's name.
 - Fixed `using` error on Haxe Interpreter.
 - Fixed compile error on non-cpp targets.
 - Improve `using` resolve function.

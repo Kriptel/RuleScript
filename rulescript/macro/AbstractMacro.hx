@@ -1,56 +1,59 @@
 package rulescript.macro;
 
+#if macro
 import haxe.macro.Context;
 import haxe.macro.Expr;
+import rulescript.macro.MacroTools.ClassPath;
 import sys.FileSystem;
 import sys.io.File;
+#end
 
 using StringTools;
 
-#if !macro
-@:keep
-@:build(rulescript.macro.TouchMacro.touch())
-#end
 class AbstractMacro
 {
-	/**
-	 * Converts abstract to class
-	 */
-	macro public static function buildAbstract(name:String, pack:String):Array<Field>
+	static final targetPackage:String = "rulescript.__abstracts";
+
+	macro public static function build():Array<Field>
 	{
+		var type = switch (Context.getLocalType())
+		{
+			case TInst(t, params):
+				switch (t.get().kind)
+				{
+					case KAbstractImpl(a):
+						a.get();
+					default:
+						null;
+				}
+			case t:
+				Context.error('Failed to build non-abstract type', Context.currentPos());
+				null;
+		}
+
+		var classPath:ClassPath = MacroTools.parseClassPath(type.module.endsWith(type.name) ? type.module : type.module + '.' + type.name);
+
 		var fields = Context.getBuildFields();
 		var pos = Context.currentPos();
-
-		var type = Context.getLocalClass();
-
-		var isEnum:Bool = type.get().meta.has(':enum');
+		var isEnum:Bool = type.meta.has(':enum');
 
 		var cl = macro class {};
 
 		cl.meta.push({pos: pos, name: ':keep'});
+		cl.meta.push({pos: pos, name: ':noCompletion'});
 
 		var imports = Context.getLocalImports();
 
 		imports.push({
-			path: name.split('.').map(s -> {
+			path: classPath.fullPath.split('.').map(s -> {
 				name: s,
 				pos: pos
 			}),
 			mode: INormal
 		});
 
-		if (name.contains('.'))
-		{
-			var list = name.split('.');
-
-			while (list.length > 1)
-				pack += '.' + list.shift();
-
-			name = list[0];
-		}
-
-		cl.name = '_' + name;
-		cl.pack = pack.split('.');
+		cl.name = '_' + classPath.name;
+		cl.pack = classPath.pack.split('.');
 
 		for (f in fields)
 		{
@@ -76,7 +79,7 @@ class AbstractMacro
 				});
 		}
 
-		Context.defineModule('$pack._$name', [cl], imports);
+		Context.defineModule('$targetPackage.${classPath.pack}._${classPath.name}', [cl], imports);
 
 		return fields;
 	}

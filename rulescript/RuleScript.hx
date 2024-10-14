@@ -90,6 +90,8 @@ class RuleScript
 
 	public var interp:RuleScriptInterp;
 
+	public var scriptName(get, set):String;
+
 	public var superInstance(get, set):Dynamic;
 
 	public var variables(get, set):Map<String, Dynamic>;
@@ -123,6 +125,16 @@ class RuleScript
 
 	public function getParser<T:Parser>(?parserClass:Class<T>):T
 		return cast parser;
+
+	function get_scriptName():String
+	{
+		return interp.scriptName;
+	}
+
+	function set_scriptName(v:String):String
+	{
+		return interp.scriptName = v;
+	}
 
 	function get_superInstance():Dynamic
 	{
