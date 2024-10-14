@@ -1,0 +1,13 @@
+package;
+
+class ScriptedClass extends ScriptedClassTest
+{
+	public function new(arg1:String)
+	{
+		trace('Constructor.pre: $arg1');
+		
+		super('Super Arg');
+
+		trace('Constructor.post: $arg1');
+	}
+}

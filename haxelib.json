@@ -2,9 +2,9 @@
   "name": "rulescript",
   "url" : "https://github.com/Kriptel/RuleScript",
   "license": "MIT",
-  "description": "Hscript addon with imports, string interpolation and more",
-  "version": "0.1.1",
-  "releasenote": "Abstracts in script",
+  "description": "Hscript addon with script classes, imports, usings, properties, string interpolation and more.",
+  "version": "0.2.0-beta",
+  "releasenote": "RuleScripted Classes, Script Properties, Rest and more.",
   "dependencies": {
       "hscript":""
   },

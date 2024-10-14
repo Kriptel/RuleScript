@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-beta] 2024.10.14
+
+### Added
+- RuleScripted Classes.
+- RuleScriptedClassUtil.
+- RuleScriptedClass interface.
+- `this` in script.
+- Script Properties.
+- `hasErrorHandler` variable to RuleScript and RuleScriptInterp.
+- `errorHandler` variable to RuleScript and RuleScriptInterp.
+- Key => value iterator.
+- Rest.
+- `superInstance` variable to RuleScriptInterp.
+- `onMeta` callback in RuleScriptInterp.
+- Classes (MODULE mode only).
+- HxParserMode.
+- `moduleDeclsToExpr` function to HScriptParserPlus.
+- `buildModuleDecl` function to ExprMacro.
+
+### Changed
+- New String Interpolation.
+- Resolve now can find local classes from modules.
+- Parser and HxParser was moved to rulescript.parsers package.
+
+### Deprecated
+- rulescript.Parser and rulescript.HxParser.
+- rulescript.parsers.HxParser.HScriptParserPlus.moduleDeclsToExpr.
+
+### Fixed
+- Fixed bug when AbstractMacro can't find abstracts in a module other than it's name.
+- Fixed `using` error on Haxe Interpreter.
+- Fixed compile error on non-cpp targets.
+- Improve `using` resolve function.
+
 ## [0.1.1] - 2024-09-15
 
 ### Fixed

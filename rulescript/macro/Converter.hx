@@ -10,9 +10,7 @@ using StringTools;
 
 class Converter
 {
-	#if macro
-	// Language server shows errors...
-	public static function init()
+	public static macro function init()
 	{
 		var files:Array<String> = [];
 
@@ -27,9 +25,13 @@ class Converter
 						abstractsList.push(abs);
 
 		for (name in abstractsList)
-			Compiler.addMetadata('@:build(rulescript.macro.AbstractMacro.buildAbstract("$name","rulescript.__abstracts"))', name);
+		{
+			var classPath = MacroTools.parseClassPath(name);
+			Compiler.addMetadata('@:build(rulescript.macro.AbstractMacro.build())', '${classPath.pack}.${classPath.name}');
+		}
+
+		return null;
 	}
-	#end
 
 	static function parseFile(content:String):Array<String>
 	{

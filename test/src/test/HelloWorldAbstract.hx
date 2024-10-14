@@ -13,3 +13,9 @@ enum abstract HelloWorldAbstract(String) from String to String
 
 	var world:String;
 }
+
+enum abstract LocalAbstract(Int)
+{
+	var ONE;
+	var RULESCRIPT;
+}

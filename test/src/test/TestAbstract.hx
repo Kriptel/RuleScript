@@ -1,4 +1,6 @@
-package;
+package test;
+
+import test.Test;
 
 abstract TestAbstract(Test) from Test to Test
 {

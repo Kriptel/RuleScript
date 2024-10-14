@@ -1,0 +1,8 @@
+package importTest;
+
+class Script
+{
+	function helloWorld(){
+		return 'importTest.Script: hello world';
+	}
+}

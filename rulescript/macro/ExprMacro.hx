@@ -3,7 +3,9 @@ package rulescript.macro;
 #if macro
 import haxe.macro.Context;
 import haxe.macro.Expr;
+#end
 
+#if macro
 class ExprMacro
 {
 	public static function build():Array<Field>
@@ -12,24 +14,71 @@ class ExprMacro
 
 		var pos = Context.currentPos();
 
+		for (field in fields)
+			if (field.name == 'EFor' || field.name == 'EVar')
+				fields.remove(field);
+
+		var newFields:Map<String, Expr> = [
+			'EPackage' => macro function(path:String) {},
+
+			'EImport' => macro function(name:String, star:Bool, alias:String, func:String) {},
+			'EUsing' => macro function(name:String) {},
+
+			'EVar' => macro function(n:String, ?t:CType, ?e:Expr, ?global:Bool) {},
+			'EProp' => macro function(n:String, g:String, s:String, ?t:CType, ?e:Expr, ?global:Bool) {},
+
+			'EFor' => macro function(key:String, it:Expr, e:Expr, ?value:String) {}
+		];
+
+		for (key => value in newFields)
+			fields.push({
+				name: key,
+				kind: FFun(MacroTools.toFunction(value)),
+				pos: pos
+			});
+
+		return fields;
+	}
+
+	public static function buildToken():Array<Field>
+	{
+		var fields:Array<Field> = Context.getBuildFields();
+
+		var pos = Context.currentPos();
+
+		var newFields:Map<String, Expr> = ['TApostr' => macro function() {},];
+
+		for (key => value in newFields)
+			fields.push({
+				name: key,
+				kind: FFun(MacroTools.toFunction(value)),
+				pos: pos
+			});
+
+		return fields;
+	}
+
+	public static function buildModuleDecl():Array<Field>
+	{
+		var fields:Array<Field> = Context.getBuildFields();
+
+		var pos = Context.currentPos();
+
+		for (field in fields)
+			if (field.name == 'DImport')
+				fields.remove(field);
+
 		fields.push({
-			name: 'EPackage',
+			name: 'DImport',
 			access: [],
-			kind: FFun(toFunction(macro function(path:String) {})),
+			kind: FFun(MacroTools.toFunction(macro function(name:Array<String>, star:Bool, ?alias:String, ?func:String) {})),
 			pos: pos,
 		});
 
 		fields.push({
-			name: 'EImport',
+			name: 'DUsing',
 			access: [],
-			kind: FFun(toFunction(macro function(name:String, postfix:Bool, alias:String, func:String) {})),
-			pos: pos,
-		});
-
-		fields.push({
-			name: 'EUsing',
-			access: [],
-			kind: FFun(toFunction(macro function(name:String) {})),
+			kind: FFun(MacroTools.toFunction(macro function(name:String) {})),
 			pos: pos,
 		});
 
@@ -38,6 +87,9 @@ class ExprMacro
 
 	public static function buildInterpDefaults():Array<Field>
 		return addDefaultPattern('expr');
+
+	public static function buildParserDefaults():Array<Field>
+		return addDefaultPattern('tokenString', null, macro '');
 
 	public static function buildToolsDefaults():Array<Field>
 		return addDefaultPattern('map', addDefaultPattern('iter'), macro expr(e));
@@ -92,6 +144,8 @@ class ExprMacro
 														default:
 													}
 												}
+											case ESwitch(_e, cases, edef):
+												e.expr = ESwitch(_e, cases, edef ?? expr ?? macro {});
 											default:
 										}
 									case EVars(vars):
@@ -113,20 +167,6 @@ class ExprMacro
 				};
 
 		return fields;
-	}
-
-	/**
-	 * Convert Expr function to function
-	 */
-	static function toFunction(f:Expr):Function
-	{
-		return switch (f.expr)
-		{
-			case EFunction(kind, f):
-				f;
-			default:
-				null;
-		}
 	}
 }
 #end

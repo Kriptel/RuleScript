@@ -1,6 +1,8 @@
 package rulescript;
 
 import hscript.Expr;
+import rulescript.Tools;
+import rulescript.parsers.*;
 
 /**
  * Type limit
@@ -79,7 +81,7 @@ class RuleScript
 {
 	/**
 	 * Edit, if you want make importable script
-	 * @see [Dynamic Keyword](https://haxe.org/manual/class-field-dynamic.html)
+	 * @see [dynamic keyword](https://haxe.org/manual/class-field-dynamic.html)
 	 */
 	public static dynamic function resolveScript(name:String):Dynamic
 	{
@@ -88,9 +90,17 @@ class RuleScript
 
 	public var interp:RuleScriptInterp;
 
+	public var scriptName(get, set):String;
+
+	public var superInstance(get, set):Dynamic;
+
 	public var variables(get, set):Map<String, Dynamic>;
 
 	public var parser:Parser;
+
+	public var hasErrorHandler(get, set):Bool;
+
+	public var errorHandler(get, set):haxe.Exception->Dynamic;
 
 	public function new(?interp:RuleScriptInterp, ?parser:Parser)
 	{
@@ -101,7 +111,7 @@ class RuleScript
 
 	public function execute(code:StringOrExpr):Dynamic
 	{
-		return interp.execute(code is String ? parser.parse(code) : code);
+		return interp.execute(code is String ? parser.parse(cast code) : cast code);
 	}
 
 	public function tryExecute(code:StringOrExpr, ?customCatch:haxe.Exception->Dynamic):Dynamic
@@ -116,6 +126,26 @@ class RuleScript
 	public function getParser<T:Parser>(?parserClass:Class<T>):T
 		return cast parser;
 
+	function get_scriptName():String
+	{
+		return interp.scriptName;
+	}
+
+	function set_scriptName(v:String):String
+	{
+		return interp.scriptName = v;
+	}
+
+	function get_superInstance():Dynamic
+	{
+		return interp.superInstance;
+	}
+
+	function set_superInstance(v:Dynamic):Dynamic
+	{
+		return interp.superInstance = v;
+	}
+
 	function get_variables():Map<String, Dynamic>
 	{
 		return interp.variables;
@@ -124,5 +154,25 @@ class RuleScript
 	function set_variables(v:Map<String, Dynamic>):Map<String, Dynamic>
 	{
 		return interp.variables = v;
+	}
+
+	function get_hasErrorHandler():Bool
+	{
+		return interp.hasErrorHandler;
+	}
+
+	function set_hasErrorHandler(v:Bool):Bool
+	{
+		return interp.hasErrorHandler = v;
+	}
+
+	function get_errorHandler():haxe.Exception->Dynamic
+	{
+		return interp.errorHandler;
+	}
+
+	function set_errorHandler(v:haxe.Exception->Dynamic):haxe.Exception->Dynamic
+	{
+		return interp.errorHandler = v;
 	}
 }

@@ -1,0 +1,41 @@
+package;
+
+class ScriptedClass extends test.ScriptedClassTest
+{
+	public var variable1(default,default) = 'variable1: Hello World';
+
+	public function new(customArg:Int,arg1:String)
+	{
+		trace('Constructor.pre: $customArg, $arg1');
+		
+		super('Super Arg');
+
+		trace('Constructor.post: $customArg, $arg1');	
+	}
+
+	override public function info()
+	{
+		return 'I Scripted!!!!, super info: ${super.info()}';
+	}
+
+	override public function argFunction(a1:Bool, a2:String, a3:String)
+	{
+		return '
+		argument1: $a1, 
+		argument2: $a2, 
+		argument3: $a3';
+	}
+
+	override public function string(arg:T)
+	{
+		return 'Script:' + arg.v;
+	}
+
+	override public function stringArray(arg:Array<T>){
+		return 'Script: stringArray - ' + Std.string(arg);
+	}
+
+	public function scriptFunction(){
+		return 'scriptFunction: Hello World!';
+	}
+}

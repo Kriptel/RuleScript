@@ -1,5 +1,3 @@
--main Main
-
 --cwd ./test
 
 --define hscriptPos
@@ -7,10 +5,4 @@
 
 -cp src
 
--cp export/haxe
--cpp export/obj
---macro keep("Main")
-
--cmd cd export/obj
-
--cmd Main.exe
+--run Main

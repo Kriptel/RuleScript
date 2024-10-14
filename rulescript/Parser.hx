@@ -1,14 +1,4 @@
 package rulescript;
 
-/**
- * Base for parsers
- */
-class Parser
-{
-	public function new() {}
-
-	public function parse(code:String):Dynamic
-	{
-		return null;
-	}
-}
+@:deprecated("rulescript.Parser was moved to rulescript.parsers.Parser")
+typedef Parser = rulescript.parsers.Parser;

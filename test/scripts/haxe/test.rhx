@@ -1,0 +1,28 @@
+package;
+
+class A
+{
+	var a = (b:Int,c:Float,...d:String) -> {}
+	var b = (...d:Int) -> {}
+
+	function main(){
+		var map = [
+			'Rulescript' => 2,
+			'Hello' => 4,
+			'World' => 8
+		];
+
+		for(key => value in map){
+			trace('Map key => value Iterator: $key => $value');
+		}
+
+		restTest('Rulescript','Hello','World','!');
+
+		restTest('Rulescript',...['Hello','World','!']);
+	}
+
+	public static function restTest(hello:String, ...rest:Dynamic)
+	{
+		trace('$hello: ' + rest.join(' '));
+	}
+}
