@@ -145,7 +145,7 @@ Script :
 ```haxe
 import test.HelloWorldAbstract;
 
-trace(HelloWorldAbstract.rulescriptPrint()); // 'Hello World'
+trace(HelloWorldAbstract.rulescriptPrint()); // Hello World
 ```
 More templates in [`test/src/Main.hx`](./test//src/Main.hx).
 
@@ -156,7 +156,7 @@ var map = [
 ];
 
 for(key => value in map){
-	trace('$key: $value'); // RuleScript:'Hello World'
+	trace('$key: $value'); // RuleScript: Hello World
 }
 ```
 
