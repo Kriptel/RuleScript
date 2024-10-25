@@ -292,10 +292,11 @@ class RuleScriptedClass
 				var _t = t;
 				var _params = params;
 
-				if (aliasMap.exists(_t.toString()))
-				while (aliasMap.exists(_t.toString()))
+				var className = Context.getLocalClass().get().name;
+
+				while (aliasMap.exists(className + _t.toString()))
 				{
-					_t = switch (aliasMap.get(_t.toString()))
+					_t = switch (aliasMap.get(className + _t.toString()))
 					{
 						case TInst(t, params):
 							_params = params;
@@ -338,7 +339,7 @@ class RuleScriptedClass
 				switch (param)
 				{
 					case TInst(_t, params):
-						aliasMap.set(switch (t.superClass?.t.get().params[id].t)
+						aliasMap.set(Context.getLocalClass().get().name + switch (t.superClass?.t.get().params[id].t)
 						{
 							case TInst(t, params):
 								t.toString();

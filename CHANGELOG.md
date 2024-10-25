@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-rc] 2024.10.25
+
+### Fixed
+-  Fixed bug with type aliases in RuleScriptedClass.
+
 ## [0.2.0-beta] 2024.10.14
 
 ### Added
