@@ -292,7 +292,7 @@ class RuleScriptedClass
 				var _t = t;
 				var _params = params;
 
-				while (aliasMap.exists(_t.toString()))
+				if (aliasMap.exists(_t.toString()))
 				{
 					_t = switch (aliasMap.get(_t.toString()))
 					{
