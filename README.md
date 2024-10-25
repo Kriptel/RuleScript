@@ -200,12 +200,13 @@ trace(f('Rulescript',...['Hello','World','!'])); // Rulescript: Hello World !
 
 1. Installing lib: 
 	- haxelib version
+
  		- Haxelib : `haxelib install rulescript`
-    	- Hmm : `hmm haxelib rulescript`
+		- Hmm : `hmm haxelib rulescript`
 	- github version
 
-	    - Haxelib : `haxelib git rulescript https://github.com/Kriptel/RuleScript.git`
-	    - Hmm : `hmm git rulescript https://github.com/Kriptel/RuleScript.git`
+		- Haxelib : `haxelib git rulescript https://github.com/Kriptel/RuleScript.git`
+		- Hmm : `hmm git rulescript https://github.com/Kriptel/RuleScript.git`
 	- github version (dev)
 
     	- Haxelib : `haxelib git rulescript https://github.com/Kriptel/RuleScript.git dev`
