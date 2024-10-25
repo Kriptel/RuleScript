@@ -50,18 +50,21 @@ class RuleScriptedClass
 			fields.push(overrideField(field));
 		}
 
+		if (constructor.isFinal)
+			Context.error("Constructor can't be final in RuleScriptedClass");
+
 		fields.push({
 			name: 'new',
 			access: [APublic],
 			kind: FFun(createConstructor(constructor, curType.meta.has(':strictScriptedConstructor'))),
-			pos: Context.currentPos()
+			pos: pos
 		});
 
 		fields.push({
 			name: '__rulescript',
 			access: [],
 			kind: FVar(macro :rulescript.RuleScript),
-			pos: Context.currentPos()
+			pos: pos
 		});
 
 		var functions = [
@@ -84,7 +87,7 @@ class RuleScriptedClass
 				name: name,
 				access: [APublic],
 				kind: FFun(MacroTools.toFunction(func)),
-				pos: Context.currentPos()
+				pos: pos
 			});
 
 		return fields;
