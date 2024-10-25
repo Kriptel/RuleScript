@@ -1,6 +1,6 @@
 package rulescript.scriptedClass;
 
-@:build(rulescript.macro.RuleScriptedClass.build())
+@:autoBuild(rulescript.macro.RuleScriptedClass.build())
 interface RuleScriptedClass
 {
 	function variableExists(name:String):Bool;
