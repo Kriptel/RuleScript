@@ -174,7 +174,7 @@ a ??= 'world';
 trace(a) // world
 ```
 
-### Rest
+# Rest
 ```haxe
 var f = function(hello:String, ...rest:Dynamic)
 {
