@@ -51,7 +51,7 @@ class RuleScriptedClass
 		}
 
 		if (constructor.isFinal)
-			Context.error("Constructor can't be final in RuleScriptedClass");
+			Context.error("Constructor can't be final in RuleScriptedClass", pos);
 
 		fields.push({
 			name: 'new',
