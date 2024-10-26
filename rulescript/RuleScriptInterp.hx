@@ -1,5 +1,8 @@
 package rulescript;
 
+#if hl
+import haxe.ds.StringMap;
+#end
 import hscript.Expr;
 import rulescript.RuleScriptProperty.Property;
 import rulescript.scriptedClass.RuleScriptedClass;
@@ -451,8 +454,13 @@ class RuleScriptInterp extends hscript.Interp
 		#else
 		if (v.keyValueIterator != null)
 			v = v.keyValueIterator();
-		// try v = v?.iterator() catch( e : Dynamic ) {};
 		#end
+
+		#if hl
+		if (v is StringMap)
+			v = new haxe.iterators.MapKeyValueIterator(v);
+		#end
+
 		if (v.hasNext == null || v.next == null)
 			error(EInvalidIterator(v));
 		return v;

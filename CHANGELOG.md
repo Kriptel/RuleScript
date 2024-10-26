@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `:ignoreFields` metadata.
+
+### Fixed
+- Map Key => value iterator in Hashlink.
+
 ## [0.2.0-rc] 2024.10.25
 
 ### Fixed

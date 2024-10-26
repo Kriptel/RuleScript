@@ -19,7 +19,7 @@ class RuleScriptedClass
 
 		var typefields:Map<String, ClassField> = [];
 
-		var curType = Context.getLocalClass().get();
+		var curType = Context.getLocalClass().get().superClass.t.get();
 
 		var constructor = curType.constructor?.get();
 
@@ -45,9 +45,28 @@ class RuleScriptedClass
 
 		curType = Context.getLocalClass().get();
 
+		var ignoredFields:Array<String> = [];
+		for (meta in curType.meta.extract(':ignoreFields'))
+		{
+			switch (meta.params[0].expr)
+			{
+				case EArrayDecl(values):
+					for (value in values)
+						switch (value.expr)
+						{
+							case EConst(CIdent(s)):
+								ignoredFields.push(s);
+							default:
+						}
+
+				default:
+			}
+		};
+
 		for (name => field in typefields)
 		{
-			fields.push(overrideField(field));
+			if (!ignoredFields.contains(name))
+				fields.push(overrideField(field));
 		}
 
 		if (constructor.isFinal)
