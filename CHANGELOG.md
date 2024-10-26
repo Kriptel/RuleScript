@@ -67,3 +67,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.1] - 2024-09-06
 
 Initial Release.
+
+[unreleased]: https://github.com/Kriptel/RuleScript/compare/0.2.0-rc...master
+[0.2.0-rc]: https://github.com/Kriptel/RuleScript/compare/285a17e13b45c9b04fcf12c7590f369e39f119e3...0.2.0-rc
+[0.2.0-beta]: https://github.com/Kriptel/RuleScript/compare/0.1.1...285a17e13b45c9b04fcf12c7590f369e39f119e3
+[0.1.1]: https://github.com/Kriptel/RuleScript/compare/0.1.0...0.1.1
+[0.1.0]: https://github.com/Kriptel/RuleScript/compare/0.0.1...0.1.0
+[0.0.1]: https://github.com/Kriptel/RuleScript/releases/tag/0.0.1
