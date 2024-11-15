@@ -34,7 +34,7 @@ class Main
 			case 'haxe':
 				script = new RuleScript(null, new HxParser());
 
-				script.scriptName = ' [[RULESCRIPT TEST]] ';
+				script.scriptName = ' [[RULESCRIPT TEST]]';
 
 				script.getParser(HxParser).allowAll();
 

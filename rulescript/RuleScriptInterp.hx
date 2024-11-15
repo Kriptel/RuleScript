@@ -13,7 +13,7 @@ class RuleScriptInterp extends hscript.Interp
 {
 	public var scriptName:String;
 
-	public var scriptPackage:String = '';
+	public var scriptPackage(default, set):String = '';
 
 	public var imports:Map<String, Dynamic> = [];
 	public var usings:Map<String, Dynamic> = [];
@@ -35,18 +35,6 @@ class RuleScriptInterp extends hscript.Interp
 
 		imports = [];
 		usings = [];
-
-		variables.set('Std', Std);
-		variables.set('Math', Math);
-		variables.set('Type', Type);
-		variables.set('Reflect', Reflect);
-		variables.set('StringTools', StringTools);
-		variables.set('Date', Date);
-		variables.set('DateTools', DateTools);
-
-		#if sys
-		variables.set('Sys', Sys);
-		#end
 	}
 
 	override public function posInfos():haxe.PosInfos
@@ -677,5 +665,31 @@ class RuleScriptInterp extends hscript.Interp
 	inline public function argExpr(e:Expr):Dynamic
 	{
 		return e != null ? expr(e) : null;
+	}
+
+	function set_scriptPackage(value:String):String
+	{
+		final packages:Array<String> = [];
+
+		var list = '$value.';
+
+		while (StringTools.contains(list, '.'))
+		{
+			list = list.substr(0, list.lastIndexOf('.'));
+			packages.push(list);
+		}
+
+		if (packages[0] != '')
+			packages.insert(0, '');
+		packages.sort((a:String, b:String) -> return (a < b) ? -1 : (a > b) ? 1 : 0);
+
+		for (pack in packages)
+		{
+			if (RuleScript.defaultImports.exists(pack))
+				for (key => value in RuleScript.defaultImports.get(pack))
+					variables.set(key, value);
+		}
+
+		return scriptPackage = value;
 	}
 }
