@@ -8,11 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `defaultPreprocesorValues` static variable to HxParser.
+- `preprocesorValues` variable to HxParser.
 - `defaultImports` static variable to RuleScript.
 - `:ignoreFields` metadata.
 - Custom Std for Hashlink target.
 
 ### Fixed
+- Error with dollar symbol in string interplation.
 - Some bugs with Int in enum abstracts.
 - Map Key => value iterator in Hashlink.
 

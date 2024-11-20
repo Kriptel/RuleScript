@@ -20,7 +20,7 @@ class RuleScriptInterp extends hscript.Interp
 
 	public var superInstance:Dynamic;
 
-	public var onMeta:(name:String, arr:Array<Expr>, e:Expr) -> Expr;
+	public var onMeta:(name:String, args:Array<Expr>, e:Expr) -> Expr;
 
 	public var isSuperCall:Bool = false;
 
