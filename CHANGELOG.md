@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `preprocesorValues` variable to HxParser.
 - `defaultImports` static variable to RuleScript.
 - `:ignoreFields` metadata.
-- Custom Std for Hashlink target.
+- Custom Std and Math for Hashlink target.
 
 ### Fixed
 - Error with dollar symbol in string interplation.

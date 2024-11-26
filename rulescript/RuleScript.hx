@@ -93,8 +93,11 @@ class RuleScript
 	 */
 	public static var defaultImports:Map<String, Map<String, Dynamic>> = [
 		'' => [
-			'Std' => #if hl rulescript.std.hl.Std #else Std #end,
-			'Math' => Math,
+			#if hl
+			'Std' => rulescript.std.hl.Std, 'Math' => rulescript.std.hl.Math,
+			#else
+			'Std' => Std, 'Math' => Math,
+			#end
 			'Type' => Type,
 			'Reflect' => Reflect,
 			'StringTools' => StringTools,
