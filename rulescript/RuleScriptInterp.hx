@@ -345,7 +345,7 @@ class RuleScriptInterp extends hscript.Interp
 						Tools.callMethod6.bind(f, _, _, _, _, _, _);
 					case 7, 8:
 						Tools.callMethod8.bind(f, _, _, _, _, _, _, _, _);
-					case 11, 12:
+					case 9, 10, 11, 12:
 						Tools.callMethod12.bind(f, _, _, _, _, _, _, _, _, _, _, _, _);
 					default:
 						Reflect.makeVarArgs(f);
