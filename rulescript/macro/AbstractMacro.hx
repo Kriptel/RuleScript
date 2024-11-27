@@ -6,7 +6,6 @@ import haxe.macro.Expr;
 import rulescript.macro.MacroTools.ClassPath;
 import sys.FileSystem;
 import sys.io.File;
-#end
 
 using StringTools;
 
@@ -89,3 +88,4 @@ class AbstractMacro
 		return fields;
 	}
 }
+#end

@@ -1,5 +1,6 @@
 package rulescript.macro;
 
+#if macro
 import haxe.macro.Compiler;
 import haxe.macro.Context;
 import haxe.macro.Expr;
@@ -39,3 +40,4 @@ class Converter
 		return text.split('\n');
 	}
 }
+#end
