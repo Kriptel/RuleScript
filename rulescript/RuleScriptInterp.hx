@@ -18,7 +18,7 @@ class RuleScriptInterp extends hscript.Interp
 	public var imports:Map<String, Dynamic> = [];
 	public var usings:Map<String, Dynamic> = [];
 
-	public var superInstance:Dynamic;
+	public var superInstance(default, set):Dynamic;
 
 	public var onMeta:(name:String, args:Array<Expr>, e:Expr) -> Expr;
 
@@ -112,12 +112,17 @@ class RuleScriptInterp extends hscript.Interp
 
 	override function setVar(name:String, v:Dynamic)
 	{
-		var lastValue = variables.get(name);
-
-		if (lastValue is RuleScriptProperty)
-			cast(lastValue, RuleScriptProperty).value = v;
+		if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
+			Reflect.setProperty(superInstance, name, v);
 		else
-			variables.set(name, v);
+		{
+			var lastValue = variables.get(name);
+
+			if (lastValue is RuleScriptProperty)
+				cast(lastValue, RuleScriptProperty).value = v;
+			else
+				variables.set(name, v);
+		}
 	}
 
 	inline private function getScriptProp(v:Dynamic):Dynamic
@@ -684,6 +689,20 @@ class RuleScriptInterp extends hscript.Interp
 				me.depth = depth;
 			}
 		};
+	}
+
+	@:noCompletion
+	var superFields:Array<String>;
+
+	function set_superInstance(value:Dynamic):Dynamic
+	{
+		if (value != null)
+		{
+			var o:Class<Dynamic> = value is Class ? cast value : Type.getClass(value);
+			superFields = (o != null) ? Type.getInstanceFields(o) : [];
+		}
+
+		return superInstance = value;
 	}
 
 	@:noCompletion
