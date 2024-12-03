@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom Std and Math for Hashlink target.
 
 ### Fixed
+- Error with super field set.
 - Error with scripted methods in Hashlink target.
 - Error with dollar symbol in string interplation.
 - Some bugs with Int in enum abstracts.
