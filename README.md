@@ -1,6 +1,6 @@
 # RuleScript
 
-Hscript addon with script classes, imports, usings, properties, string interpolation and more.
+Hscript addon featuring script classes, imports, usings, properties, string interpolation and more.
 
 ## Features:
 
@@ -30,7 +30,7 @@ map.set("Hello","World");
 trace(map.get("Hello")); // World
 ```
 ### Import with alias
-you can use `as` or `in` keywords alias.
+Supports both the `as` and `in` aliases.
 ```haxe
 import haxe.ds.StringMap as StrMap;
 
@@ -98,7 +98,7 @@ trace('${a.a}: ${a.b() + ' ' + a.c(true)}'); // RuleScript: Hello World
 ```
 
 ### RuleScriptedClass
-Rulescript supports scripted classes, they can have a strict and non-strict constructor. 
+RuleScript supports scripted classes; these can have strict and non-strict constructors.
 
 Script :
 ```haxe
@@ -147,7 +147,7 @@ import test.HelloWorldAbstract;
 
 trace(HelloWorldAbstract.rulescriptPrint()); // Hello World
 ```
-More templates in [`test/src/Main.hx`](./test//src/Main.hx).
+More templates can be found in [`test/src/Main.hx`](./test//src/Main.hx).
 
 ### Key => value iterator
 ```haxe
@@ -188,17 +188,17 @@ trace(f('Rulescript',...['Hello','World','!'])); // Rulescript: Hello World !
 
 # Limitations
 
-- Script `using` callback supports max number of arguments is 8.
-- [Wildcard imports](https://haxe.org/manual/type-system-import.html#wildcard-import) don't support.
-- AbstractMacro ports only static fields
+- Script `using` callbacks support a maximum of 8 arguments.
+- [Wildcard imports](https://haxe.org/manual/type-system-import.html#wildcard-import) are not supported.
+- AbstractMacro only supports `static` [abstract](https://haxe.org/manual/types-abstract-class.html) fields.
 
 # To Do
-- Lua Parser
+- Lua parser
 - Improve hscript module parser
 
 # Install
 
-1. Installing lib: 
+1. Installing the library: 
 	- haxelib version
 
  		- Haxelib : `haxelib install rulescript`
@@ -211,7 +211,7 @@ trace(f('Rulescript',...['Hello','World','!'])); // Rulescript: Hello World !
 
     	- Haxelib : `haxelib git rulescript https://github.com/Kriptel/RuleScript.git dev`
     	- Hmm : `hmm git rulescript https://github.com/Kriptel/RuleScript.git dev`
-2. Adding lib to your project:
+2. Adding the library to your project:
     
     Hxml :
     ```hxml
