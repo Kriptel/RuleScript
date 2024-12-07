@@ -18,9 +18,37 @@ class HxParser extends Parser
 
 	public var mode:HxParserMode = DEFAULT;
 
+	public var defaultPreprocesorValues:Map<String, Dynamic> = [
+		#if eval 'eval' => 1, #end
+		#if interp 'interp' => 1, #end
+		#if cpp 'cpp' => 1, #end
+		#if hl 'hl' => 1, #end
+		#if hlc 'hlc' => 1, #end
+		#if cppia 'cppia' => 1, #end
+		#if js 'js' => 1, #end
+		#if java 'java' => 1, #end
+		#if neko 'neko' => 1, #end
+		#if lua 'lua' => 1, #end
+		#if php 'php' => 1, #end
+		#if python 'python' => 1, #end
+		#if swf 'swf' => 1, #end
+		#if display 'display' => 1, #end
+		#if macro 'macro' => 1, #end
+		#if sys 'sys' => 1, #end
+		#if static 'static' => 1, #end
+		#if unsafe 'unsafe' => 1, #end
+		#if debug 'debug' => 1, #end
+		'haxe3' => 1,
+		'haxe4' => 1
+	];
+
+	public var preprocesorValues(get, set):Map<String, Dynamic>;
+
 	public function new()
 	{
 		parser ??= new HScriptParserPlus();
+		for (key => value in defaultPreprocesorValues)
+			preprocesorValues.set(key, value);
 
 		super();
 	}
@@ -46,6 +74,16 @@ class HxParser extends Parser
 	{
 		parser.line = 1;
 		return parser.parseModule(code, 'rulescript', 0);
+	}
+
+	function get_preprocesorValues():Map<String, Dynamic>
+	{
+		return parser.preprocesorValues;
+	}
+
+	function set_preprocesorValues(value:Map<String, Dynamic>):Map<String, Dynamic>
+	{
+		return parser.preprocesorValues = value;
 	}
 }
 
@@ -89,7 +127,6 @@ class HScriptParserPlus extends hscript.Parser
 	#else
 	override function token():Token
 	#end
-
 	{
 		#if !hscriptPos
 		if (!tokens.isEmpty())
@@ -206,8 +243,7 @@ class HScriptParserPlus extends hscript.Parser
 											// we allow to parse hexadecimal Int32 in Neko, but when the value will be
 											// evaluated by Interpreter, a failure will occur if no Int32 operation is
 											// performed
-											var v = try CInt(haxe.Int32.toInt(n))
-											catch (e:Dynamic) CInt32(n);
+											var v = try CInt(haxe.Int32.toInt(n)) catch (e:Dynamic) CInt32(n);
 											return TConst(v);
 									}
 								}
@@ -378,6 +414,7 @@ class HScriptParserPlus extends hscript.Parser
 		}
 		return null;
 	}
+
 	override function parseExpr()
 	{
 		var tk = token();
@@ -727,6 +764,9 @@ class HScriptParserPlus extends hscript.Parser
 							ensure(TBrClose);
 						case TId(s):
 							currentPart = parts.push(mk(EIdent(s)));
+						case TApostr:
+							parts[currentPart] += String.fromCharCode(char);
+							this.char = "'".code;
 						default:
 					}
 			}

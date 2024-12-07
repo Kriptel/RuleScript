@@ -1,5 +1,8 @@
 package rulescript;
 
+#if hl
+import haxe.ds.StringMap;
+#end
 import hscript.Expr;
 import rulescript.RuleScriptProperty.Property;
 import rulescript.scriptedClass.RuleScriptedClass;
@@ -10,14 +13,14 @@ class RuleScriptInterp extends hscript.Interp
 {
 	public var scriptName:String;
 
-	public var scriptPackage:String = '';
+	public var scriptPackage(default, set):String = '';
 
 	public var imports:Map<String, Dynamic> = [];
 	public var usings:Map<String, Dynamic> = [];
 
-	public var superInstance:Dynamic;
+	public var superInstance(default, set):Dynamic;
 
-	public var onMeta:(name:String, arr:Array<Expr>, e:Expr) -> Expr;
+	public var onMeta:(name:String, args:Array<Expr>, e:Expr) -> Expr;
 
 	public var isSuperCall:Bool = false;
 
@@ -32,18 +35,6 @@ class RuleScriptInterp extends hscript.Interp
 
 		imports = [];
 		usings = [];
-
-		variables.set('Std', Std);
-		variables.set('Math', Math);
-		variables.set('Type', Type);
-		variables.set('Reflect', Reflect);
-		variables.set('StringTools', StringTools);
-		variables.set('Date', Date);
-		variables.set('DateTools', DateTools);
-
-		#if sys
-		variables.set('Sys', Sys);
-		#end
 	}
 
 	override public function posInfos():haxe.PosInfos
@@ -121,12 +112,17 @@ class RuleScriptInterp extends hscript.Interp
 
 	override function setVar(name:String, v:Dynamic)
 	{
-		var lastValue = variables.get(name);
-
-		if (lastValue is RuleScriptProperty)
-			cast(lastValue, RuleScriptProperty).value = v;
+		if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
+			Reflect.setProperty(superInstance, name, v);
 		else
-			variables.set(name, v);
+		{
+			var lastValue = variables.get(name);
+
+			if (lastValue is RuleScriptProperty)
+				cast(lastValue, RuleScriptProperty).value = v;
+			else
+				variables.set(name, v);
+		}
 	}
 
 	inline private function getScriptProp(v:Dynamic):Dynamic
@@ -337,7 +333,32 @@ class RuleScriptInterp extends hscript.Interp
 					me.depth = depth;
 					return r;
 				};
+				#if hl
+				var f:Dynamic = switch (params.length)
+				{
+					case 0:
+						() -> f([]);
+					case 1:
+						Tools.callMethod1.bind(f, _);
+					case 2:
+						Tools.callMethod2.bind(f, _, _);
+					case 3:
+						Tools.callMethod3.bind(f, _, _, _);
+					case 4:
+						Tools.callMethod4.bind(f, _, _, _, _);
+					case 5, 6:
+						Tools.callMethod6.bind(f, _, _, _, _, _, _);
+					case 7, 8:
+						Tools.callMethod8.bind(f, _, _, _, _, _, _, _, _);
+					case 9, 10, 11, 12:
+						Tools.callMethod12.bind(f, _, _, _, _, _, _, _, _, _, _, _, _);
+					default:
+						Reflect.makeVarArgs(f);
+				}
+				#else
 				var f = Reflect.makeVarArgs(f);
+				#end
+
 				if (name != null)
 				{
 					if (depth == 0)
@@ -451,8 +472,13 @@ class RuleScriptInterp extends hscript.Interp
 		#else
 		if (v.keyValueIterator != null)
 			v = v.keyValueIterator();
-		// try v = v?.iterator() catch( e : Dynamic ) {};
 		#end
+
+		#if hl
+		if (v is StringMap)
+			v = new haxe.iterators.MapKeyValueIterator(v);
+		#end
+
 		if (v.hasNext == null || v.next == null)
 			error(EInvalidIterator(v));
 		return v;
@@ -666,8 +692,48 @@ class RuleScriptInterp extends hscript.Interp
 	}
 
 	@:noCompletion
+	var superFields:Array<String>;
+
+	function set_superInstance(value:Dynamic):Dynamic
+	{
+		if (value != null)
+		{
+			var o:Class<Dynamic> = value is Class ? cast value : Type.getClass(value);
+			superFields = (o != null) ? Type.getInstanceFields(o) : [];
+		}
+
+		return superInstance = value;
+	}
+
+	@:noCompletion
 	inline public function argExpr(e:Expr):Dynamic
 	{
 		return e != null ? expr(e) : null;
+	}
+
+	function set_scriptPackage(value:String):String
+	{
+		final packages:Array<String> = [];
+
+		var list = '$value.';
+
+		while (StringTools.contains(list, '.'))
+		{
+			list = list.substr(0, list.lastIndexOf('.'));
+			packages.push(list);
+		}
+
+		if (packages[0] != '')
+			packages.insert(0, '');
+		packages.sort((a:String, b:String) -> return (a < b) ? -1 : (a > b) ? 1 : 0);
+
+		for (pack in packages)
+		{
+			if (RuleScript.defaultImports.exists(pack))
+				for (key => value in RuleScript.defaultImports.get(pack))
+					variables.set(key, value);
+		}
+
+		return scriptPackage = value;
 	}
 }

@@ -10,12 +10,10 @@ import rulescript.parsers.*;
 abstract StringOrExpr(Dynamic) from String to String from Expr to Expr {}
 
 /**
- * Addon for HScript with imports, using and more.
- * 
  * ## Adding script:
  * 
  * ```haxe
- * script = new RuleScript(null,new HxParser());
+ * script = new RuleScript(new HxParser());
  * 
  * // Get parser as HxParser
  * script.getParser(HxParser).allowAll();
@@ -88,6 +86,27 @@ class RuleScript
 		return null;
 	}
 
+	/**
+	 * Package => Imports
+	 */
+	public static var defaultImports:Map<String, Map<String, Dynamic>> = [
+		'' => [
+			#if hl
+			'Std' => rulescript.std.hl.Std, 'Math' => rulescript.std.hl.Math,
+			#else
+			'Std' => Std, 'Math' => Math,
+			#end
+			'Type' => Type,
+			'Reflect' => Reflect,
+			'StringTools' => StringTools,
+			'Date' => Date,
+			'DateTools' => DateTools,
+			#if sys
+			'Sys' => Sys
+			#end
+		]
+	];
+
 	public var interp:RuleScriptInterp;
 
 	public var scriptName(get, set):String;
@@ -118,9 +137,10 @@ class RuleScript
 	{
 		return try
 		{
-			execute(parser.parse(code));
+			execute(code);
 		}
-		catch (v) customCatch != null ? customCatch(v) : v.details();
+		catch (v)
+			customCatch != null ? customCatch(v) : v.details();
 	}
 
 	public function getParser<T:Parser>(?parserClass:Class<T>):T

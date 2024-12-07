@@ -6,7 +6,6 @@ import haxe.macro.Expr;
 import rulescript.macro.MacroTools.ClassPath;
 import sys.FileSystem;
 import sys.io.File;
-#end
 
 using StringTools;
 
@@ -55,6 +54,8 @@ class AbstractMacro
 		cl.name = '_' + classPath.name;
 		cl.pack = classPath.pack.split('.');
 
+		var fieldNum:Int = 0;
+
 		for (f in fields)
 		{
 			if (f.access.contains(AStatic) || (isEnum && f.kind.match(FVar(_, _))))
@@ -69,7 +70,10 @@ class AbstractMacro
 								case FVar(t, e) if (e != null):
 									f.kind;
 								default:
-									FVar(macro :String, macro $v{f.name});
+									if (type.type.match(TInst(_, _)))
+										FVar(macro :String, macro $v{f.name});
+									else
+										FVar(macro :Int, macro $v{fieldNum++});
 							}
 						else
 							f.kind;
@@ -84,3 +88,4 @@ class AbstractMacro
 		return fields;
 	}
 }
+#end

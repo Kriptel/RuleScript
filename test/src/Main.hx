@@ -22,37 +22,31 @@ class Main
 
 	static function main():Void
 	{
-		var language:String = 'haxe';
-
 		test.Test.LocalHelloClass.init();
 		HelloWorldAbstract.RULESCRIPT;
 
 		trace('Testing Commands:');
 
-		switch (language)
+		script = new RuleScript(new HxParser());
+
+		script.scriptName = ' [[RULESCRIPT TEST]]';
+
+		script.getParser(HxParser).allowAll();
+
+		script.errorHandler = onError;
+		try
 		{
-			case 'haxe':
-				script = new RuleScript(null, new HxParser());
-
-				script.scriptName = ' [[RULESCRIPT TEST]] ';
-
-				script.getParser(HxParser).allowAll();
-
-				script.errorHandler = onError;
-				try
-				{
-					mathTest();
-					packageTest();
-					importAndUsingTest();
-					stringInterpolationTest();
-					abstractTest();
-					moduleTest();
-					scriptClassesTest();
-					fileScriptTest();
-				}
-				catch (e)
-					trace(e?.details());
+			mathTest();
+			packageTest();
+			importAndUsingTest();
+			stringInterpolationTest();
+			abstractTest();
+			moduleTest();
+			scriptClassesTest();
+			fileScriptTest();
 		}
+		catch (e)
+			trace(e?.details());
 
 		Sys.println('\n	
 	Tests: $callNum,

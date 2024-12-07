@@ -77,5 +77,6 @@ class SrcClassTest2 extends SrcClassTest<Hello<Dynamic>, Dynamic>
 
 class ScriptedClassTest implements RuleScriptedClass extends SrcClassTest2 {}
 
+@:ignoreFields([stringArray])
 @:strictScriptedConstructor
 class ScriptedClassTestStrict implements RuleScriptedClass extends SrcClassTest2 {}

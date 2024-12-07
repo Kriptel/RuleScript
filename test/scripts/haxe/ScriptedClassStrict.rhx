@@ -1,6 +1,6 @@
 package;
 
-class ScriptedClass extends ScriptedClassTest
+class ScriptedClassStrict extends ScriptedClassTest
 {
 	public function new(arg1:String)
 	{

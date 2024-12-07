@@ -2,7 +2,8 @@ package importTest;
 
 import importTest.Script;
 
-class ScriptImportTest{
+class ScriptImportTest 
+{
 	public var a = 'hello';
 
 	function main(){

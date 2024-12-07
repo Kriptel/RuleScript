@@ -3,6 +3,9 @@ package rulescript;
 import haxe.Constraints.Function;
 import hscript.Expr;
 
+#if hl
+@:build(rulescript.macro.CallMethodMacro.build())
+#end
 class Tools
 {
 	public static function usingFunction(?o:Dynamic, f:Function, ?a1:Dynamic, ?a2:Dynamic, ?a3:Dynamic, ?a4:Dynamic, ?a5:Dynamic, ?a6:Dynamic, ?a7:Dynamic,
