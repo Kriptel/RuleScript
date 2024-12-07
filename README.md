@@ -193,7 +193,6 @@ trace(f('Rulescript',...['Hello','World','!'])); // Rulescript: Hello World !
 - AbstractMacro only supports `static` [abstract](https://haxe.org/manual/types-abstract-class.html) fields.
 
 # To Do
-- Lua parser
 - Improve hscript module parser
 
 # Install

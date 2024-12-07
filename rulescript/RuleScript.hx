@@ -10,12 +10,10 @@ import rulescript.parsers.*;
 abstract StringOrExpr(Dynamic) from String to String from Expr to Expr {}
 
 /**
- * Addon for HScript with imports, using and more.
- * 
  * ## Adding script:
  * 
  * ```haxe
- * script = new RuleScript(null,new HxParser());
+ * script = new RuleScript(new HxParser());
  * 
  * // Get parser as HxParser
  * script.getParser(HxParser).allowAll();
