@@ -39,6 +39,7 @@ class RuleScriptInterp extends hscript.Interp
 
 		imports = [];
 		usings = [];
+		typePaths = [];
 	}
 
 	override public function posInfos():haxe.PosInfos
