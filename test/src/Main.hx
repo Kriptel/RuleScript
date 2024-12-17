@@ -2,8 +2,9 @@ package;
 
 import hscript.Expr.ModuleDecl;
 import hscript.Printer;
-import rulescript.*;
-import rulescript.parsers.*;
+import rulescript.RuleScript;
+import rulescript.Tools;
+import rulescript.parsers.HxParser;
 import rulescript.scriptedClass.RuleScriptedClassUtil;
 import sys.FileSystem;
 import sys.io.File;
@@ -34,6 +35,7 @@ class Main
 		script.getParser(HxParser).allowAll();
 
 		script.errorHandler = onError;
+
 		try
 		{
 			mathTest();
@@ -41,6 +43,7 @@ class Main
 			importAndUsingTest();
 			stringInterpolationTest();
 			abstractTest();
+			typePathTest();
 			moduleTest();
 			scriptClassesTest();
 			fileScriptTest();
@@ -48,98 +51,69 @@ class Main
 		catch (e)
 			trace(e?.details());
 
-		Sys.println('\n	
-	Tests: $callNum,
-	Errors: $errorsNum
-		');
+		Sys.println('\n\tTests:$callNum,\n\tErrors: $errorsNum');
 	}
 
 	static function mathTest()
 	{
-		runScript('1 + 7');
-		runScript('1 - 2');
-		runScript('15*2');
-		runScript('10 / 2');
+		runScript('1 + 7', 1 + 7);
+		runScript('1 - 2', 1 - 2);
+		runScript('15 * 2', 15 * 2);
+		runScript('10 / 2', 10 / 2);
 
-		runScript('5 + 5*2');
-		runScript('1.1 + 2.53 + 122');
-		runScript('(15*2) + (12/2)');
-		runScript('2 / (3*5)');
+		runScript('5 + 5 * 2', 5 + 5 * 2);
+		runScript('1.1 + 2.53 + 122', 1.1 + 2.53 + 122);
+		runScript('(15 * 2) + (12 / 2)', (15 * 2) + (12 / 2));
+		runScript('2 / (3 * 5)', 2 / (3 * 5));
 
-		runScript('1.153');
+		runScript('1.153', 1.153);
 	}
 
 	static function packageTest()
 	{
-		runScript('
-            package;
+		runScript('package', () -> script.interp.scriptPackage == '');
 
-            return "Hello World";
-        ');
-
-		runScript('
-            package scripts.hello.world;
-
-            return "Hello World";
-        ');
+		runScript('package scripts.hello.world', () -> script.interp.scriptPackage == 'scripts.hello.world');
 	}
 
 	static function importAndUsingTest()
 	{
+		script.variables.set('a', {hello: 'world'});
+
 		runScript('
             import Reflect as AliasReflect;
 
-            var a = {
-                "hello":"world"
-            };
-
-            return AliasReflect.getProperty(a,"hello");
-        ');
+            AliasReflect.getProperty(a,"hello");
+        ', 'world');
 
 		runScript('
             import Reflect.getProperty;
 
-            var a = {
-                "hello":"world"
-            };
-
-            return getProperty(a,"hello");
-        ');
+            getProperty(a,"hello");
+        ', 'world');
 
 		runScript('
             import Reflect.getProperty as get;
 
-            var a = {
-                "hello":"world"
-            };
-
-            return get(a,"hello");
-        ');
+            get(a,"hello");
+        ', 'world');
 
 		runScript('
             using Reflect;
-
-            var a = {
-                "hello":"world"
-            };
             
-            return a.getProperty("hello");
-        ');
+            a.getProperty("hello");
+        ', 'world');
+
+		script.variables.remove('a');
 	}
 
 	static function stringInterpolationTest()
 	{
-		runScript("
-            var a = 'Hello';
-        
-            return 'RuleScript: $a World';
-        ");
+		script.variables.set('a', {hello: 'World'});
 
-		runScript("
-            var a = 'World';
-        
-            return 'RuleScript: Hello $a';
-        ");
+		runScript("  'RuleScript: $a World'  ");
+
+		runScript("  'RuleScript: Hello $a'  ");
 
 		runScript("
             var a = {
@@ -160,6 +134,8 @@ class Main
         
             return '${a.a}: ${a.b() + \" \" + a.c}';
         ");
+
+		script.variables.remove('a');
 	}
 
 	static function abstractTest()
@@ -167,32 +143,29 @@ class Main
 		runScript('
             import test.TestAbstract;
 
-            return TestAbstract.helloworld;
-        ');
+            TestAbstract.helloworld;
+        ', TestAbstract.helloworld);
 
 		runScript('
-            import test.HelloWorldAbstract;
+            test.HelloWorldAbstract.rulescriptPrint();
+        ', HelloWorldAbstract.rulescriptPrint());
+	}
 
-            return HelloWorldAbstract.rulescriptPrint();
-        ');
+	static function typePathTest()
+	{
+		runScript('
+            sys.FileSystem;
+        ', sys.FileSystem);
+
+		var a = {FileSystem: "hello world"};
+
+		script.variables.set('sys', a);
 
 		runScript('
-            import test.HelloWorldAbstract as Hw;
+            sys.FileSystem;
+        ', "hello world");
 
-            return Hw.rulescriptPrint();
-        ');
-
-		runScript("
-            import test.HelloWorldAbstract as Hw;
-
-            return '${Hw.RULESCRIPT}: ${Hw.hello} ${Hw.world}';
-        ");
-
-		runScript('
-            import test.Test.LocalHelloClass;
-
-            return LocalHelloClass.hello();
-        ');
+		script.variables.remove('sys');
 	}
 
 	static function moduleTest()
@@ -388,30 +361,31 @@ class Main
 		RuleScript.resolveScript = old;
 	}
 
-	static function runScript(code:String)
+	static function runScript(code:String, ?value:Dynamic)
 	{
 		// Reset package, for reusing package keyword
+		Sys.println('\n[Running code #${++callNum}]: "$code"');
+
 		script.interp.scriptPackage = '';
 
-		Sys.println('\n[Running code #${++callNum}]: "$code"\n\n         [Result]: ${script.tryExecute(code)}');
+		var result = script.tryExecute(script.parser.parse(code));
+
+		if (result != null)
+			Sys.println('\t\t[Result]: ${Std.string(result)}');
+
+		if (value != null && (Reflect.isFunction(value) ? !value() : result != value))
+			throw 'the result does not match the value';
 	}
 
-	static function runFileScript(path:String)
+	inline static function runFileScript(path:String, ?value:Dynamic)
 	{
-		// Reset package, for reusing package keyword
-		script.interp.scriptPackage = '';
-
-		var code:String = File.getContent('scripts/' + path);
-
-		Sys.println('\n[Running code #${++callNum}]: "$code"\n\n         [Result]: ${script.tryExecute(code)}');
+		runScript(File.getContent('scripts/' + path), value);
 	}
 
 	static function onError(e:haxe.Exception):Dynamic
 	{
 		errorsNum++;
-
 		trace('[ERROR] : ${e.details()}');
-
 		return e.details();
 	}
 }

@@ -63,7 +63,7 @@ using Reflect;
 
 var a = {
   "Hello":"World"
-};
+}
 trace(a.getProperty("Hello")); // World
 ```
 
@@ -80,6 +80,12 @@ function set_a(v:String):String
 	return _a = v;
 
 trace(a); // Hello World
+```
+
+### Type path
+```haxe
+sys.FileSystem;
+haxe.ds.StringMap;
 ```
 
 ### String interpolation
@@ -124,7 +130,7 @@ Source :
 class ScriptedClassTest implements RuleScriptedClass extends SrcClass {}
 ```
 
-See [`Main.hx`](./test/src/Main.hx#l267), [`ScriptedClassTest.hx`](./test/src/test/ScriptedClassTest.hx), [`ScriptedClass`](./test/scripts/haxe/ScriptedClass.rhx).
+See [`Main.hx`](./test/src/Main.hx#l232), [`ScriptedClassTest.hx`](./test/src/test/ScriptedClassTest.hx), [`ScriptedClass`](./test/scripts/haxe/ScriptedClass.rhx).
 
 ### Abstracts in script
 
@@ -194,6 +200,7 @@ trace(f('Rulescript',...['Hello','World','!'])); // Rulescript: Hello World !
 
 # To Do
 - Improve hscript module parser
+- Improve abstracts
 
 # Install
 

@@ -54,14 +54,15 @@ class HxParser extends Parser
 	}
 
 	inline public function allowAll():Void
-		setParams(true, true, true, true);
+		setParams(true, true, true, true, true);
 
-	public function setParams(?allowJSON:Bool, ?allowMetadata:Bool, ?allowTypes:Bool, ?allowStringInterpolation:Bool)
+	public function setParams(?allowJSON:Bool, ?allowMetadata:Bool, ?allowTypes:Bool, ?allowStringInterpolation:Bool, ?allowTypePath:Bool)
 	{
 		parser.allowJSON = allowJSON;
 		parser.allowMetadata = allowMetadata;
 		parser.allowTypes = allowTypes;
 		parser.allowStringInterpolation = allowStringInterpolation;
+		parser.allowTypePath = allowTypePath;
 	}
 
 	override public function parse(code:String):Expr
@@ -90,6 +91,7 @@ class HxParser extends Parser
 class HScriptParserPlus extends hscript.Parser
 {
 	public var allowStringInterpolation:Bool = true;
+	public var allowTypePath:Bool = true;
 
 	#if !hscriptPos
 	static inline final p1:Int = 0;
@@ -423,6 +425,55 @@ class HScriptParserPlus extends hscript.Parser
 		#end
 		return switch (tk)
 		{
+			case TId(id):
+				var e = parseStructure(id);
+
+				if (allowTypePath && e == null && id.startsWithLowerCase())
+				{
+					var tk = token();
+					if (tk == TDot)
+					{
+						var ids = [id];
+
+						while (true)
+						{
+							var ident = getIdent();
+							ids.push(ident);
+
+							var tk = token();
+							if (tk != TDot)
+							{
+								push(tk);
+								break;
+							}
+
+							if (ident.startsWithUpperCase())
+							{
+								push(TDot);
+								break;
+							}
+						}
+
+						if (ids[ids.length - 1].startsWithUpperCase())
+							e = mk(ETypeVarPath(ids));
+						else
+						{
+							while (ids.length > 1)
+							{
+								push(TId(ids.pop()));
+								push(TDot);
+							}
+						}
+					}
+					else
+						push(tk);
+				}
+
+				if (e == null)
+					e = mk(EIdent(id));
+
+				return parseExprNext(e);
+
 			case TPOpen:
 				tk = token();
 				if (tk == TPClose)

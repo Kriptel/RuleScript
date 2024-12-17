@@ -27,7 +27,9 @@ class ExprMacro
 			'EVar' => macro function(n:String, ?t:CType, ?e:Expr, ?global:Bool) {},
 			'EProp' => macro function(n:String, g:String, s:String, ?t:CType, ?e:Expr, ?global:Bool) {},
 
-			'EFor' => macro function(key:String, it:Expr, e:Expr, ?value:String) {}
+			'EFor' => macro function(key:String, it:Expr, e:Expr, ?value:String) {},
+
+			'ETypeVarPath' => macro function(path:Array<String>) {}
 		];
 
 		for (key => value in newFields)

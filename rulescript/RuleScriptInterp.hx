@@ -1,13 +1,15 @@
 package rulescript;
 
-#if hl
-import haxe.ds.StringMap;
-#end
 import hscript.Expr;
 import rulescript.RuleScriptProperty.Property;
 import rulescript.scriptedClass.RuleScriptedClass;
+import sys.FileSystem;
 
 using rulescript.Tools;
+
+#if hl
+import haxe.ds.StringMap;
+#end
 
 class RuleScriptInterp extends hscript.Interp
 {
@@ -26,6 +28,8 @@ class RuleScriptInterp extends hscript.Interp
 
 	public var hasErrorHandler:Bool = false;
 	public var errorHandler(default, set):haxe.Exception->Dynamic;
+
+	var typePaths:Map<String, Dynamic> = [];
 
 	override private function resetVariables():Void
 	{
@@ -169,6 +173,9 @@ class RuleScriptInterp extends hscript.Interp
 
 					var t = resolveType(path);
 
+					if (t == null)
+						error(ECustom('Type not found : $path'));
+
 					if (func != null && t is Class)
 					{
 						var tag:String = alias ?? func;
@@ -177,10 +184,46 @@ class RuleScriptInterp extends hscript.Interp
 					else
 						variables.set(name, t);
 				}
-			case EUsing(name):
-				var t:Dynamic = resolveType(name);
+
+			case EUsing(path):
+				var t:Dynamic = resolveType(path);
+
+				if (t == null)
+					error(ECustom('Type not found : $path'));
+
 				if (t != null)
-					usings.set(name, t);
+					usings.set(path, t);
+			case ETypeVarPath(path):
+				var id:String = path[0];
+
+				if (!locals.exists(id) && !variables.exists(id))
+				{
+					var typePath = path.join('.');
+
+					if (typePaths.exists(typePath))
+					{
+						return typePaths[typePath];
+					}
+					else
+					{
+						var type:Dynamic = resolveType(typePath);
+						return typePaths[typePath] = type;
+					}
+				}
+
+				var obj:Dynamic = null;
+				var l = locals.get(id);
+				if (l != null)
+					obj = getScriptProp(l.r);
+
+				obj ??= resolve(id);
+
+				var currentField:Int = 0;
+				while (path[++currentField] != null)
+					obj = get(obj, path[currentField]);
+
+				return obj;
+
 			case EMeta(name, args, e) if (onMeta != null):
 				return onMeta(name, args, e);
 			case EVar(n, _, e, global):
@@ -457,9 +500,6 @@ class RuleScriptInterp extends hscript.Interp
 		#if interp t = Tools.isEmptyClass(t) ? null : t; #end
 
 		t ??= Type.resolveEnum(path);
-
-		if (t == null)
-			error(ECustom('Type not found : $path'));
 
 		return t;
 	}

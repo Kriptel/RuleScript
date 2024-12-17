@@ -65,7 +65,13 @@ class Tools
 		return e;
 	#end
 
-	inline public static function isEmptyClass(cl:Class<Dynamic>)
+	inline public static function startsWithLowerCase(s:String):Bool
+		return s.charAt(0) == s.charAt(0).toLowerCase();
+
+	inline public static function startsWithUpperCase(s:String):Bool
+		return s.charAt(0) == s.charAt(0).toUpperCase();
+
+	inline public static function isEmptyClass(cl:Class<Dynamic>):Bool
 	{
 		#if interp
 		// Because interp returns an empty class instead of null
