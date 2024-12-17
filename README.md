@@ -10,6 +10,7 @@ Hscript addon featuring script classes, imports, usings, properties, string inte
 	- [Static field](#static-field-import)
 - [Using](#using)
 - [Property](#property)
+- [Type path](#type-path)
 - [String interpolation](#string-interpolation)
 - [Script Class](#rulescriptedclass)
 - [Abstracts in script](#abstracts-in-script)
@@ -85,6 +86,8 @@ trace(a); // Hello World
 ### Type path
 ```haxe
 sys.FileSystem;
+```
+```haxe
 haxe.ds.StringMap;
 ```
 
