@@ -1,6 +1,7 @@
 -lib hscript
 
 --macro addMetadata('#if hscriptPos @:build(rulescript.macro.ExprMacro.build()) #end', 'hscript.ExprDef')
+
 --macro addMetadata('#if !hscriptPos @:build(rulescript.macro.ExprMacro.build()) #end', 'hscript.Expr')
 
 --macro addMetadata('@:build(rulescript.macro.ExprMacro.buildToken())', 'hscript.Token')
@@ -20,5 +21,3 @@
 --macro addMetadata('@:build(rulescript.macro.ExprMacro.buildCheckerDefaults())', 'hscript.Checker')
 
 --macro addMetadata('@:build(rulescript.macro.ExprMacro.buildMacroDefaults())', 'hscript.Macro')
-
---macro rulescript.macro.Converter.init()

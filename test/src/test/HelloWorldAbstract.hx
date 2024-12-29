@@ -8,9 +8,7 @@ enum abstract HelloWorldAbstract(String) from String to String
 	}
 
 	var RULESCRIPT:String = 'Rulescript';
-
 	var hello:String;
-
 	var world:String;
 }
 

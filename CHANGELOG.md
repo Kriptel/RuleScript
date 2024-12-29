@@ -8,7 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Type path
+- Type path.
+- `list` static variable to Abstracts.
+
+### Changed
+- Reworked AbstractMacro.
+
+### Removed
+- Converter macro.
 
 ## [0.2.0] 2024.12.07
 

@@ -101,9 +101,8 @@ class RuleScript
 			'StringTools' => StringTools,
 			'Date' => Date,
 			'DateTools' => DateTools,
-			#if sys
-			'Sys' => Sys
-			#end
+			'Xml' => Xml,
+			#if sys 'Sys' => Sys #end
 		]
 	];
 
