@@ -14,7 +14,7 @@ enum HxParserMode
 
 class HxParser extends Parser
 {
-	public var parser:HScriptParserPlus;
+	public var parser:HScriptParser;
 
 	public var mode:HxParserMode = DEFAULT;
 
@@ -46,7 +46,7 @@ class HxParser extends Parser
 
 	public function new()
 	{
-		parser ??= new HScriptParserPlus();
+		parser ??= new HScriptParser();
 		for (key => value in defaultPreprocesorValues)
 			preprocesorValues.set(key, value);
 
@@ -88,8 +88,15 @@ class HxParser extends Parser
 	}
 }
 
-class HScriptParserPlus extends hscript.Parser
+@:deprecated
+typedef HScriptParserPlus = HScriptParser;
+
+private class HScriptParser extends hscript.Parser
 {
+	public var allowPackage:Bool = true;
+	public var allowImport:Bool = true;
+	public var allowUsing:Bool = true;
+
 	public var allowStringInterpolation:Bool = true;
 	public var allowTypePath:Bool = true;
 
@@ -563,7 +570,7 @@ class HScriptParserPlus extends hscript.Parser
 
 		return switch (id)
 		{
-			case 'package':
+			case 'package' if (allowPackage):
 				var path:Array<String> = [];
 
 				var tk = token();
@@ -593,7 +600,7 @@ class HScriptParserPlus extends hscript.Parser
 				}
 
 				mk(EPackage(path.join('.')));
-			case 'import':
+			case 'import' if (allowImport):
 				var path:Array<String> = [getIdent()];
 				var star = false;
 
@@ -631,7 +638,7 @@ class HScriptParserPlus extends hscript.Parser
 					!star ? alias = getIdent() : unexpected(TId("in"));
 
 				mk(EImport(path.join('.'), star, alias, func));
-			case 'using':
+			case 'using' if (allowUsing):
 				var path = [getIdent()];
 				while (true)
 				{

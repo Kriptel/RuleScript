@@ -10,12 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Type path.
 - `list` static variable to Abstracts.
+- `allowPackage`, `allowImport`, `allowUsing` variables to HxParser.
 
 ### Changed
 - Reworked AbstractMacro.
 
 ### Removed
 - Converter macro.
+
+### Deprecated
+- HScriptParserPlus.
 
 ## [0.2.0] 2024.12.07
 
