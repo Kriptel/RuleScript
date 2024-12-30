@@ -3,6 +3,8 @@ package rulescript.macro;
 #if macro
 import haxe.macro.Context;
 import haxe.macro.Expr;
+import haxe.macro.ExprTools;
+import rulescript.macro.MacroTools.ClassPath;
 import sys.FileSystem;
 import sys.io.File;
 
@@ -26,7 +28,7 @@ class AbstractMacro
 
 		var list = [
 			for (abstractType in abstractsList)
-				macro $v{abstractType} => $e{buildAbstract(MacroTools.parseClassPath(abstractType))}
+				buildAbstract(MacroTools.parseClassPath(abstractType))
 		];
 
 		var fields = Context.getBuildFields();
@@ -46,7 +48,7 @@ class AbstractMacro
 		return text.split('\n');
 	}
 
-	static function buildAbstract(classPath):Expr
+	static function buildAbstract(classPath:ClassPath):Expr
 	{
 		var type = switch (Context.getType(classPath.fullPath))
 		{
@@ -57,17 +59,48 @@ class AbstractMacro
 				null;
 		}
 
-		return {
+		var alias:String = null;
+
+		if (type.meta.has(':alias'))
+		{
+			var meta = [
+				for (meta in type.meta.get())
+					if (meta.name == ':alias')
+						meta
+			][0];
+
+			alias = ExprTools.getValue(meta.params[0]);
+
+			if (!ExprTools.getValue(meta.params[1] ?? macro false))
+				alias = '${classPath.pack}.${alias}';
+		}
+
+		var value:Expr = {
 			expr: EObjectDecl([
 				for (field in type.impl.get().statics.get())
-					if (!field.meta.has(':to') && !field.meta.has(':ignoreField'))
+					if (!field.meta.has(':ignoreField'))
+					{
+						var isStatic:Bool = true;
+
+						switch (field.expr().expr)
 						{
-							field: field.name,
-							expr: macro @:privateAccess $p{'${classPath.fullPath}.${field.name}'.split('.')}
+							case TFunction(f):
+								if (f.args[0] != null && f.args[0].v.name == 'this')
+									isStatic = false;
+							default:
 						}
+
+						if (isStatic)
+							{
+								field: field.name,
+								expr: macro @:privateAccess $p{'${classPath.fullPath}.${field.name}'.split('.')}
+							}
+					}
 			]),
 			pos: Context.currentPos()
 		}
+
+		return macro $v{alias ?? classPath.fullPath} => $e{value};
 	}
 }
 #end

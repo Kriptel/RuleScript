@@ -2,6 +2,7 @@ package test;
 
 import test.Test;
 
+@:alias('hello.TestAbstract', true)
 abstract TestAbstract(Test) from Test to Test
 {
 	public static inline var helloworld:Int = 1;

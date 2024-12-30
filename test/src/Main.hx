@@ -141,7 +141,7 @@ class Main
 	static function abstractTest()
 	{
 		runScript('
-            import test.TestAbstract;
+            import hello.TestAbstract;
 
             TestAbstract.helloworld;
         ', TestAbstract.helloworld);
