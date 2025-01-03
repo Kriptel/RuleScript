@@ -70,19 +70,19 @@ class ExprMacro
 			if (field.name == 'DImport')
 				fields.remove(field);
 
-		fields.push({
-			name: 'DImport',
-			access: [],
-			kind: FFun(MacroTools.toFunction(macro function(name:Array<String>, star:Bool, ?alias:String, ?func:String) {})),
-			pos: pos,
-		});
+		var newFields:Map<String, Expr> = [
+			'DImport' => macro function(name:Array<String>, star:Bool, ?alias:String, ?func:String) {},
+			'DUsing' => macro function(name:String) {},
+			'DAbstract' => macro function(c:rulescript.Abstracts.AbstractDecl) {}
+		];
 
-		fields.push({
-			name: 'DUsing',
-			access: [],
-			kind: FFun(MacroTools.toFunction(macro function(name:String) {})),
-			pos: pos,
-		});
+		for (key => value in newFields)
+			fields.push({
+				name: key,
+				access: [],
+				kind: FFun(MacroTools.toFunction(value)),
+				pos: pos,
+			});
 
 		return fields;
 	}

@@ -1,0 +1,17 @@
+package abstracts;
+
+abstract AbstractTest(String) from String
+{
+	var HELLO:AbstractTest = "Hello World";
+
+	inline public static function helloWorld():String
+	{
+		return 'Hello World';
+	}
+}
+
+private enum abstract LocalAbstractTest(Int)
+{
+	var ONE;
+	var RULESCRIPT;
+}

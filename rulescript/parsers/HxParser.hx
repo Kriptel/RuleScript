@@ -933,7 +933,7 @@ private class HScriptParser extends hscript.Parser
 	{
 		var meta = parseMetadata();
 		var ident = getIdent();
-		var isPrivate = false, isExtern = false;
+		var isPrivate = false, isExtern = false, isEnum = false;
 		while (true)
 		{
 			switch (ident)
@@ -947,6 +947,13 @@ private class HScriptParser extends hscript.Parser
 			}
 			ident = getIdent();
 		}
+
+		if (ident == 'enum' && maybe(TId('abstract')))
+		{
+			ident = 'abstract';
+			isEnum = true;
+		}
+
 		switch (ident)
 		{
 			case "package":
@@ -1091,6 +1098,52 @@ private class HScriptParser extends hscript.Parser
 					params: params,
 					isPrivate: isPrivate,
 					t: t,
+				});
+			case "abstract":
+				var name = getIdent();
+				var params = parseParams();
+
+				var t = null;
+
+				if (maybe(TPOpen))
+				{
+					t = parseType();
+					ensure(TPClose);
+				}
+
+				var from = [], to = [];
+				while (true)
+				{
+					var t = token();
+
+					switch (t)
+					{
+						case TId('from'):
+							from.push(parseType());
+						case TId('to'):
+							to.push(parseType());
+						case TBrOpen:
+							break;
+						default:
+							unexpected(t);
+					}
+				}
+
+				var fields = [];
+				while (!maybe(TBrClose))
+					fields.push(parseField());
+
+				return DAbstract({
+					meta: meta,
+					name: name,
+					params: params,
+					type: t,
+					isExtern: isExtern,
+					isPrivate: isPrivate,
+					isEnum: isEnum,
+					to: to,
+					from: from,
+					fields: fields
 				});
 			default:
 				unexpected(TId(ident));
