@@ -2,12 +2,25 @@ package rulescript;
 
 import haxe.Constraints.Function;
 import hscript.Expr;
+import hscript.Printer;
 
 #if hl
 @:build(rulescript.macro.CallMethodMacro.build())
 #end
 class Tools
 {
+	static var _printer:Printer = new Printer();
+
+	inline public static function exprToString(expr:Expr):String
+	{
+		return _printer.exprToString(expr);
+	}
+
+	inline public static function typeToString(type:CType):String
+	{
+		return _printer.typeToString(type);
+	}
+
 	public static function usingFunction(?o:Dynamic, f:Function, ?a1:Dynamic, ?a2:Dynamic, ?a3:Dynamic, ?a4:Dynamic, ?a5:Dynamic, ?a6:Dynamic, ?a7:Dynamic,
 			?a8:Dynamic)
 	{
@@ -81,7 +94,7 @@ class Tools
 		#end
 	}
 
-	public static function moduleDeclsToExpr(moduleDecls:Array<ModuleDecl>):Expr
+	public static function moduleDeclsToExpr(moduleDecls:Array<ModuleDecl>, ?parameters:{?isScriptedClass:Bool, ?fieldFilter:FieldDecl->Bool}):Expr
 	{
 		var fields:Array<Expr> = [];
 
@@ -113,20 +126,25 @@ class Tools
 
 					for (field in c.fields)
 					{
-						switch (field.kind)
-						{
-							case KFunction(f):
-								pushExpr(EFunction(f.args, f.expr, field.name, f.ret));
-							case KVar(v):
-								if (v.get == null && v.set == null)
-								{
-									pushExpr(EVar(field.name, v.type, v.expr, field.access.contains(APublic)));
-								}
-								else
-								{
-									pushExpr(EProp(field.name, v.get, v.set, v.type, v.expr, field.access.contains(APublic)));
-								}
-						}
+						if (parameters?.fieldFilter(field) ?? true)
+							switch (field.kind)
+							{
+								case KFunction(f):
+									if (parameters?.isScriptedClass
+										&& (field.access.contains(AOverride) || (field.name == 'new' && c.extend != null)))
+										pushExpr(EVar('__super_${field.name}', null, toExpr(EIdent(field.name)), false));
+
+									pushExpr(EFunction(f.args, f.expr, field.name, f.ret));
+								case KVar(v):
+									if (v.get == null && v.set == null)
+									{
+										pushExpr(EVar(field.name, v.type, v.expr, field.access.contains(APublic)));
+									}
+									else
+									{
+										pushExpr(EProp(field.name, v.get, v.set, v.type, v.expr, field.access.contains(APublic)));
+									}
+							}
 					}
 
 				case DTypedef(c):

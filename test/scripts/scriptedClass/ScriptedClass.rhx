@@ -1,0 +1,38 @@
+package scriptedClass;
+
+class ScriptedClassA
+{
+	public function new(value:Int){
+		trace('A: $value');
+	}
+
+	public function hello(){
+		trace('A: hello');
+	}
+}
+
+class ScriptedClassB extends ScriptedClassA
+{
+	public function new(?a:Float = 0,b:Bool){
+		super(Std.int(a));
+		trace('B: $a, $b');
+	}
+
+	override function hello(){
+		trace('B: Hello');
+		super.hello();
+	}
+}
+
+class ScriptedClassC extends ScriptedClassB
+{
+	public function new(){
+		super(2.5,true);
+		trace('C');
+	}
+
+	override function hello(){
+		super.hello();
+		trace('C: hello world');
+	}
+}

@@ -6,6 +6,18 @@ import hscript.Parser.Token;
 using StringTools;
 using rulescript.Tools;
 
+typedef HxParserParams =
+{
+	var ?allowJSON:Bool;
+	var ?allowMetadata:Bool;
+	var ?allowTypes:Bool;
+	var ?allowPackage:Bool;
+	var ?allowImport:Bool;
+	var ?allowUsing:Bool;
+	var ?allowStringInterpolation:Bool;
+	var ?allowTypePath:Bool;
+}
+
 enum HxParserMode
 {
 	DEFAULT;
@@ -18,7 +30,7 @@ class HxParser extends Parser
 
 	public var mode:HxParserMode = DEFAULT;
 
-	public var defaultPreprocesorValues:Map<String, Dynamic> = [
+	public static var defaultPreprocesorValues:Map<String, Dynamic> = [
 		#if eval 'eval' => 1, #end
 		#if interp 'interp' => 1, #end
 		#if cpp 'cpp' => 1, #end
@@ -54,8 +66,20 @@ class HxParser extends Parser
 	}
 
 	inline public function allowAll():Void
-		setParams(true, true, true, true, true);
+	{
+		setParameters({
+			allowJSON: true,
+			allowMetadata: true,
+			allowTypes: true,
+			allowPackage: true,
+			allowImport: true,
+			allowUsing: true,
+			allowStringInterpolation: true,
+			allowTypePath: true
+		});
+	}
 
+	@:deprecated
 	public function setParams(?allowJSON:Bool, ?allowMetadata:Bool, ?allowTypes:Bool, ?allowStringInterpolation:Bool, ?allowTypePath:Bool)
 	{
 		parser.allowJSON = allowJSON;
@@ -63,6 +87,33 @@ class HxParser extends Parser
 		parser.allowTypes = allowTypes;
 		parser.allowStringInterpolation = allowStringInterpolation;
 		parser.allowTypePath = allowTypePath;
+	}
+
+	public function setParameters(parameters:HxParserParams)
+	{
+		if (parameters.allowJSON != null)
+			parser.allowJSON = parameters.allowJSON;
+
+		if (parameters.allowMetadata != null)
+			parser.allowMetadata = parameters.allowMetadata;
+
+		if (parameters.allowTypes != null)
+			parser.allowTypes = parameters.allowTypes;
+
+		if (parameters.allowPackage != null)
+			parser.allowPackage = parameters.allowPackage;
+
+		if (parameters.allowImport != null)
+			parser.allowImport = parameters.allowImport;
+
+		if (parameters.allowUsing != null)
+			parser.allowUsing = parameters.allowUsing;
+
+		if (parameters.allowStringInterpolation != null)
+			parser.allowStringInterpolation = parameters.allowStringInterpolation;
+
+		if (parameters.allowTypePath != null)
+			parser.allowTypePath = parameters.allowTypePath;
 	}
 
 	override public function parse(code:String):Expr
@@ -88,7 +139,7 @@ class HxParser extends Parser
 	}
 }
 
-@:deprecated
+@:deprecated("rulescript.parsers.HxParser.HScriptParserPlus was moved to rulescript.parsers.HxParser.HScriptParser")
 typedef HScriptParserPlus = HScriptParser;
 
 private class HScriptParser extends hscript.Parser
@@ -456,7 +507,16 @@ private class HScriptParser extends hscript.Parser
 
 							if (ident.startsWithUpperCase())
 							{
-								push(TDot);
+								var tk = token();
+								switch (tk)
+								{
+									case TId(s) if (s.startsWithUpperCase()):
+										ids.push(s);
+									case _:
+										push(tk);
+										push(TDot);
+								}
+
 								break;
 							}
 						}

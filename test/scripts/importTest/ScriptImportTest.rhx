@@ -1,0 +1,12 @@
+package importTest;
+
+import importTest.Script;
+import importTest.Script.SubScript;
+
+class ScriptImportTest 
+{
+	function main(){
+		trace(Script.helloWorld());
+		trace(importTest.Script.SubScript.helloWorld());
+	}
+}

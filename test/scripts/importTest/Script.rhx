@@ -1,0 +1,15 @@
+package importTest;
+
+class Script
+{
+	static function helloWorld(){
+		return 'importTest.Script: hello world';
+	}
+}
+
+class SubScript
+{
+	static function helloWorld(){
+		return 'importTest.SubScript: hello world';
+	}
+}

@@ -28,7 +28,8 @@ class CallMethodMacro
 						macro return f([$a{args}]);
 					}
 				}),
-				pos: pos
+				pos: pos,
+				meta: [{name: ':noCompletion', pos: pos}]
 			});
 
 		return fields;

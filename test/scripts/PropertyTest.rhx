@@ -1,5 +1,3 @@
-package;
-
 var _a = 'Test';
 
 var a(get,set):String;

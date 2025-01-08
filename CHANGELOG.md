@@ -8,17 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- setParameters function to HxParser
+- rulescript.parsers.HxParser.HxParserParams type.
+- `__rulescript_strict` field adds to classes with the RuleScriptedClass interface.
+- `:alias` metadata for abstracts.
+- `getVariables` function to RuleScriptedClass.
+- ScriptedClass, ScriptedInstance, Access types in rulescript.scriptedClass.RuleScriptedClass module.
+- Abstract parse to HxParser.
 - Type path.
 - `list` static variable to Abstracts.
 - `allowPackage`, `allowImport`, `allowUsing` variables to HxParser.
 
+### Fixed
+- Fixed missing static modifier for the HxParser.defaultPreprocesorValues ​​field.
+
 ### Changed
 - Reworked AbstractMacro.
+- Renamed rulescript.macro.RuleScriptedClass to rulescript.macro.RuleScriptedClassMacro.
 
 ### Removed
 - Converter macro.
 
 ### Deprecated
+- HScriptParserPlus.
 - HScriptParserPlus.
 
 ## [0.2.0] 2024.12.07

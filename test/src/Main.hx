@@ -1,10 +1,11 @@
 package;
 
+import hscript.Expr.ClassDecl;
 import hscript.Expr.ModuleDecl;
 import hscript.Printer;
 import rulescript.RuleScript;
-import rulescript.Tools;
 import rulescript.parsers.HxParser;
+import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.scriptedClass.RuleScriptedClassUtil;
 import sys.FileSystem;
 import sys.io.File;
@@ -36,6 +37,8 @@ class Main
 
 		script.errorHandler = onError;
 
+		RuleScript.resolveScript = resolveScript;
+
 		try
 		{
 			mathTest();
@@ -56,6 +59,7 @@ class Main
 
 	static function mathTest()
 	{
+		// Math
 		runScript('1 + 7', 1 + 7);
 		runScript('1 - 2', 1 - 2);
 		runScript('15 * 2', 15 * 2);
@@ -78,26 +82,36 @@ class Main
 
 	static function importAndUsingTest()
 	{
+		// Test object.
 		script.variables.set('a', {hello: 'world'});
 
+		// Import.
+		runScript('
+            Reflect.getProperty(a,"hello");
+        ', 'world');
+
+		// Import with alias.
 		runScript('
             import Reflect as AliasReflect;
 
             AliasReflect.getProperty(a,"hello");
         ', 'world');
 
+		// Class field import.
 		runScript('
             import Reflect.getProperty;
 
             getProperty(a,"hello");
         ', 'world');
 
+		// Class field import with alias.
 		runScript('
             import Reflect.getProperty as get;
 
             get(a,"hello");
         ', 'world');
 
+		// Using;
 		runScript('
             using Reflect;
             
@@ -149,6 +163,9 @@ class Main
 		runScript('
             test.HelloWorldAbstract.rulescriptPrint();
         ', HelloWorldAbstract.rulescriptPrint());
+
+		var module = script.getParser(HxParser).parseModule(File.getContent('scripts/abstracts/AbstractTest.rhx'));
+		trace(module);
 	}
 
 	static function typePathTest()
@@ -235,16 +252,19 @@ class Main
 	{
 		script.getParser(HxParser).mode = MODULE;
 
-		RuleScriptedClassUtil.registerRuleScriptedClass('ScriptedClass', script.getParser(HxParser).parse(File.getContent('scripts/haxe/ScriptedClass.rhx')));
-		RuleScriptedClassUtil.registerRuleScriptedClass('ScriptedClassStrict',
-			script.getParser(HxParser).parse(File.getContent('scripts/haxe/ScriptedClassStrict.rhx')));
+		// Get class
+		var cl = new Access(RuleScript.resolveScript('scriptedClass.RuleScriptedClass.ScriptedClassStrict'));
 
-		// Custom constructor can't have extra args
+		// Create Scripted class instance
+		var instance = cl.createInstance(['hello']);
 
-		new ScriptedClassTestStrict('ScriptedClassStrict', 'Script');
+		// Custom constructor can't have extra args, if it strict
+		new ScriptedClassTestStrict('scriptedClass.RuleScriptedClass.ScriptedClassStrict', 'Script');
 
 		var srcClass = new SrcClassTest<Hello<Int>, Int>('Src'),
-			scriptClass = new ScriptedClassTest('ScriptedClass', [4, 'Script']);
+			scriptClass = new ScriptedClassTest('scriptedClass.RuleScriptedClass.ScriptedClass', [4, 'Script']);
+
+		// Compare
 		trace(srcClass.info());
 		trace(scriptClass.info());
 
@@ -257,106 +277,116 @@ class Main
 		trace(srcClass.stringArray([new Hello<Int>(12)]));
 		trace(scriptClass.stringArray([new Hello<String>('hello')]));
 
+		trace(scriptClass);
+
 		if (scriptClass.variableExists('scriptFunction'))
 			trace(scriptClass.getVariable('scriptFunction')());
-
-		RuleScriptedClassUtil.buildBridge = customBuildRuleScript;
-
-		Sys.println('\n[Custom RuleScriptedClass Builder]\n');
-
-		var srcClass = new SrcClassTest<Hello<Int>, Int>('Src'),
-			scriptClass = new ScriptedClassTest('ScriptedClass', [1, 'Script']);
-		trace(srcClass.info());
-		trace(scriptClass.info());
 	}
 
-	public static function customBuildRuleScript(typeName:String, superInstance:Dynamic):RuleScript
+	public static function resolveScript(name:String):Dynamic
 	{
-		var rulescript = new rulescript.RuleScript();
-		rulescript.getParser(HxParser).allowAll();
-		rulescript.getParser(HxParser).mode = MODULE;
+		// Check if it has been parsed before.
 
-		rulescript.superInstance = superInstance;
-		rulescript.interp.skipNextRestore = true;
-		rulescript.execute(File.getContent('scripts/haxe/${typeName.replace('.', '/')}.rhx'));
-		return rulescript;
+		var cl = RuleScriptedClassUtil.getClass(name);
+		if (cl != null)
+			return cl;
+
+		// Parse type path.
+		var path:Array<String> = name.split('.');
+
+		var pack:Array<String> = [];
+
+		while (path[0].charAt(0) == path[0].charAt(0).toLowerCase())
+			pack.push(path.shift());
+
+		var moduleName:String = null;
+
+		if (path.length > 1)
+			moduleName = path.shift();
+
+		// Replace type path dots to slash.
+		var filePath = 'scripts/${(pack.length >= 1 ? pack.join('.') + '.' + (moduleName ?? path[0]) : path[0]).replace('.', '/')}.rhx';
+
+		// Check file.
+		if (!FileSystem.exists(filePath))
+			return null;
+
+		var typeName = path[0];
+
+		// Parse code.
+		var parser = new HxParser();
+		parser.allowAll();
+		parser.mode = MODULE;
+
+		var module:Array<ModuleDecl> = parser.parseModule(File.getContent(filePath));
+
+		// Remove other types, include packages, imports and etc.
+		var newModule:Array<ModuleDecl> = [];
+
+		var extend:String = null;
+
+		var classImpl:ClassDecl = null;
+
+		for (decl in module)
+		{
+			switch (decl)
+			{
+				case DPackage(_), DUsing(_), DImport(_):
+					newModule.push(decl);
+				case DClass(c):
+					if (c.name == typeName)
+					{
+						newModule.push(decl);
+
+						classImpl = c;
+
+						if (c.extend != null)
+						{
+							extend = new Printer().typeToString(c.extend);
+						}
+					}
+				default:
+			}
+		}
+
+		var obj:Null<ScriptedClass> = null;
+
+		if (classImpl != null)
+		{
+			obj = new ScriptedClass({
+				name: moduleName ?? path[0],
+				path: pack.join('.'),
+				decl: newModule
+			}, classImpl?.name);
+
+			RuleScriptedClassUtil.registerRuleScriptedClass(obj.toString(), obj);
+		}
+
+		return obj;
 	}
 
 	static function fileScriptTest()
 	{
 		script.getParser(HxParser).mode = DEFAULT;
-		runFileScript('haxe/PropertyTest.rhx');
-
-		runFileScript('haxe/StringInterpolation.rhx');
+		runFileScript('PropertyTest.rhx');
 
 		script.getParser(HxParser).mode = MODULE;
-		runFileScript('haxe/test.rhx');
+		runFileScript('test.rhx');
 
 		script.variables.get('main')();
 
 		var old = RuleScript.resolveScript;
 
-		RuleScript.resolveScript = function(name:String):Dynamic
-		{
-			if (!FileSystem.exists('scripts/haxe/${name.replace('.', '/')}.rhx'))
-				return null;
-
-			var parser = new HxParser();
-			parser.allowAll();
-			parser.mode = MODULE;
-
-			var module:Array<ModuleDecl> = parser.parseModule(File.getContent('scripts/haxe/${name.replace('.', '/')}.rhx'));
-
-			var newModule:Array<ModuleDecl> = [];
-
-			var extend:String = null;
-			for (decl in module)
-			{
-				switch (decl)
-				{
-					case DPackage(_), DUsing(_), DImport(_):
-						newModule.push(decl);
-					case DClass(c):
-						if (name.split('.').pop() == c.name)
-						{
-							newModule.push(decl);
-							if (c.extend != null)
-							{
-								extend = new Printer().typeToString(c.extend);
-							}
-						}
-					default:
-				}
-			}
-
-			var obj:Dynamic = null;
-
-			if (extend == null)
-			{
-				var script = new RuleScript();
-				script.execute(Tools.moduleDeclsToExpr(newModule));
-
-				obj = {};
-				for (key => value in script.variables)
-					Reflect.setField(obj, key, value);
-			}
-			else
-			{
-				var cl = Type.resolveClass(extend);
-				var f = function(args:Array<Dynamic>)
-				{
-					return Type.createInstance(cl, [name, args]);
-				}
-
-				obj = Reflect.makeVarArgs(f);
-			}
-
-			return obj;
-		}
-
-		runFileScript('haxe/importTest/ScriptImportTest.rhx');
+		runFileScript('importTest/ScriptImportTest.rhx');
 
 		script.variables.get('main')();
+
+		// Scripted class
+		var ScriptedClassC:Access = new Access(RuleScript.resolveScript('scriptedClass.ScriptedClass.ScriptedClassC'));
+
+		// Scripted class instance
+		var instance = ScriptedClassC.createInstance();
+		instance.hello();
 
 		RuleScript.resolveScript = old;
 	}

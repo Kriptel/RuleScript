@@ -3,7 +3,6 @@ package rulescript;
 import hscript.Expr;
 import rulescript.RuleScriptProperty.Property;
 import rulescript.scriptedClass.RuleScriptedClass;
-import sys.FileSystem;
 
 using rulescript.Tools;
 
@@ -163,27 +162,34 @@ class RuleScriptInterp extends hscript.Interp
 		switch (e)
 		{
 			case EPackage(path):
-				if (scriptPackage != '')
-					error(ECustom('Unexpected keyword "package"'));
-
 				scriptPackage = path;
 			case EImport(path, star, alias, func):
 				if (!star)
 				{
 					var name = alias ?? path.split('.').pop();
 
-					var t = resolveType(path);
+					var t:Dynamic = resolveType(path);
 
 					if (t == null)
 						error(ECustom('Type not found : $path'));
 
-					if (func != null && t is Class)
+					var value = if (func != null && t is Class)
 					{
-						var tag:String = alias ?? func;
-						imports.set(tag, (variables[tag] = Reflect.getProperty(t, func)));
+						name = alias ?? func;
+						Reflect.getProperty(t, func);
 					}
 					else
-						variables.set(name, t);
+						t;
+
+					imports.set(name, value);
+
+					if (depth == 0)
+						variables.set(name, value)
+					else
+					{
+						declared.push({n: name, old: locals.get(name)});
+						locals.set(name, {r: value});
+					}
 				}
 
 			case EUsing(path):
@@ -224,7 +230,6 @@ class RuleScriptInterp extends hscript.Interp
 					obj = get(obj, path[currentField]);
 
 				return obj;
-
 			case EMeta(name, args, e) if (onMeta != null):
 				return onMeta(name, args, e);
 			case EVar(n, _, e, global):
@@ -616,11 +621,19 @@ class RuleScriptInterp extends hscript.Interp
 		if (o == superInstance)
 			isSuperCall = true;
 
+		if (f == superInstance)
+			return call(o, resolve('__super_new'), args);
+
 		var result:Dynamic = super.call(o, f, args);
 
 		isSuperCall = false;
 
 		return result;
+	}
+
+	override function fcall(o:Dynamic, f:String, args:Array<Dynamic>):Dynamic
+	{
+		return call(o, ((o == superInstance && o is ScriptedInstance) ? resolve('__super_$f') : get(o, f)), args);
 	}
 
 	override function cnew(cl:String, args:Array<Dynamic>):Dynamic
@@ -630,7 +643,10 @@ class RuleScriptInterp extends hscript.Interp
 		c ??= RuleScript.resolveScript(cl);
 		c ??= resolve(cl);
 
-		return Reflect.Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : c is Class ? Type.createInstance(c, args) : c;
+		if (c is ScriptedClass)
+			return cast(scriptedClass, ScriptedClass).createInstance(args);
+
+		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : c is Class ? Type.createInstance(c, args) : c;
 	}
 
 	function set_errorHandler(v:haxe.Exception->Dynamic):haxe.Exception->Dynamic

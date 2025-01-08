@@ -17,7 +17,7 @@ class MacroTools
 
 		var pack:Array<String> = [];
 
-		while (path[0].charAt(0) == path[0].charAt(0).charAt(0).toLowerCase())
+		while (path[0].charAt(0) == path[0].charAt(0).toLowerCase())
 			pack.push(path.shift());
 
 		var module:String = null;

@@ -8,7 +8,7 @@ import haxe.macro.Type.ClassField;
 import haxe.macro.Type.ClassType;
 import rulescript.macro.MacroTools;
 
-class RuleScriptedClass
+class RuleScriptedClassMacro
 {
 	static var aliasMap:Map<String, haxe.macro.Type> = [];
 
@@ -19,7 +19,12 @@ class RuleScriptedClass
 
 		var typefields:Map<String, ClassField> = [];
 
-		var curType = Context.getLocalClass().get().superClass.t.get();
+		var curType = Context.getLocalClass().get();
+
+		if (curType.meta.has(':noBuild'))
+			return fields;
+
+		curType = curType.superClass.t.get();
 
 		var constructor = curType.constructor?.get();
 
@@ -72,21 +77,35 @@ class RuleScriptedClass
 		if (constructor.isFinal)
 			Context.error("Constructor can't be final in RuleScriptedClass", pos);
 
+		var strict = curType.meta.has(':strictScriptedConstructor') || curType.meta.has(':strictConstructor');
+
 		fields.push({
 			name: 'new',
 			access: [APublic],
-			kind: FFun(createConstructor(constructor, curType.meta.has(':strictScriptedConstructor'))),
+			kind: FFun(createConstructor(constructor, strict)),
+			pos: pos
+		});
+
+		fields.push({
+			name: '__rulescript_strict',
+			access: [AStatic, AFinal],
+			kind: FVar(macro :Bool, macro $v{strict}),
 			pos: pos
 		});
 
 		fields.push({
 			name: '__rulescript',
-			access: [],
+			access: [APublic],
 			kind: FVar(macro :rulescript.RuleScript),
-			pos: pos
+			pos: pos,
+			meta: [{name: ':noCompletion', pos: pos}]
 		});
 
 		var functions = [
+			'getVariables' => macro function():Map<String, Dynamic>
+			{
+				return __rulescript.variables;
+			},
 			'variableExists' => macro function(name:String):Bool
 			{
 				return __rulescript.variables.exists(name);
@@ -115,8 +134,6 @@ class RuleScriptedClass
 	static function createConstructor(constructor:ClassField, strict:Bool = false):Function
 	{
 		var args = null;
-
-		var ret = null;
 
 		switch (constructor.type)
 		{
@@ -197,7 +214,8 @@ class RuleScriptedClass
 									switch (rulescript.Tools.getExpr(expr))
 									{
 										case ECall(e, _):
-											if (rulescript.Tools.getExpr(e).match(EIdent('super'))) break;
+											if (rulescript.Tools.getExpr(e).match(EIdent('super')))
+												break;
 										default:
 											null;
 									}
