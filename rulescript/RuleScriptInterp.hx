@@ -644,7 +644,7 @@ class RuleScriptInterp extends hscript.Interp
 		c ??= resolve(cl);
 
 		if (c is ScriptedClass)
-			return cast(scriptedClass, ScriptedClass).createInstance(args);
+			return cast(c, ScriptedClass).createInstance(args);
 
 		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : c is Class ? Type.createInstance(c, args) : c;
 	}

@@ -375,8 +375,6 @@ class Main
 
 		script.variables.get('main')();
 
-		var old = RuleScript.resolveScript;
-
 		runFileScript('importTest/ScriptImportTest.rhx');
 
 		script.variables.get('main')();
@@ -387,8 +385,6 @@ class Main
 		// Scripted class instance
 		var instance = ScriptedClassC.createInstance();
 		instance.hello();
-
-		RuleScript.resolveScript = old;
 	}
 
 	static function runScript(code:String, ?value:Dynamic)

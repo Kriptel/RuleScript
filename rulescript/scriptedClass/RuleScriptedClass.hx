@@ -2,7 +2,6 @@ package rulescript.scriptedClass;
 
 import hscript.Expr.ClassDecl;
 import hscript.Expr.ModuleDecl;
-import test.ScriptedClassTest.ScriptedClassTestStrict;
 
 @:autoBuild(rulescript.macro.RuleScriptedClassMacro.build())
 interface RuleScriptedClass
