@@ -155,8 +155,8 @@ class Tools
 		#if hscriptPos
 		return {
 			e: EBlock(fields),
-			pmin: fields[0].pmin,
-			pmax: fields[fields.length - 1].pmax,
+			pmin: fields[0]?.pmin ?? 0,
+			pmax: fields[fields.length - 1]?.pmax ?? 0,
 			origin: 'rulescript',
 			line: 0
 		};
