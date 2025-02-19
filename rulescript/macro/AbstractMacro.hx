@@ -90,7 +90,7 @@ class AbstractMacro
 							default:
 						}
 
-						if (isStatic)
+						if (!field.kind.match(FVar(AccCall, _)) && isStatic)
 							{
 								field: field.name,
 								expr: macro @:privateAccess $p{'${classPath.fullPath}.${field.name}'.split('.')}
