@@ -50,6 +50,7 @@ class Main
 			moduleTest();
 			scriptClassesTest();
 			fileScriptTest();
+			enumTest();
 		}
 		catch (e)
 			trace(e?.details());
@@ -385,6 +386,15 @@ class Main
 		// Scripted class instance
 		var instance = ScriptedClassC.createInstance();
 		instance.hello();
+	}
+
+	static function enumTest()
+	{
+		script.getParser(HxParser).mode = DEFAULT;
+
+		runScript("test.TestEnum.HELLO", test.TestEnum.HELLO);
+
+		runScript("a = test.TestEnum.RULESCRIPT(1.2)", () -> test.TestEnum.RULESCRIPT(1.2).equals(script.variables['a']));
 	}
 
 	static function runScript(code:String, ?value:Dynamic)

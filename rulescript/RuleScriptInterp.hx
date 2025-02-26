@@ -205,16 +205,21 @@ class RuleScriptInterp extends hscript.Interp
 
 				if (!locals.exists(id) && !variables.exists(id))
 				{
-					var typePath = path.join('.');
+					final typePath:String = path.join('.');
 
 					if (typePaths.exists(typePath))
-					{
 						return typePaths[typePath];
-					}
 					else
 					{
-						var type:Dynamic = resolveType(typePath);
-						return typePaths[typePath] = type;
+						final type:Dynamic = resolveType(typePath);
+						if (type != null)
+							return typePaths[typePath] = type;
+						else
+						{
+							final field = typePath.substring(typePath.lastIndexOf('.') + 1);
+
+							return typePaths[typePath] = get(resolveType(typePath.substring(0, typePath.lastIndexOf('.'))), field);
+						}
 					}
 				}
 
@@ -503,9 +508,13 @@ class RuleScriptInterp extends hscript.Interp
 
 		t ??= Abstracts.resolveAbstract(path);
 
-		#if interp t = Tools.isEmptyClass(t) ? null : t; #end
+		if (shortPath != null)
+			t ??= Abstracts.resolveAbstract(shortPath);
 
 		t ??= Type.resolveEnum(path);
+
+		if (shortPath != null)
+			t ??= Type.resolveEnum(shortPath);
 
 		return t;
 	}
@@ -555,6 +564,17 @@ class RuleScriptInterp extends hscript.Interp
 	 */
 	override function get(o:Dynamic, f:String):Dynamic
 	{
+		if (o is Enum)
+		{
+			if (Type.getEnumConstructs(o).contains(f))
+			{
+				return if (Type.allEnums(o).map(_ -> Std.string(_)).contains(f))
+					Type.createEnum(o, f);
+				else
+					Reflect.makeVarArgs((args:Array<Dynamic>) -> Type.createEnum(o, f, args));
+			}
+		}
+
 		if (o == this)
 		{
 			if (variables.exists(f))
