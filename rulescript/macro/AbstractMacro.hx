@@ -78,7 +78,7 @@ class AbstractMacro
 		var value:Expr = {
 			expr: EObjectDecl([
 				for (field in type.impl.get().statics.get())
-					if (!field.meta.has(':ignoreField'))
+					if (!field.meta.has(':ignoreField') && field.name != '_new')
 					{
 						var isStatic:Bool = true;
 
