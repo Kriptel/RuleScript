@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Enum constructors (with and without arguments).
-- setParameters function to HxParser
+- setParameters function to HxParser.
 - rulescript.parsers.HxParser.HxParserParams type.
 - `__rulescript_strict` field adds to classes with the RuleScriptedClass interface.
 - `:alias` metadata for abstracts.
@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `allowPackage`, `allowImport`, `allowUsing` variables to HxParser.
 
 ### Fixed
-- Fixed abstracts resolve.
+- Some compilation errors in AbstractMacro.
+- Abstracts resolve.
 - Fixed missing static modifier for the HxParser.defaultPreprocesorValues ​​field.
 
 ### Changed

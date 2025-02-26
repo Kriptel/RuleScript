@@ -82,7 +82,7 @@ class AbstractMacro
 					{
 						var isStatic:Bool = true;
 
-						switch (field.expr().expr)
+						switch (field.expr()?.expr)
 						{
 							case TFunction(f):
 								if (f.args[0] != null && f.args[0].v.name == 'this')
