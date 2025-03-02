@@ -6,73 +6,73 @@ import Math as HlMath;
 class Math
 {
 	public static function sqrt(v:Float):Float
-		return HlMath.sqrt(v);
+		return inline HlMath.sqrt(v);
 
 	public static function abs(v:Float):Float
-		return HlMath.abs(v);
+		return inline HlMath.abs(v);
 
 	public static function floor(v:Float):Int
-		return HlMath.floor(v);
+		return inline HlMath.floor(v);
 
 	public static function round(v:Float):Int
-		return HlMath.round(v);
+		return inline HlMath.round(v);
 
 	public static function ceil(v:Float):Int
-		return HlMath.ceil(v);
+		return inline HlMath.ceil(v);
 
 	public static function isFinite(f:Float):Bool
-		return HlMath.isFinite(f);
+		return inline HlMath.isFinite(f);
 
 	public static function isNaN(f:Float):Bool
-		return HlMath.isNaN(f);
+		return inline HlMath.isNaN(f);
 
 	public static function ffloor(v:Float):Float
-		return HlMath.ffloor(v);
+		return inline HlMath.ffloor(v);
 
 	public static function fround(v:Float):Float
-		return HlMath.fround(v);
+		return inline HlMath.fround(v);
 
 	public static function fceil(v:Float):Float
-		return HlMath.fceil(v);
+		return inline HlMath.fceil(v);
 
 	public static function cos(v:Float):Float
-		return HlMath.cos(v);
+		return inline HlMath.cos(v);
 
 	public static function sin(v:Float):Float
-		return HlMath.sin(v);
+		return inline HlMath.sin(v);
 
 	public static function exp(v:Float):Float
-		return HlMath.exp(v);
+		return inline HlMath.exp(v);
 
 	public static function log(v:Float):Float
-		return HlMath.log(v);
+		return inline HlMath.log(v);
 
 	public static function tan(v:Float):Float
-		return HlMath.tan(v);
+		return inline HlMath.tan(v);
 
 	public static function atan(v:Float):Float
-		return HlMath.atan(v);
+		return inline HlMath.atan(v);
 
 	public static function acos(v:Float):Float
-		return HlMath.acos(v);
+		return inline HlMath.acos(v);
 
 	public static function asin(v:Float):Float
-		return HlMath.asin(v);
+		return inline HlMath.asin(v);
 
 	public static function pow(v:Float, exp:Float):Float
-		return HlMath.pow(v, exp);
+		return inline HlMath.pow(v, exp);
 
 	public static function atan2(y:Float, x:Float):Float
-		return HlMath.atan2(y, x);
+		return inline HlMath.atan2(y, x);
 
 	public static function random():Float
-		return HlMath.random();
+		return inline HlMath.random();
 
 	public static function min(a:Float, b:Float):Float
-		return HlMath.min(a, b);
+		return inline HlMath.min(a, b);
 
 	public static function max(a:Float, b:Float):Float
-		return HlMath.max(a, b);
+		return inline HlMath.max(a, b);
 
 	public static var PI:Float = HlMath.PI;
 	public static var NaN:Float = HlMath.NaN;

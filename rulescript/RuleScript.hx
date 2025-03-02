@@ -1,7 +1,6 @@
 package rulescript;
 
 import hscript.Expr;
-import rulescript.Tools;
 import rulescript.parsers.*;
 
 /**

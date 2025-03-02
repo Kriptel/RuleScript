@@ -395,6 +395,9 @@ class Main
 		runScript("test.TestEnum.HELLO", test.TestEnum.HELLO);
 
 		runScript("a = test.TestEnum.RULESCRIPT(1.2)", () -> test.TestEnum.RULESCRIPT(1.2).equals(script.variables['a']));
+
+		var module = script.getParser(HxParser).parseModule(File.getContent('scripts/enumTest/EnumTest.rhx'));
+		trace(module);
 	}
 
 	static function runScript(code:String, ?value:Dynamic)

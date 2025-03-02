@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Type parameters parse.
+- Enum parse to HxParser.
 - Enum constructors (with and without arguments).
 - setParameters function to HxParser.
 - rulescript.parsers.HxParser.HxParserParams type.
@@ -21,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `allowPackage`, `allowImport`, `allowUsing` variables to HxParser.
 
 ### Fixed
+- Error when calling methods with 9 or more arguments in Hashlink target (now limit is 12 arguments).
 - Some compilation errors in AbstractMacro.
 - Abstracts resolve.
 - Fixed missing static modifier for the HxParser.defaultPreprocesorValues ​​field.
@@ -33,7 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Converter macro.
 
 ### Deprecated
-- HScriptParserPlus.
 - HScriptParserPlus.
 
 ## [0.2.0] 2024.12.07

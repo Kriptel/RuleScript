@@ -2,6 +2,7 @@ package rulescript.parsers;
 
 import hscript.Expr;
 import hscript.Parser.Token;
+import rulescript.types.EnumDecl.EnumField;
 
 using StringTools;
 using rulescript.Tools;
@@ -1123,7 +1124,10 @@ private class HScriptParser extends hscript.Parser
 					switch (t)
 					{
 						case TId("extends"):
-							extend = parseType();
+							if (extend != null)
+								unexpected(t);
+							else
+								extend = parseType();
 						case TId("implements"):
 							implement.push(parseType());
 						default:
@@ -1205,10 +1209,81 @@ private class HScriptParser extends hscript.Parser
 					from: from,
 					fields: fields
 				});
+			case 'enum':
+				var name = getIdent();
+				var params = parseParameters();
+
+				var constructs:Map<String, EnumField> = [];
+				var names:Array<String> = [];
+
+				ensure(TBrOpen);
+
+				var id:Int = 0;
+				while (!maybe(TBrClose))
+				{
+					var meta = parseMetadata();
+					var name:String = getIdent();
+					var params:Array<CType> = parseParameters();
+					var type:FieldKind = null;
+
+					if (maybe(TPOpen))
+						type = KFunction({args: parseFunctionArgs(), expr: null, ret: null});
+
+					ensure(TSemicolon);
+
+					var field:EnumField = {
+						name: name,
+						type: type,
+						meta: meta,
+						index: id++,
+						params: params,
+					}
+
+					constructs[name] = field;
+					names.push(name);
+				}
+
+				return DEnum({
+					meta: meta,
+					name: name,
+					params: params,
+					isPrivate: isPrivate,
+					isExtern: isExtern,
+					constructs: constructs,
+					names: names
+				});
 			default:
 				unexpected(TId(ident));
 		}
 		return null;
+	}
+
+	override function parseParams():{}
+	{
+		return parseParameters();
+	}
+
+	function parseParameters():Array<CType>
+	{
+		final params:Array<CType> = [];
+
+		if (maybe(TOp('<')))
+		{
+			while (true)
+			{
+				params.push(parseType());
+				switch (token())
+				{
+					case TComma:
+					case TOp('>'):
+						break;
+					case tk:
+						unexpected(tk);
+				}
+			}
+		}
+
+		return params;
 	}
 
 	@:deprecated('rulescript.parsers.HxParser.HScriptParserPlus.moduleDeclsToExpr was moved to rulescript.Tools.moduleDeclsToExpr')

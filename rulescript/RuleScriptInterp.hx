@@ -191,7 +191,6 @@ class RuleScriptInterp extends hscript.Interp
 						locals.set(name, {r: value});
 					}
 				}
-
 			case EUsing(path):
 				var t:Dynamic = resolveType(path);
 
@@ -644,7 +643,11 @@ class RuleScriptInterp extends hscript.Interp
 		if (f == superInstance)
 			return call(o, resolve('__super_new'), args);
 
-		var result:Dynamic = super.call(o, f, args);
+		#if hl
+		final result:Dynamic = Tools.__hl_callMethod(f, args);
+		#else
+		final result:Dynamic = super.call(o, f, args);
+		#end
 
 		isSuperCall = false;
 
@@ -666,7 +669,11 @@ class RuleScriptInterp extends hscript.Interp
 		if (c is ScriptedClass)
 			return cast(c, ScriptedClass).createInstance(args);
 
+		#if hl
+		return Reflect.isFunction(c) ? Tools.__hl_callMethod(c, args) : c is Class ? Tools.__hl_createInstance(c, args) : c;
+		#else
 		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : c is Class ? Type.createInstance(c, args) : c;
+		#end
 	}
 
 	function set_errorHandler(v:haxe.Exception->Dynamic):haxe.Exception->Dynamic

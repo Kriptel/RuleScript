@@ -37,6 +37,8 @@ class Tools
 			i--;
 		}
 		return Reflect.callMethod(o, f, args);
+		#elseif hl
+		return __hl_callMethod(f, [o, a1, a2, a3, a4, a5, a6, a7, a8]);
 		#else
 		return Reflect.callMethod(o, f, [o, a1, a2, a3, a4, a5, a6, a7, a8]);
 		#end
@@ -164,4 +166,63 @@ class Tools
 		return EBlock(fields);
 		#end
 	}
+
+	#if hl
+	@:noCompletion @:allow(rulescript.RuleScriptInterp) inline static function __hl_callMethod(func:haxe.Constraints.Function, args:Array<Dynamic>):Dynamic
+	{
+		final ft = hl.Type.getDynamic(func);
+		if (ft.kind != HFun)
+			throw "Invalid function " + func;
+
+		final need = ft.getArgsCount();
+
+		if (need > 8)
+			return rulescript.macro.CallMethodMacro.__hl_callMethod();
+
+		final args:hl.types.ArrayDyn = cast args;
+
+		final count = args.length;
+		var nargs = count < need ? need : count;
+		var cval:Dynamic = hl.Api.getClosureValue(func);
+		if (cval != null)
+		{
+			func = hl.Api.noClosure(func);
+			nargs++;
+		}
+
+		var a = new hl.NativeArray<Dynamic>(nargs);
+		if (cval == null)
+		{
+			for (i in 0...count)
+				a[i] = args.getDyn(i);
+		}
+		else
+		{
+			a[0] = cval;
+			for (i in 0...count)
+				a[i + 1] = args.getDyn(i);
+		}
+		return hl.Api.callMethod(func, a);
+	}
+
+	public static function __hl_createInstance<T>(cl:Class<T>, args:Array<Dynamic>):T
+	{
+		final c:hl.BaseType.Class = cast cl;
+
+		final t = c.__type__;
+		if (t == hl.Type.get((null : hl.types.ArrayBase.ArrayAccess)))
+			return cast new Array<Dynamic>();
+
+		final o = t.allocObject();
+		if (c.__constructor__ != null)
+		{
+			final v:Dynamic = hl.Api.noClosure(c.__constructor__);
+			final args = args.copy();
+			args.unshift(o);
+			__hl_callMethod(v, args);
+		}
+
+		return o;
+	}
+	#end
 }

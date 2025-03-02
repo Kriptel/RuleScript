@@ -73,7 +73,8 @@ class ExprMacro
 		var newFields:Map<String, Expr> = [
 			'DImport' => macro function(name:Array<String>, star:Bool, ?alias:String, ?func:String) {},
 			'DUsing' => macro function(name:String) {},
-			'DAbstract' => macro function(c:rulescript.Abstracts.AbstractDecl) {}
+			'DAbstract' => macro function(c:rulescript.Abstracts.AbstractDecl) {},
+			'DEnum' => macro function(c:rulescript.types.EnumDecl) {}
 		];
 
 		for (key => value in newFields)
@@ -81,7 +82,7 @@ class ExprMacro
 				name: key,
 				access: [],
 				kind: FFun(MacroTools.toFunction(value)),
-				pos: pos,
+				pos: pos
 			});
 
 		return fields;

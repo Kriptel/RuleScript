@@ -94,6 +94,14 @@ class RuleScriptedClassMacro
 		});
 
 		fields.push({
+			name: '__rulescript_type',
+			access: [APublic],
+			kind: FProp('get', 'never', macro :rulescript.types.ScriptedType.TypeID),
+			pos: pos,
+			meta: [{name: ':noCompletion', pos: pos}]
+		});
+
+		fields.push({
 			name: '__rulescript',
 			access: [APublic],
 			kind: FVar(macro :rulescript.RuleScript),
@@ -117,6 +125,10 @@ class RuleScriptedClassMacro
 			'setVariable' => macro function(name:String, value:Dynamic):Dynamic
 			{
 				return __rulescript.variables[name] = value;
+			},
+			'get___rulescript_type' => macro function():rulescript.types.ScriptedType.TypeID
+			{
+				return rulescript.types.ScriptedType.TypeID.CLASS;
 			}
 		];
 

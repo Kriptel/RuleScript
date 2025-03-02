@@ -2,9 +2,10 @@ package rulescript.scriptedClass;
 
 import hscript.Expr.ClassDecl;
 import hscript.Expr.ModuleDecl;
+import rulescript.types.ScriptedType;
 
 @:autoBuild(rulescript.macro.RuleScriptedClassMacro.build())
-interface RuleScriptedClass
+interface RuleScriptedClass extends ScriptedType
 {
 	function getVariables():Map<String, Dynamic>;
 	function variableExists(name:String):Bool;
@@ -131,6 +132,13 @@ typedef ScriptedModule =
 			throw '$superClass cannot be constructed';
 	}
 
+	@:noCompletion public var __rulescript_type(get, never):TypeID;
+
+	private function get___rulescript_type():TypeID
+	{
+		return CLASS;
+	}
+
 	public function createInstance(?args:Array<Dynamic>):Dynamic
 	{
 		return constructor(args ?? []);
@@ -217,6 +225,13 @@ typedef ScriptedModule =
 				Reflect.callMethod(this, getVariable('new'), args);
 			else
 				throw '${cl.pack + '.' + cl.impl.name} does not have a constructor';
+	}
+
+	@:noCompletion public var __rulescript_type(get, never):TypeID;
+
+	private function get___rulescript_type():TypeID
+	{
+		return CLASS;
 	}
 
 	public function getVariables():Map<String, Dynamic>
