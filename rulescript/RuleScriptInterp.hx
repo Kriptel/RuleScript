@@ -10,8 +10,7 @@ using rulescript.Tools;
 import haxe.ds.StringMap;
 #end
 
-class RuleScriptInterp extends hscript.Interp
-{
+class RuleScriptInterp extends hscript.Interp {
 	public var scriptName:String;
 
 	public var scriptPackage(default, set):String = '';
@@ -26,12 +25,11 @@ class RuleScriptInterp extends hscript.Interp
 	public var isSuperCall:Bool = false;
 
 	public var hasErrorHandler:Bool = false;
-	public var errorHandler(default, set):haxe.Exception->Dynamic;
+	public var errorHandler(default, set):haxe.Exception->Void;
 
 	var typePaths:Map<String, Dynamic> = [];
 
-	override private function resetVariables():Void
-	{
+	override private function resetVariables():Void {
 		super.resetVariables();
 
 		scriptPackage = '';
@@ -41,8 +39,7 @@ class RuleScriptInterp extends hscript.Interp
 		typePaths = [];
 	}
 
-	override public function posInfos():haxe.PosInfos
-	{
+	override public function posInfos():haxe.PosInfos {
 		#if hscriptPos
 		if (curExpr != null)
 			return cast {fileName: scriptName ?? curExpr.origin, lineNumber: curExpr.line};
@@ -53,15 +50,13 @@ class RuleScriptInterp extends hscript.Interp
 		};
 	}
 
-	override function initOps()
-	{
+	override function initOps() {
 		super.initOps();
 		binops.set("??", (e1, e2) -> this.expr(e1) ?? this.expr(e2));
 		assignOp("??=", function(v1:Dynamic, v2:Dynamic) return v1 ?? v2);
 	}
 
-	override function resolve(id:String):Dynamic
-	{
+	override function resolve(id:String):Dynamic {
 		if (id == 'this')
 			return this;
 
@@ -78,17 +73,14 @@ class RuleScriptInterp extends hscript.Interp
 		return v;
 	}
 
-	override function assign(e1:Expr, e2:Expr):Dynamic
-	{
+	override function assign(e1:Expr, e2:Expr):Dynamic {
 		var v = expr(e2);
-		switch (hscript.Tools.expr(e1))
-		{
+		switch (hscript.Tools.expr(e1)) {
 			case EIdent(id):
 				var l = locals.get(id);
 				if (l == null)
 					setVar(id, v);
-				else
-				{
+				else {
 					if (l.r is RuleScriptProperty)
 						cast(l.r, RuleScriptProperty).value = v;
 					else
@@ -99,12 +91,9 @@ class RuleScriptInterp extends hscript.Interp
 			case EArray(e, index):
 				var arr:Dynamic = expr(e);
 				var index:Dynamic = expr(index);
-				if (isMap(arr))
-				{
+				if (isMap(arr)) {
 					setMapValue(arr, index, v);
-				}
-				else
-				{
+				} else {
 					arr[index] = v;
 				}
 
@@ -114,12 +103,10 @@ class RuleScriptInterp extends hscript.Interp
 		return v;
 	}
 
-	override function setVar(name:String, v:Dynamic)
-	{
+	override function setVar(name:String, v:Dynamic) {
 		if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
 			Reflect.setProperty(superInstance, name, v);
-		else
-		{
+		else {
 			var lastValue = variables.get(name);
 
 			if (lastValue is RuleScriptProperty)
@@ -129,20 +116,15 @@ class RuleScriptInterp extends hscript.Interp
 		}
 	}
 
-	inline private function getScriptProp(v:Dynamic):Dynamic
-	{
+	inline private function getScriptProp(v:Dynamic):Dynamic {
 		return v is RuleScriptProperty ? cast(v, RuleScriptProperty).value : v;
 	}
 
-	override function exprReturn(e):Dynamic
-	{
+	override function exprReturn(e):Dynamic {
 		if (!inTry && hasErrorHandler)
-			try
-			{
+			try {
 				return super.exprReturn(e);
-			}
-			catch (exception:haxe.Exception)
-			{
+			} catch (exception:haxe.Exception) {
 				errorHandler(exception);
 			}
 		else
@@ -150,8 +132,7 @@ class RuleScriptInterp extends hscript.Interp
 		return null;
 	}
 
-	override public function expr(expr:Expr):Dynamic
-	{
+	override public function expr(expr:Expr):Dynamic {
 		#if hscriptPos
 		curExpr = expr;
 		var e:ExprDef = expr.e;
@@ -159,13 +140,11 @@ class RuleScriptInterp extends hscript.Interp
 		var e:Expr = expr;
 		#end
 
-		switch (e)
-		{
+		switch (e) {
 			case EPackage(path):
 				scriptPackage = path;
 			case EImport(path, star, alias, func):
-				if (!star)
-				{
+				if (!star) {
 					var name = alias ?? path.split('.').pop();
 
 					var t:Dynamic = resolveType(path);
@@ -173,20 +152,16 @@ class RuleScriptInterp extends hscript.Interp
 					if (t == null)
 						error(ECustom('Type not found : $path'));
 
-					var value = if (func != null && t is Class)
-					{
+					var value = if (func != null && t is Class) {
 						name = alias ?? func;
 						Reflect.getProperty(t, func);
-					}
-					else
-						t;
+					} else t;
 
 					imports.set(name, value);
 
 					if (depth == 0)
 						variables.set(name, value)
-					else
-					{
+					else {
 						declared.push({n: name, old: locals.get(name)});
 						locals.set(name, {r: value});
 					}
@@ -202,19 +177,16 @@ class RuleScriptInterp extends hscript.Interp
 			case ETypeVarPath(path):
 				var id:String = path[0];
 
-				if (!locals.exists(id) && !variables.exists(id))
-				{
+				if (!locals.exists(id) && !variables.exists(id)) {
 					final typePath:String = path.join('.');
 
 					if (typePaths.exists(typePath))
 						return typePaths[typePath];
-					else
-					{
+					else {
 						final type:Dynamic = resolveType(typePath);
 						if (type != null)
 							return typePaths[typePath] = type;
-						else
-						{
+						else {
 							final field = typePath.substring(typePath.lastIndexOf('.') + 1);
 
 							return typePaths[typePath] = get(resolveType(typePath.substring(0, typePath.lastIndexOf('.'))), field);
@@ -239,8 +211,7 @@ class RuleScriptInterp extends hscript.Interp
 			case EVar(n, _, e, global):
 				if (global)
 					variables.set(n, (e == null) ? null : this.expr(e));
-				else
-				{
+				else {
 					declared.push({n: n, old: locals.get(n)});
 					locals.set(n, {r: (e == null) ? null : this.expr(e)});
 				}
@@ -249,8 +220,7 @@ class RuleScriptInterp extends hscript.Interp
 				var prop = createScriptProperty(n, g, s, type);
 				if (global)
 					variables.set(n, prop);
-				else
-				{
+				else {
 					declared.push({n: n, old: locals.get(n)});
 					locals.set(n, {r: prop});
 				}
@@ -270,11 +240,9 @@ class RuleScriptInterp extends hscript.Interp
 				return null;
 			case ECall(e, params):
 				var args = new Array();
-				for (p in params)
-				{
+				for (p in params) {
 					if (p.getExpr().match(EUnop('...', true, _)))
-						for (arg in cast(this.expr(switch (p.getExpr())
-						{
+						for (arg in cast(this.expr(switch (p.getExpr()) {
 							case EUnop(op, prefix, e): e;
 							default: null;
 						}), Array<Dynamic>))
@@ -283,8 +251,7 @@ class RuleScriptInterp extends hscript.Interp
 						args.push(this.expr(p));
 				}
 
-				switch (hscript.Tools.expr(e))
-				{
+				switch (hscript.Tools.expr(e)) {
 					case EField(e, f):
 						var obj = this.expr(e);
 						if (obj == null)
@@ -300,10 +267,8 @@ class RuleScriptInterp extends hscript.Interp
 				var capturedLocals = duplicate(locals);
 				var me = this;
 				var hasOpt:Bool = false, hasRest:Bool = false, minParams = 0;
-				for (p in params)
-				{
-					if (p.t.match(CTPath(["haxe", "Rest"], _)))
-					{
+				for (p in params) {
+					if (p.t.match(CTPath(["haxe", "Rest"], _))) {
 						if (params.indexOf(p) == params.length - 1)
 							hasRest = true;
 						else
@@ -316,12 +281,9 @@ class RuleScriptInterp extends hscript.Interp
 						minParams++;
 				}
 
-				var f = function(args:Array<Dynamic>)
-				{
-					if (((args == null) ? 0 : args.length) != params.length)
-					{
-						if (args.length < minParams && (!hasRest && args.length + 1 < minParams))
-						{
+				var f = function(args:Array<Dynamic>) {
+					if (((args == null) ? 0 : args.length) != params.length) {
+						if (args.length < minParams && (!hasRest && args.length + 1 < minParams)) {
 							var str = "Invalid number of parameters. Got " + args.length + ", required " + minParams;
 							if (name != null)
 								str += " for function '" + name + "'";
@@ -331,29 +293,22 @@ class RuleScriptInterp extends hscript.Interp
 						var args2 = [];
 						var extraParams = args.length - minParams;
 						var pos = 0;
-						for (p in params)
-						{
+						for (p in params) {
 							if (hasRest && p.t.match(CTPath(["haxe", "Rest"], _)))
 								args2.push([for (i in pos...args.length) args[i]]);
-							else
-							{
-								if (p.opt)
-								{
-									if (extraParams > 0)
-									{
+							else {
+								if (p.opt) {
+									if (extraParams > 0) {
 										args2.push(args[pos++]);
 										extraParams--;
-									}
-									else
+									} else
 										args2.push(null);
-								}
-								else
+								} else
 									args2.push(args[pos++]);
 							}
 						}
 						args = args2;
-					}
-					else if (hasRest)
+					} else if (hasRest)
 						args.push([args.pop()]);
 
 					var old = me.locals, depth = me.depth;
@@ -364,12 +319,9 @@ class RuleScriptInterp extends hscript.Interp
 					var r = null;
 					var oldDecl = declared.length;
 					if (inTry)
-						try
-						{
+						try {
 							r = me.exprReturn(fexpr);
-						}
-						catch (e:Dynamic)
-						{
+						} catch (e:Dynamic) {
 							restore(oldDecl);
 							me.locals = old;
 							me.depth = depth;
@@ -387,8 +339,7 @@ class RuleScriptInterp extends hscript.Interp
 					return r;
 				};
 				#if hl
-				var f:Dynamic = switch (params.length)
-				{
+				var f:Dynamic = switch (params.length) {
 					case 0:
 						() -> f([]);
 					case 1:
@@ -412,15 +363,11 @@ class RuleScriptInterp extends hscript.Interp
 				var f = Reflect.makeVarArgs(f);
 				#end
 
-				if (name != null)
-				{
-					if (depth == 0)
-					{
+				if (name != null) {
+					if (depth == 0) {
 						// global function
 						variables.set(name, f);
-					}
-					else
-					{
+					} else {
 						// function-in-function is a local function
 						declared.push({n: name, old: locals.get(name)});
 						var ref = {r: f};
@@ -436,10 +383,8 @@ class RuleScriptInterp extends hscript.Interp
 		return null;
 	}
 
-	function createScriptProperty(n:String, g:String, s:String, type:Null<CType>)
-	{
-		var getter:Property = switch (g)
-		{
+	function createScriptProperty(n:String, g:String, s:String, type:Null<CType>) {
+		var getter:Property = switch (g) {
 			case 'default':
 				DEFAULT;
 			case 'get':
@@ -454,8 +399,7 @@ class RuleScriptInterp extends hscript.Interp
 				error(ECustom('$n: Custom property accessor is no longer supported, please use `get`'));
 		}
 
-		var setter:Property = switch (s)
-		{
+		var setter:Property = switch (s) {
 			case 'default':
 				DEFAULT;
 			case 'set':
@@ -475,8 +419,7 @@ class RuleScriptInterp extends hscript.Interp
 		return prop;
 	}
 
-	function resolveType(path:String):Dynamic
-	{
+	function resolveType(path:String):Dynamic {
 		var t:Dynamic = RuleScript.resolveScript(path);
 
 		if (t != null)
@@ -484,11 +427,9 @@ class RuleScriptInterp extends hscript.Interp
 
 		var shortPath:String = null;
 
-		if (StringTools.contains(path, '.'))
-		{
+		if (StringTools.contains(path, '.')) {
 			var _shortPath = path.split('.');
-			if (_shortPath.length > 1)
-			{
+			if (_shortPath.length > 1) {
 				_shortPath.remove(_shortPath[_shortPath.length - 2]);
 				shortPath = _shortPath.join('.');
 			}
@@ -498,8 +439,7 @@ class RuleScriptInterp extends hscript.Interp
 
 		#if interp t = Tools.isEmptyClass(t) ? null : t; #end
 
-		if (t == null && shortPath != null)
-		{
+		if (t == null && shortPath != null) {
 			t = Type.resolveClass(shortPath);
 
 			#if interp t = Tools.isEmptyClass(t) ? null : t; #end
@@ -518,8 +458,7 @@ class RuleScriptInterp extends hscript.Interp
 		return t;
 	}
 
-	function makeKeyValueIterator(v:Dynamic)
-	{
+	function makeKeyValueIterator(v:Dynamic) {
 		#if ((flash && !flash9) || (php && !php7 && haxe_ver < '4.0.0'))
 		if (v.keyValueIterator != null)
 			v = v.keyValueIterator();
@@ -538,16 +477,14 @@ class RuleScriptInterp extends hscript.Interp
 		return v;
 	}
 
-	function forLoopKeyValue(key:String, value:String, it:Expr, e:Expr)
-	{
+	function forLoopKeyValue(key:String, value:String, it:Expr, e:Expr) {
 		var old = declared.length;
 
 		declared.push({n: key, old: locals.get(key)});
 		declared.push({n: value, old: locals.get(value)});
 
 		var it:{hasNext:() -> Bool, next:() -> Dynamic} = makeKeyValueIterator(expr(it));
-		while (it.hasNext())
-		{
+		while (it.hasNext()) {
 			var itNext = it.next();
 			locals.set(key, {r: itNext.key});
 			locals.set(value, {r: itNext.value});
@@ -561,21 +498,16 @@ class RuleScriptInterp extends hscript.Interp
 	 * hasField not works for properties
 	 * If getProperty object is null, interp tries to get prop from usings
 	 */
-	override function get(o:Dynamic, f:String):Dynamic
-	{
-		if (o is Enum)
-		{
-			if (Type.getEnumConstructs(o).contains(f))
-			{
-				return if (Type.allEnums(o).map(_ -> Std.string(_)).contains(f))
-					Type.createEnum(o, f);
-				else
-					Reflect.makeVarArgs((args:Array<Dynamic>) -> Type.createEnum(o, f, args));
+	override function get(o:Dynamic, f:String):Dynamic {
+		if (o is Enum) {
+			if (Type.getEnumConstructs(o).contains(f)) {
+				return if (Type.allEnums(o)
+					.map(_ -> Std.string(_))
+					.contains(f)) Type.createEnum(o, f); else Reflect.makeVarArgs((args:Array<Dynamic>) -> Type.createEnum(o, f, args));
 			}
 		}
 
-		if (o == this)
-		{
+		if (o == this) {
 			if (variables.exists(f))
 				return getScriptProp(variables.get(f));
 			else
@@ -587,15 +519,13 @@ class RuleScriptInterp extends hscript.Interp
 		if (prop != null)
 			return getScriptProp(prop);
 
-		if (o is RuleScriptedClass)
-		{
+		if (o is RuleScriptedClass) {
 			var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
 			if (cl.variableExists(f))
 				return getScriptProp(cl.getVariable(f));
 		}
 
-		for (cl in usings)
-		{
+		for (cl in usings) {
 			var prop:Dynamic = Reflect.getProperty(cl, f);
 			if (prop != null)
 				return Tools.usingFunction.bind(o, prop, _, _, _, _, _, _, _, _);
@@ -604,28 +534,22 @@ class RuleScriptInterp extends hscript.Interp
 		return null;
 	}
 
-	override function set(o:Dynamic, f:String, v:Dynamic):Dynamic
-	{
+	override function set(o:Dynamic, f:String, v:Dynamic):Dynamic {
 		if (o == null)
 			error(EInvalidAccess(f));
 
-		if (o == this)
-		{
-			if (variables.exists(f))
-			{
+		if (o == this) {
+			if (variables.exists(f)) {
 				var variable:Dynamic = variables.get(f);
 				variable is RuleScriptProperty ? cast(variable, RuleScriptProperty).value = v : variables.set(f, v);
 				return v;
-			}
-			else
+			} else
 				o = superInstance;
 		}
 
-		if (o is RuleScriptedClass)
-		{
+		if (o is RuleScriptedClass) {
 			var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
-			if (cl.variableExists(f))
-			{
+			if (cl.variableExists(f)) {
 				var o = cl.getVariable(f);
 				return o is RuleScriptProperty ? cast(o, RuleScriptProperty).value = v : cl.setVariable(f, v);
 			}
@@ -635,8 +559,7 @@ class RuleScriptInterp extends hscript.Interp
 		return v;
 	}
 
-	override function call(o:Dynamic, f:Dynamic, args:Array<Dynamic>):Dynamic
-	{
+	override function call(o:Dynamic, f:Dynamic, args:Array<Dynamic>):Dynamic {
 		if (o == superInstance)
 			isSuperCall = true;
 
@@ -654,13 +577,11 @@ class RuleScriptInterp extends hscript.Interp
 		return result;
 	}
 
-	override function fcall(o:Dynamic, f:String, args:Array<Dynamic>):Dynamic
-	{
+	override function fcall(o:Dynamic, f:String, args:Array<Dynamic>):Dynamic {
 		return call(o, ((o == superInstance && o is ScriptedInstance) ? resolve('__super_$f') : get(o, f)), args);
 	}
 
-	override function cnew(cl:String, args:Array<Dynamic>):Dynamic
-	{
+	override function cnew(cl:String, args:Array<Dynamic>):Dynamic {
 		var c:Dynamic = Type.resolveClass(cl);
 
 		c ??= RuleScript.resolveScript(cl);
@@ -676,8 +597,7 @@ class RuleScriptInterp extends hscript.Interp
 		#end
 	}
 
-	function set_errorHandler(v:haxe.Exception->Dynamic):haxe.Exception->Dynamic
-	{
+	function set_errorHandler(v:haxe.Exception->Void):haxe.Exception->Void {
 		hasErrorHandler = v != null;
 
 		return errorHandler = v;
@@ -686,8 +606,7 @@ class RuleScriptInterp extends hscript.Interp
 	@:noCompletion
 	public var skipNextRestore:Bool = false;
 
-	override function restore(old:Int)
-	{
+	override function restore(old:Int) {
 		if (skipNextRestore)
 			skipNextRestore = false;
 		else
@@ -699,15 +618,12 @@ class RuleScriptInterp extends hscript.Interp
 	public var __constructor:Expr;
 
 	@:noCompletion
-	public function makeSuperFunction(params:Array<Argument>, args:Array<Dynamic>)
-	{
+	public function makeSuperFunction(params:Array<Argument>, args:Array<Dynamic>) {
 		var capturedLocals = duplicate(locals);
 		var me = this;
 		var hasOpt:Bool = false, hasRest:Bool = false, minParams = 0;
-		for (p in params)
-		{
-			if (p.t.match(CTPath(["haxe", "Rest"], _)))
-			{
+		for (p in params) {
+			if (p.t.match(CTPath(["haxe", "Rest"], _))) {
 				if (params.indexOf(p) == params.length - 1)
 					hasRest = true;
 				else
@@ -720,10 +636,8 @@ class RuleScriptInterp extends hscript.Interp
 				minParams++;
 		}
 
-		if (((args == null) ? 0 : args.length) != params.length)
-		{
-			if (args.length < minParams && (!hasRest && args.length + 1 < minParams))
-			{
+		if (((args == null) ? 0 : args.length) != params.length) {
+			if (args.length < minParams && (!hasRest && args.length + 1 < minParams)) {
 				var str = "Invalid number of parameters. Got " + args.length + ", required " + minParams + " for function 'new'";
 				error(ECustom(str));
 			}
@@ -731,29 +645,22 @@ class RuleScriptInterp extends hscript.Interp
 			var args2 = [];
 			var extraParams = args.length - minParams;
 			var pos = 0;
-			for (p in params)
-			{
+			for (p in params) {
 				if (hasRest && p.t.match(CTPath(["haxe", "Rest"], _)))
 					args2.push([for (i in pos...args.length) args[i]]);
-				else
-				{
-					if (p.opt)
-					{
-						if (extraParams > 0)
-						{
+				else {
+					if (p.opt) {
+						if (extraParams > 0) {
 							args2.push(args[pos++]);
 							extraParams--;
-						}
-						else
+						} else
 							args2.push(null);
-					}
-					else
+					} else
 						args2.push(args[pos++]);
 				}
 			}
 			args = args2;
-		}
-		else if (hasRest)
+		} else if (hasRest)
 			args.push([args.pop()]);
 
 		var old = me.locals, depth = me.depth;
@@ -766,8 +673,7 @@ class RuleScriptInterp extends hscript.Interp
 
 		return {
 			f: (e:Expr) -> me.exprReturn(e),
-			finish: () ->
-			{
+			finish: () -> {
 				restore(oldDecl);
 				me.locals = old;
 				me.depth = depth;
@@ -778,10 +684,8 @@ class RuleScriptInterp extends hscript.Interp
 	@:noCompletion
 	var superFields:Array<String>;
 
-	function set_superInstance(value:Dynamic):Dynamic
-	{
-		if (value != null)
-		{
+	function set_superInstance(value:Dynamic):Dynamic {
+		if (value != null) {
 			var o:Class<Dynamic> = value is Class ? cast value : Type.getClass(value);
 			superFields = (o != null) ? Type.getInstanceFields(o) : [];
 		}
@@ -790,19 +694,16 @@ class RuleScriptInterp extends hscript.Interp
 	}
 
 	@:noCompletion
-	inline public function argExpr(e:Expr):Dynamic
-	{
+	inline public function argExpr(e:Expr):Dynamic {
 		return e != null ? expr(e) : null;
 	}
 
-	function set_scriptPackage(value:String):String
-	{
+	function set_scriptPackage(value:String):String {
 		final packages:Array<String> = [];
 
 		var list = '$value.';
 
-		while (StringTools.contains(list, '.'))
-		{
+		while (StringTools.contains(list, '.')) {
 			list = list.substr(0, list.lastIndexOf('.'));
 			packages.push(list);
 		}
@@ -811,8 +712,7 @@ class RuleScriptInterp extends hscript.Interp
 			packages.insert(0, '');
 		packages.sort((a:String, b:String) -> return (a < b) ? -1 : (a > b) ? 1 : 0);
 
-		for (pack in packages)
-		{
+		for (pack in packages) {
 			if (RuleScript.defaultImports.exists(pack))
 				for (key => value in RuleScript.defaultImports.get(pack))
 					variables.set(key, value);
