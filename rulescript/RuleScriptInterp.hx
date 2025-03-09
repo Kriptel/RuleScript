@@ -26,7 +26,7 @@ class RuleScriptInterp extends hscript.Interp
 	public var isSuperCall:Bool = false;
 
 	public var hasErrorHandler:Bool = false;
-	public var errorHandler(default, set):haxe.Exception->Dynamic;
+	public var errorHandler(default, set):haxe.Exception->Void;
 
 	var typePaths:Map<String, Dynamic> = [];
 
