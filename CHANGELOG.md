@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- RuleScriptedClass can be extended two or more times.
 - Type parameters parse.
 - Enum parse to HxParser.
 - Enum constructors (with and without arguments).

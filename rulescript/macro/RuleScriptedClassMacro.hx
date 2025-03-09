@@ -211,6 +211,8 @@ class RuleScriptedClassMacro
 											macro args
 									});
 
+								__rulescript.interp.__constructors.push(c);
+
 								var exprs = switch (rulescript.Tools.getExpr(fexpr))
 								{
 									case EBlock(exprs):
@@ -246,6 +248,7 @@ class RuleScriptedClassMacro
 								};
 
 								super($a{scriptSuperCall});
+								c.restoreVars();
 								// Post exprs
 								c.f(rulescript.Tools.toExpr(EBlock(exprs.slice(superID + 1))));
 

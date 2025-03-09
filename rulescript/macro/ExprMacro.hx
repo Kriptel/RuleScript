@@ -26,10 +26,9 @@ class ExprMacro
 
 			'EVar' => macro function(n:String, ?t:CType, ?e:Expr, ?global:Bool) {},
 			'EProp' => macro function(n:String, g:String, s:String, ?t:CType, ?e:Expr, ?global:Bool) {},
-
 			'EFor' => macro function(key:String, it:Expr, e:Expr, ?value:String) {},
-
-			'ETypeVarPath' => macro function(path:Array<String>) {}
+			'ETypeVarPath' => macro function(path:Array<String>) {},
+			'EUntyped' => macro function(e:Expr) {}
 		];
 
 		for (key => value in newFields)
@@ -98,7 +97,35 @@ class ExprMacro
 		return addDefaultPattern('map', addDefaultPattern('iter'), macro expr(e));
 
 	public static function buildPrinterDefaults():Array<Field>
-		return addDefaultPattern('expr');
+		return addDefaultPattern('expr', null, macro
+			{
+				switch (rulescript.Tools.getExpr(e))
+				{
+					case EPackage(path):
+						add('package $path');
+					case EImport(name, star, alias, func):
+						add('import ');
+						add(name);
+						if (star)
+						{
+							add('.*');
+						}
+						else
+						{
+							if (func != null)
+								add('.$func');
+							if (alias != null)
+								add(' as $alias');
+						}
+					case EUsing(name):
+						add('using $name');
+					case EUntyped(e):
+						add('untyped ');
+						expr(e);
+					case _:
+						add('???');
+				}
+			});
 
 	public static function buildBytesDefaults():Array<Field>
 		return addDefaultPattern('doEncode');

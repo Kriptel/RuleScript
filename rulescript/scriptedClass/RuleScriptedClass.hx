@@ -63,6 +63,7 @@ typedef ScriptedModule =
 	public var module:ScriptedModule;
 	public var impl:ClassDecl;
 	public var superClass:Null<Dynamic>;
+	public var nativeClass:Null<Dynamic>;
 	public var constructor:(args:Array<Dynamic>) -> Dynamic;
 
 	public var interp:RuleScriptInterp;
@@ -107,13 +108,25 @@ typedef ScriptedModule =
 				throw 'Type not found : $type';
 		}
 
-		constructor = if (superClass == null || superClass is ScriptedClass)
+		if (superClass != null)
+		{
+			if (superClass is ScriptedClass)
+			{
+				nativeClass = superClass.nativeClass;
+			}
+			else
+			{
+				nativeClass = superClass;
+			}
+		}
+
+		constructor = if (nativeClass == null && (superClass == null || superClass is ScriptedClass))
 			ScriptedInstance.new.bind(this, _)
-		else if (superClass is Class)
+		else if (nativeClass != null)
 		{
 			var type = toString();
 
-			var strict = Reflect.getProperty(superClass, '__rulescript_strict');
+			var strict = Reflect.getProperty(nativeClass, '__rulescript_strict');
 
 			if (strict)
 				args ->
@@ -123,10 +136,10 @@ typedef ScriptedModule =
 					for (arg in args)
 						strictArgs.push(arg);
 
-					Type.createInstance(superClass, strictArgs);
+					Type.createInstance(nativeClass, strictArgs);
 				}
 			else
-				args -> Type.createInstance(superClass, [type, args]);
+				args -> Type.createInstance(nativeClass, [type, args]);
 		}
 		else
 			throw '$superClass cannot be constructed';
