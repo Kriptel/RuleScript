@@ -1,12 +1,8 @@
 package rulescript;
 
+import haxe.extern.EitherType;
 import hscript.Expr;
 import rulescript.parsers.*;
-
-/**
- * Type limit
- */
-abstract StringOrExpr(Dynamic) from String to String from Expr to Expr {}
 
 /**
  * ## Adding script:
@@ -126,12 +122,12 @@ class RuleScript
 		this.parser ??= parser ?? new HxParser();
 	}
 
-	public function execute(code:StringOrExpr):Dynamic
+	public function execute(code:EitherType<String, Expr>):Dynamic
 	{
 		return interp.execute(code is String ? parser.parse(cast code) : cast code);
 	}
 
-	public function tryExecute(code:StringOrExpr, ?customCatch:haxe.Exception->Dynamic):Dynamic
+	public function tryExecute(code:EitherType<String, Expr>, ?customCatch:haxe.Exception->Dynamic):Dynamic
 	{
 		return try
 		{

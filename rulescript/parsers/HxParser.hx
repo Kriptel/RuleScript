@@ -1,5 +1,6 @@
 package rulescript.parsers;
 
+import haxe.extern.EitherType;
 import hscript.Expr;
 import hscript.Parser.Token;
 import rulescript.types.EnumDecl.EnumField;
@@ -793,7 +794,7 @@ private class HScriptParser extends hscript.Parser
 	{
 		var char:Int = 0;
 		var backslash = false, dollar = false;
-		var parts:Array<rulescript.RuleScript.StringOrExpr> = [];
+		var parts:Array<EitherType<String, Expr>> = [];
 		var currentPart:Int = 0;
 
 		var old = line;
