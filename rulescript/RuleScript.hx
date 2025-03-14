@@ -101,25 +101,30 @@ class RuleScript
 		]
 	];
 
-	public var interp:RuleScriptInterp;
+	public var interp(default, null):RuleScriptInterp;
 
 	public var scriptName(get, set):String;
 
 	public var superInstance(get, set):Dynamic;
 
+	@:deprecated('RuleScript.variables is deprecated. Use access instead')
 	public var variables(get, set):Map<String, Dynamic>;
 
-	public var parser:Parser;
+	public var parser(default, null):Parser;
 
 	public var hasErrorHandler(get, set):Bool;
 
 	public var errorHandler(get, set):haxe.Exception->Void;
+
+	public var access(default, null):RuleScriptAccess;
 
 	public function new(?interp:RuleScriptInterp, ?parser:Parser)
 	{
 		// You can register custom parser in a child class
 		this.interp ??= interp ?? new RuleScriptInterp();
 		this.parser ??= parser ?? new HxParser();
+
+		access = new RuleScriptAccess(this);
 	}
 
 	public function execute(code:EitherType<String, Expr>):Dynamic

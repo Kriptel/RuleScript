@@ -84,7 +84,7 @@ class Main
 	static function importAndUsingTest()
 	{
 		// Test object.
-		script.variables.set('a', {hello: 'world'});
+		script.access.setVariable('a', {hello: 'world'});
 
 		// Import.
 		runScript('
@@ -119,12 +119,12 @@ class Main
             a.getProperty("hello");
         ', 'world');
 
-		script.variables.remove('a');
+		script.interp.variables.remove('a');
 	}
 
 	static function stringInterpolationTest()
 	{
-		script.variables.set('a', {hello: 'World'});
+		script.access.setVariable('a', {hello: 'World'});
 
 		runScript("  'RuleScript: $a World'  ");
 
@@ -150,7 +150,7 @@ class Main
             return '${a.a}: ${a.b() + \" \" + a.c}';
         ");
 
-		script.variables.remove('a');
+		script.interp.variables.remove('a');
 	}
 
 	static function abstractTest()
@@ -177,13 +177,13 @@ class Main
 
 		var a = {FileSystem: "hello world"};
 
-		script.variables.set('sys', a);
+		script.access.setVariable('sys', a);
 
 		runScript('
             sys.FileSystem;
         ', "hello world");
 
-		script.variables.remove('sys');
+		script.interp.variables.remove('a');
 	}
 
 	static function moduleTest()
@@ -207,7 +207,7 @@ class Main
 			}
 		');
 
-		script.variables.get('main')();
+		script.access.callFunction('main', []);
 
 		script.superInstance = {"test": () -> trace('testing super instance')};
 
@@ -222,7 +222,7 @@ class Main
 			}
 		');
 
-		script.variables.get('main')();
+		script.access.callFunction('main', []);
 
 		script.superInstance = {"replace": () -> trace('testing super instance')};
 
@@ -246,7 +246,7 @@ class Main
 			}
 		');
 
-		script.variables.get('main')();
+		script.access.callFunction('main', []);
 	}
 
 	static function scriptClassesTest()
@@ -374,11 +374,11 @@ class Main
 		script.getParser(HxParser).mode = MODULE;
 		runFileScript('test.rhx');
 
-		script.variables.get('main')();
+		script.access.callFunction('main', []);
 
 		runFileScript('importTest/ScriptImportTest.rhx');
 
-		script.variables.get('main')();
+		script.access.callFunction('main', []);
 
 		// Scripted class
 		var ScriptedClassC:Access = new Access(RuleScript.resolveScript('scriptedClass.ScriptedClass.ScriptedClassC'));
@@ -394,7 +394,7 @@ class Main
 
 		runScript("test.TestEnum.HELLO", test.TestEnum.HELLO);
 
-		runScript("a = test.TestEnum.RULESCRIPT(1.2)", () -> test.TestEnum.RULESCRIPT(1.2).equals(script.variables['a']));
+		runScript("a = test.TestEnum.RULESCRIPT(1.2)", () -> test.TestEnum.RULESCRIPT(1.2).equals(script.access.getVariable('a')));
 
 		var module = script.getParser(HxParser).parseModule(File.getContent('scripts/enumTest/EnumTest.rhx'));
 		trace(module);

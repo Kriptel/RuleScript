@@ -112,19 +112,19 @@ class RuleScriptedClassMacro
 		var functions = [
 			'getVariables' => macro function():Map<String, Dynamic>
 			{
-				return __rulescript.variables;
+				return __rulescript.access.getVariables();
 			},
 			'variableExists' => macro function(name:String):Bool
 			{
-				return __rulescript.variables.exists(name);
+				return __rulescript.access.variableExists(name);
 			},
 			'getVariable' => macro function(name:String):Dynamic
 			{
-				return __rulescript.variables[name];
+				return __rulescript.access.getVariable(name);
 			},
 			'setVariable' => macro function(name:String, value:Dynamic):Dynamic
 			{
-				return __rulescript.variables[name] = value;
+				return __rulescript.access.setVariable(name, value);
 			},
 			'get___rulescript_type' => macro function():rulescript.types.ScriptedType.TypeID
 			{

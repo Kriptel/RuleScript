@@ -70,7 +70,7 @@ class RuleScriptedClassUtil
 
 	public static function buildScriptedClass(cl:ScriptedClass, rulescript:RuleScript):Void
 	{
-		rulescript.variables['new'] = () -> {};
+		rulescript.access.setVariable('new', () -> {});
 
 		var list = [];
 
