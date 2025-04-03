@@ -21,8 +21,8 @@ class Tools
 		return _printer.typeToString(type);
 	}
 
-	public static function usingFunction(?o:Dynamic, f:Function, ?a1:Dynamic, ?a2:Dynamic, ?a3:Dynamic, ?a4:Dynamic, ?a5:Dynamic, ?a6:Dynamic, ?a7:Dynamic,
-			?a8:Dynamic)
+	@:noCompletion public static function usingFunction(?o:Dynamic, f:Function, ?a1:Dynamic, ?a2:Dynamic, ?a3:Dynamic, ?a4:Dynamic, ?a5:Dynamic, ?a6:Dynamic,
+			?a7:Dynamic, ?a8:Dynamic)
 	{
 		#if interp
 		var args:Array<Dynamic> = [o, a1, a2, a3, a4, a5, a6, a7, a8];
@@ -140,7 +140,7 @@ class Tools
 								case KVar(v):
 									if (v.get == null && v.set == null)
 									{
-										pushExpr(EVar(field.name, v.type, v.expr, field.access.contains(APublic)));
+										pushExpr(EVar(field.name, v.type, v.expr, field.access.contains(APublic), field.access.contains(AFinal)));
 									}
 									else
 									{
@@ -168,7 +168,7 @@ class Tools
 	}
 
 	#if hl
-	@:noCompletion @:allow(rulescript.RuleScriptInterp) inline static function __hl_callMethod(func:haxe.Constraints.Function, args:Array<Dynamic>):Dynamic
+	@:noCompletion public inline static function __hl_callMethod(func:haxe.Constraints.Function, args:Array<Dynamic>):Dynamic
 	{
 		final ft = hl.Type.getDynamic(func);
 		if (ft.kind != HFun)
@@ -205,7 +205,7 @@ class Tools
 		return hl.Api.callMethod(func, a);
 	}
 
-	public static function __hl_createInstance<T>(cl:Class<T>, args:Array<Dynamic>):T
+	@:noCompletion public static function __hl_createInstance<T>(cl:Class<T>, args:Array<Dynamic>):T
 	{
 		final c:hl.BaseType.Class = cast cl;
 

@@ -41,7 +41,7 @@ class RuleScriptProperty
 		{
 			case DEFAULT | NULL: this.value;
 			case GET(f): f();
-			case SET(f): throw 'Custom property accessor is no longer supported, please use `get`';
+			case SET(_): throw 'Custom property accessor is no longer supported, please use `get`';
 			case DYNAMIC(f): f();
 			case NEVER: throw 'This expression cannot be accessed for reading';
 		}
@@ -63,7 +63,7 @@ class RuleScriptProperty
 		var v:Dynamic = switch (_set)
 		{
 			case DEFAULT | NULL: this.value = v;
-			case GET(f): throw 'Custom property accessor is no longer supported, please use `set`';
+			case GET(_): throw 'Custom property accessor is no longer supported, please use `set`';
 			case SET(f): f(v);
 			case DYNAMIC(f): f(v);
 			case NEVER: throw 'This expression cannot be accessed for writing';

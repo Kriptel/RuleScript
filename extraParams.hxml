@@ -8,6 +8,8 @@
 
 --macro addMetadata('@:build(rulescript.macro.ExprMacro.buildModuleDecl())', 'hscript.ModuleDecl')
 
+--macro addMetadata('@:build(rulescript.macro.ExprMacro.buildFieldAccess())', 'hscript.FieldAccess')
+
 --macro addMetadata('@:build(rulescript.macro.ExprMacro.buildParserDefaults())', 'hscript.Parser')
 
 --macro addMetadata('@:build(rulescript.macro.ExprMacro.buildInterpDefaults())', 'hscript.Interp')

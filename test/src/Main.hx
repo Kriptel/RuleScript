@@ -3,7 +3,9 @@ package;
 import hscript.Expr.ClassDecl;
 import hscript.Expr.ModuleDecl;
 import hscript.Printer;
+import rulescript.BytecodeInterp;
 import rulescript.RuleScript;
+import rulescript.RuleScriptInterp;
 import rulescript.parsers.HxParser;
 import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.scriptedClass.RuleScriptedClassUtil;
@@ -28,6 +30,8 @@ class Main
 		HelloWorldAbstract.RULESCRIPT;
 
 		trace('Testing Commands:');
+
+		RuleScript.createInterp = () -> new BytecodeInterp();
 
 		script = new RuleScript(new HxParser());
 
@@ -76,9 +80,9 @@ class Main
 
 	static function packageTest()
 	{
-		runScript('package', () -> script.interp.scriptPackage == '');
+		runScript('package', () -> script.scriptPackage == '');
 
-		runScript('package scripts.hello.world', () -> script.interp.scriptPackage == 'scripts.hello.world');
+		runScript('package scripts.hello.world', () -> script.scriptPackage == 'scripts.hello.world');
 	}
 
 	static function importAndUsingTest()
@@ -124,11 +128,17 @@ class Main
 
 	static function stringInterpolationTest()
 	{
+		runScript("
+		var a = 'Hello';
+		return 'RuleScript: $a World';
+		", 'RuleScript: Hello World');
+
+		runScript("
+		var a = 'World';
+		'RuleScript: Hello $a';
+		", 'RuleScript: Hello World');
+
 		script.variables.set('a', {hello: 'World'});
-
-		runScript("  'RuleScript: $a World'  ");
-
-		runScript("  'RuleScript: Hello $a'  ");
 
 		runScript("
             var a = {
@@ -138,7 +148,7 @@ class Main
             };
         
             return a.a + ' ' + a.b() + ' ' + a.c;
-        ");
+        ", 'RuleScript Hello World');
 
 		runScript("
             var a = {
@@ -191,23 +201,18 @@ class Main
 		script.getParser(HxParser).mode = MODULE;
 
 		runScript('
-			package;
+				package;
 
-			class HelloWorld
-			{
-				function main(){
-					trace("hello world");
-
-					var a = {
-						b: "rulescript class: hello world"
+				class HelloWorld
+				{
+					function main(){
+						return true;
 					}
-					trace(Reflect.getProperty(a,"b"));
-
 				}
-			}
-		');
-
-		script.variables.get('main')();
+			', () ->
+			{
+				return script.variables.get('main')();
+			});
 
 		script.superInstance = {"test": () -> trace('testing super instance')};
 
@@ -218,11 +223,11 @@ class Main
 			{
 				function main(){
 					test();
+
+					return true;
 				}
 			}
-		');
-
-		script.variables.get('main')();
+		', () -> script.variables.get('main')());
 
 		script.superInstance = {"replace": () -> trace('testing super instance')};
 
@@ -374,7 +379,7 @@ class Main
 		script.getParser(HxParser).mode = MODULE;
 		runFileScript('test.rhx');
 
-		script.variables.get('main')();
+		script.access.callFunctionUnsafe('main', []);
 
 		runFileScript('importTest/ScriptImportTest.rhx');
 
@@ -400,20 +405,22 @@ class Main
 		trace(module);
 	}
 
-	static function runScript(code:String, ?value:Dynamic)
+	static function runScript(code:String, ?value:Dynamic):Dynamic
 	{
 		// Reset package, for reusing package keyword
 		Sys.println('\n[Running code #${++callNum}]: "$code"');
 
-		script.interp.scriptPackage = '';
+		script.scriptPackage = '';
 
-		var result = script.tryExecute(script.parser.parse(code));
+		final result:Dynamic = script.execute(script.parser.parse(code));
 
 		if (result != null)
 			Sys.println('\t\t[Result]: ${Std.string(result)}');
 
 		if (value != null && (Reflect.isFunction(value) ? !value() : result != value))
-			throw 'the result does not match the value';
+			throw 'the result($result) does not match the value';
+
+		return result;
 	}
 
 	inline static function runFileScript(path:String, ?value:Dynamic)

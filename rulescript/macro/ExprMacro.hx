@@ -24,11 +24,13 @@ class ExprMacro
 			'EImport' => macro function(name:String, star:Bool, alias:String, func:String) {},
 			'EUsing' => macro function(name:String) {},
 
-			'EVar' => macro function(n:String, ?t:CType, ?e:Expr, ?global:Bool) {},
+			'EVar' => macro function(n:String, ?t:CType, ?e:Expr, ?global:Bool, ?isFinal:Bool) {},
 			'EProp' => macro function(n:String, g:String, s:String, ?t:CType, ?e:Expr, ?global:Bool) {},
 			'EFor' => macro function(key:String, it:Expr, e:Expr, ?value:String) {},
 			'ETypeVarPath' => macro function(path:Array<String>) {},
-			'EUntyped' => macro function(e:Expr) {}
+			'EUntyped' => macro function(e:Expr) {},
+			'EMapDecl' => macro function(exprs:Array<Expr>) {}
+
 		];
 
 		for (key => value in newFields)
@@ -72,7 +74,7 @@ class ExprMacro
 		var newFields:Map<String, Expr> = [
 			'DImport' => macro function(name:Array<String>, star:Bool, ?alias:String, ?func:String) {},
 			'DUsing' => macro function(name:String) {},
-			'DAbstract' => macro function(c:rulescript.Abstracts.AbstractDecl) {},
+			'DAbstract' => macro function(c:rulescript.types.AbstractDecl) {},
 			'DEnum' => macro function(c:rulescript.types.EnumDecl) {}
 		];
 
@@ -83,6 +85,20 @@ class ExprMacro
 				kind: FFun(MacroTools.toFunction(value)),
 				pos: pos
 			});
+
+		return fields;
+	}
+
+	public static function buildFieldAccess():Array<Field>
+	{
+		var fields:Array<Field> = Context.getBuildFields();
+
+		fields.push({
+			name: 'AFinal',
+			access: [],
+			kind: FVar(null, null),
+			pos: Context.currentPos()
+		});
 
 		return fields;
 	}

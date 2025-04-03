@@ -40,7 +40,8 @@ class RuleScriptedClassUtil
 
 			var rulescript = new rulescript.RuleScript();
 			rulescript.superInstance = superInstance;
-			rulescript.interp.skipNextRestore = true;
+			if (rulescript.interp is RuleScriptInterp)
+				cast(rulescript.interp, RuleScriptInterp).skipNextRestore = true;
 
 			if (type.isExpr)
 			{

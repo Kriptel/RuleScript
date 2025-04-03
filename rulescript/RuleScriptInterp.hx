@@ -1,6 +1,7 @@
 package rulescript;
 
 import hscript.Expr;
+import rulescript.RuleScript.IInterp;
 import rulescript.RuleScriptProperty.Property;
 import rulescript.scriptedClass.RuleScriptedClass;
 
@@ -10,11 +11,12 @@ using rulescript.Tools;
 import haxe.ds.StringMap;
 #end
 
-class RuleScriptInterp extends hscript.Interp
+class RuleScriptInterp extends hscript.Interp implements IInterp
 {
 	public var scriptName:String;
-
 	public var scriptPackage(default, set):String = '';
+
+	public var access:RuleScriptAccess;
 
 	public var imports:Map<String, Dynamic> = [];
 	public var usings:Map<String, Dynamic> = [];
@@ -29,6 +31,12 @@ class RuleScriptInterp extends hscript.Interp
 	public var errorHandler(default, set):haxe.Exception->Void;
 
 	var typePaths:Map<String, Dynamic> = [];
+
+	public function new()
+	{
+		access = new RuleScriptInterpAccess(this);
+		super();
+	}
 
 	override private function resetVariables():Void
 	{
@@ -236,7 +244,7 @@ class RuleScriptInterp extends hscript.Interp
 				return obj;
 			case EMeta(name, args, e) if (onMeta != null):
 				return onMeta(name, args, e);
-			case EVar(n, _, e, global):
+			case EVar(n, _, e, global, _):
 				if (global)
 					variables.set(n, (e == null) ? null : this.expr(e));
 				else
@@ -860,4 +868,189 @@ private typedef SuperFunction =
 	stashVars:Void->Void,
 	restoreVars:Void->Void,
 	finish:Void->Void
+}
+
+class RuleScriptInterpAccess extends RuleScriptAccess
+{
+	var interp:RuleScriptInterp;
+
+	public function new(interp:RuleScriptInterp)
+	{
+		this.interp = interp;
+	}
+
+	override function getVariables():Map<String, Dynamic>
+	{
+		return interp.variables;
+	}
+
+	override function setVariables(newVariables:Map<String, Dynamic>):Map<String, Dynamic>
+	{
+		return interp.variables = newVariables;
+	}
+
+	override function variableExists(name:String):Bool
+	{
+		return interp.variables.exists(name);
+	}
+
+	override function getVariable(name:String):Dynamic
+	{
+		return interp.variables[name];
+	}
+
+	override function setVariable(name:String, value:Dynamic):Dynamic
+	{
+		return interp.variables[name] = value;
+	}
+
+	override function callFunction(name:String, args:Array<Dynamic>):Dynamic
+	{
+		return if (variableExists(name))
+		{
+			#if hl
+			Tools.__hl_callMethod(interp.variables[name], args);
+			#else
+			Reflect.callMethod(null, interp.variables[name], args);
+			#end
+		}
+		else
+			null;
+	}
+
+	override function callFunctionUnsafe(name:String, args:Array<Dynamic>):Dynamic
+	{
+		return #if hl
+			Tools.__hl_callMethod(interp.variables[name], args);
+		#else
+			Reflect.callMethod(null, interp.variables[name], args);
+		#end
+	}
+
+	override function execute(expr:Expr):Dynamic
+	{
+		return interp.execute(expr);
+	}
+
+	override function get_scriptName():String
+	{
+		return interp.scriptName;
+	}
+
+	override function set_scriptName(v:String):String
+	{
+		return interp.scriptName = v;
+	}
+
+	override function get_scriptPackage():String
+	{
+		return interp.scriptPackage;
+	}
+
+	override function set_scriptPackage(v:String):String
+	{
+		return interp.scriptPackage = v;
+	}
+
+	override function get_superInstance():Dynamic
+	{
+		return interp.superInstance;
+	}
+
+	override function set_superInstance(v:Dynamic):Dynamic
+	{
+		return interp.superInstance = v;
+	}
+
+	override function get_hasErrorHandler():Bool
+	{
+		return interp.hasErrorHandler;
+	}
+
+	override function set_hasErrorHandler(v:Bool):Bool
+	{
+		return interp.hasErrorHandler = v;
+	}
+
+	override function get_errorHandler():haxe.Exception->Void
+	{
+		return interp.errorHandler;
+	}
+
+	override function set_errorHandler(v:haxe.Exception->Void):haxe.Exception->Void
+	{
+		return interp.errorHandler = v;
+	}
+
+	override function get_isSuperCall():Bool
+	{
+		return interp.isSuperCall;
+	}
+
+	override function get_hasConstructor():Bool
+	{
+		return interp.__constructor != null;
+	}
+
+	override function createConstructor(args:Array<Dynamic>):rulescript.RuleScriptAccess.ConstructorAccess
+	{
+		return switch (rulescript.Tools.getExpr(interp.__constructor))
+		{
+			case EFunction(params, fexpr, name, _):
+				final c = interp.makeSuperFunction(params, args);
+
+				interp.__constructors.push(c);
+
+				final exprs = switch (rulescript.Tools.getExpr(fexpr))
+				{
+					case EBlock(exprs):
+						exprs;
+					default:
+						null;
+				}
+
+				var superID:Int = 0;
+
+				for (expr in exprs)
+				{
+					switch (rulescript.Tools.getExpr(expr))
+					{
+						case ECall(e, _):
+							if (rulescript.Tools.getExpr(e).match(EIdent('super')))
+								break;
+						default:
+							null;
+					}
+					superID++;
+				}
+
+				{
+					pre: () ->
+					{
+						// Pre exprs
+						c.f(rulescript.Tools.toExpr(EBlock(exprs.slice(0, superID))));
+					},
+					getSuperArgs: () ->
+					{
+						final superCallArgs:Array<Expr> = switch (rulescript.Tools.getExpr(exprs[superID]))
+						{
+							case ECall(_, params): params;
+							default: null;
+						};
+
+						return superCallArgs.map(e -> interp.argExpr(e));
+					},
+					post: () ->
+					{
+						c.restoreVars();
+						// Post exprs
+						c.f(rulescript.Tools.toExpr(EBlock(exprs.slice(superID + 1))));
+
+						c.finish();
+					}
+				}
+			default:
+				null;
+		}
+	}
 }

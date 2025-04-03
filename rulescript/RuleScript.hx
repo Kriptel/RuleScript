@@ -81,6 +81,11 @@ class RuleScript
 		return null;
 	}
 
+	public static dynamic function createInterp():IInterp
+	{
+		return new RuleScriptInterp();
+	}
+
 	/**
 	 * Package => Imports
 	 */
@@ -101,9 +106,13 @@ class RuleScript
 		]
 	];
 
-	public var interp:RuleScriptInterp;
+	public var interp(default, set):IInterp;
+
+	public var access:RuleScriptAccess;
 
 	public var scriptName(get, set):String;
+
+	public var scriptPackage(get, set):String;
 
 	public var superInstance(get, set):Dynamic;
 
@@ -115,16 +124,16 @@ class RuleScript
 
 	public var errorHandler(get, set):haxe.Exception->Void;
 
-	public function new(?interp:RuleScriptInterp, ?parser:Parser)
+	public function new(?interp:IInterp, ?parser:Parser)
 	{
 		// You can register custom parser in a child class
-		this.interp ??= interp ?? new RuleScriptInterp();
+		this.interp ??= interp ?? createInterp();
 		this.parser ??= parser ?? new HxParser();
 	}
 
 	public function execute(code:EitherType<String, Expr>):Dynamic
 	{
-		return interp.execute(code is String ? parser.parse(cast code) : cast code);
+		return access.execute(code is String ? parser.parse(cast code) : cast code);
 	}
 
 	public function tryExecute(code:EitherType<String, Expr>, ?customCatch:haxe.Exception->Dynamic):Dynamic
@@ -138,55 +147,83 @@ class RuleScript
 	}
 
 	public function getParser<T:Parser>(?parserClass:Class<T>):T
+	{
 		return cast parser;
+	}
+
+	public function getInterp<T>(?interpClass:Class<T>):T
+	{
+		return cast interp;
+	}
+
+	function set_interp(v:IInterp):IInterp
+	{
+		access = v.access;
+		return interp = v;
+	}
 
 	function get_scriptName():String
 	{
-		return interp.scriptName;
+		return access.scriptName;
 	}
 
 	function set_scriptName(v:String):String
 	{
-		return interp.scriptName = v;
+		return access.scriptName = v;
+	}
+
+	function get_scriptPackage():String
+	{
+		return access.scriptPackage;
+	}
+
+	function set_scriptPackage(v:String):String
+	{
+		return access.scriptPackage = v;
 	}
 
 	function get_superInstance():Dynamic
 	{
-		return interp.superInstance;
+		return access.superInstance;
 	}
 
 	function set_superInstance(v:Dynamic):Dynamic
 	{
-		return interp.superInstance = v;
+		return access.superInstance = v;
 	}
 
 	function get_variables():Map<String, Dynamic>
 	{
-		return interp.variables;
+		return access.getVariables();
 	}
 
 	function set_variables(v:Map<String, Dynamic>):Map<String, Dynamic>
 	{
-		return interp.variables = v;
+		return access.setVariables(v);
 	}
 
 	function get_hasErrorHandler():Bool
 	{
-		return interp.hasErrorHandler;
+		return access.hasErrorHandler;
 	}
 
 	function set_hasErrorHandler(v:Bool):Bool
 	{
-		return interp.hasErrorHandler = v;
+		return access.hasErrorHandler = v;
 	}
 
 	function get_errorHandler():haxe.Exception->Void
 	{
-		return interp.errorHandler;
+		return access.errorHandler;
 	}
 
 	function set_errorHandler(v:haxe.Exception->Void):haxe.Exception->Void
 	{
-		return interp.errorHandler = v;
+		return access.errorHandler = v;
 	}
+}
+
+interface IInterp
+{
+	var access:RuleScriptAccess;
 }

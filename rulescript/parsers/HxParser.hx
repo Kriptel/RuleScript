@@ -721,11 +721,12 @@ private class HScriptParser extends hscript.Parser
 				}
 
 				return mk(EUsing(path.join('.')));
-			case "var":
+			case 'var', 'final':
 				var ident = getIdent();
 
 				var props:{get:String, set:String} = null;
-				if (maybe(TPOpen))
+
+				if (id == 'var' && maybe(TPOpen))
 				{
 					var list:Array<Expr> = parseExprList(TPClose);
 
@@ -760,6 +761,7 @@ private class HScriptParser extends hscript.Parser
 					t = parseType();
 					tk = token();
 				}
+
 				var e = null;
 				if (Type.enumEq(tk, TOp("=")))
 					e = parseExpr();
@@ -768,7 +770,7 @@ private class HScriptParser extends hscript.Parser
 
 				if (props == null)
 				{
-					mk(EVar(ident, t, e), p1, (e == null) ? tokenMax : pmax(e));
+					mk(EVar(ident, t, e, false, id == 'final'), p1, (e == null) ? tokenMax : pmax(e));
 				}
 				else
 				{
@@ -794,7 +796,7 @@ private class HScriptParser extends hscript.Parser
 	{
 		var char:Int = 0;
 		var backslash = false, dollar = false;
-		var parts:Array<EitherType<String, Expr>> = [];
+		var parts:Array<EitherType<String, Expr>> = [''];
 		var currentPart:Int = 0;
 
 		var old = line;
@@ -909,10 +911,13 @@ private class HScriptParser extends hscript.Parser
 			}
 		}
 
+		if (parts.length > 1 && parts[1] is String)
+			parts.shift();
+
 		var e:Expr = null;
 
 		var currentPart:Int = 0;
-		while (parts.length > currentPart)
+		while (currentPart < parts.length)
 		{
 			var part:Dynamic = parts[currentPart++];
 			if (part is String)
@@ -1255,6 +1260,97 @@ private class HScriptParser extends hscript.Parser
 				});
 			default:
 				unexpected(TId(ident));
+		}
+		return null;
+	}
+
+	override function parseField():FieldDecl
+	{
+		var meta = parseMetadata();
+		var access = [];
+		while (true)
+		{
+			var id = getIdent();
+			switch (id)
+			{
+				case "override":
+					access.push(AOverride);
+				case "public":
+					access.push(APublic);
+				case "private":
+					access.push(APrivate);
+				case "inline":
+					access.push(AInline);
+				case "static":
+					access.push(AStatic);
+				case "macro":
+					access.push(AMacro);
+				case "function":
+					var name = getIdent();
+					var inf = parseFunctionDecl();
+					return {
+						name: name,
+						meta: meta,
+						access: access,
+						kind: KFunction({
+							args: inf.args,
+							expr: inf.body,
+							ret: inf.ret,
+						}),
+					};
+				case "var", "final":
+					var name = getIdent();
+
+					if (id == "final")
+						access.push(AFinal);
+
+					if (name == 'function')
+					{
+						push(TId('function'));
+					}
+					else
+					{
+						var get = null, set = null;
+						if (id == "var" && maybe(TPOpen))
+						{
+							get = getIdent();
+							ensure(TComma);
+							set = getIdent();
+							ensure(TPClose);
+						}
+						var type = maybe(TDoubleDot) ? parseType() : null;
+						var expr = maybe(TOp("=")) ? parseExpr() : null;
+
+						if (expr != null)
+						{
+							if (isBlock(expr))
+								maybe(TSemicolon);
+							else
+								ensure(TSemicolon);
+						}
+						else if (type != null && type.match(CTAnon(_)))
+						{
+							maybe(TSemicolon);
+						}
+						else
+							ensure(TSemicolon);
+
+						return {
+							name: name,
+							meta: meta,
+							access: access,
+							kind: KVar({
+								get: get,
+								set: set,
+								type: type,
+								expr: expr,
+							}),
+						};
+					}
+				default:
+					unexpected(TId(id));
+					break;
+			}
 		}
 		return null;
 	}

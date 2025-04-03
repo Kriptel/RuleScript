@@ -165,7 +165,7 @@ class RuleScriptedClassMacro
 
 		var scriptSuperCall = [
 			for (i in 0...args.length)
-				macro __rulescript.interp.argExpr(superCallArgs[$v{i}])
+				macro superCallArgs[$v{i}]
 		];
 
 		var funcArgs:Array<FunctionArg> = [
@@ -199,69 +199,30 @@ class RuleScriptedClassMacro
 
 					$e{!strict ? macro args ??= [] : macro {}} // If args equals null
 
-					if (__rulescript.interp.__constructor != null)
-						switch (rulescript.Tools.getExpr(__rulescript.interp.__constructor))
-						{
-							case EFunction(params, fexpr, name, _):
-								var c = __rulescript.interp.makeSuperFunction(params, $
-									{
-										if (strict)
-											macro $a{fieldArgs}
-										else
-											macro args
-									});
+					if (__rulescript.access.hasConstructor)
+					{
+						final c = __rulescript.access.createConstructor($
+							{
+								if (strict)
+									macro $a{fieldArgs}
+								else
+									macro args
+							});
 
-								__rulescript.interp.__constructors.push(c);
+						c.pre();
 
-								var exprs = switch (rulescript.Tools.getExpr(fexpr))
-								{
-									case EBlock(exprs):
-										exprs;
-									default:
-										null;
-								}
+						final superCallArgs:Array<Dynamic> = c.getSuperArgs();
 
-								var superID = 0;
-
-								for (expr in exprs)
-								{
-									switch (rulescript.Tools.getExpr(expr))
-									{
-										case ECall(e, _):
-											if (rulescript.Tools.getExpr(e).match(EIdent('super')))
-												break;
-										default:
-											null;
-									}
-									superID++;
-								}
-
-								// Pre exprs
-								c.f(rulescript.Tools.toExpr(EBlock(exprs.slice(0, superID))));
-
-								var superCallArgs = switch (rulescript.Tools.getExpr(exprs[superID]))
-								{
-									case ECall(_, params):
-										params;
-									default:
-										null;
-								};
-
-								super($a{scriptSuperCall});
-								c.restoreVars();
-								// Post exprs
-								c.f(rulescript.Tools.toExpr(EBlock(exprs.slice(superID + 1))));
-
-								c.finish();
-
-							default:
-								null;
-						}
+						super($a{scriptSuperCall});
+						c.post();
+					}
 					else
+					{
 						super($a
 							{
 								strict ? fieldArgs : [for (i in 0...args.length) macro args[$v{i}]]
 							});
+					}
 				} : macro {},
 			params: [for (param in constructor.params) {name: param.name}]
 		}
@@ -296,9 +257,9 @@ class RuleScriptedClassMacro
 				ret: getOverrideType(ret),
 				expr: macro
 				{
-					return if (!__rulescript.interp.isSuperCall && __rulescript.interp.variables.exists($v{field.name}))
+					return if (!__rulescript.access.isSuperCall && __rulescript.access.variableExists($v{field.name}))
 					{
-						__rulescript.interp.variables.get($v{field.name})($a{fieldArgs});
+						__rulescript.access.getVariable($v{field.name})($a{fieldArgs});
 					}
 					else
 					{

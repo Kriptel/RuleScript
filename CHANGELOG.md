@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `final` variables.
+- Bytecode interpreter.
+- RuleScriptAccess (see [#20](https://github.com/Kriptel/RuleScript/pull/20)).
 - RuleScriptedClass can be extended two or more times.
 - Type parameters parse.
 - Enum parse to HxParser.

@@ -136,10 +136,19 @@ typedef ScriptedModule =
 					for (arg in args)
 						strictArgs.push(arg);
 
+					#if hl
+					Tools.__hl_createInstance(nativeClass, strictArgs);
+					#else
 					Type.createInstance(nativeClass, strictArgs);
+					#end
 				}
 			else
-				args -> Type.createInstance(nativeClass, [type, args]);
+				args ->
+					#if hl
+					Tools.__hl_createInstance(nativeClass, [type, args]);
+					#else
+					Type.createInstance(nativeClass, [type, args]);
+					#end
 		}
 		else
 			throw '$superClass cannot be constructed';
