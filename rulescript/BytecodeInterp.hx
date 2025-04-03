@@ -261,17 +261,6 @@ class BytecodeInterp implements IInterp
 		return getValue();
 	}
 
-	public function executeBuffer(buffer:Array<Command>, ?pos:Int = 0):Dynamic
-	{
-		if (buffer == null)
-			this._buffer = buffer;
-		this.pos = pos;
-
-		command();
-
-		return getValue();
-	}
-
 	public function reset()
 	{
 		floatBuffer = [];
