@@ -26,6 +26,8 @@ class RuleScriptAccess
 
 	/**
 	 * Returns `true` if variable with identifier `name` exists.
+	 * 
+	 * if `name` is null, the result is unspecified.
 	 */
 	public function variableExists(name:String):Bool
 	{
@@ -34,6 +36,8 @@ class RuleScriptAccess
 
 	/**
 	 * Returns variable with identifier `name`.
+	 * 
+	 * if `name` is null, the result is unspecified.
 	 */
 	public function getVariable(name:String):Dynamic
 	{
@@ -41,7 +45,9 @@ class RuleScriptAccess
 	}
 
 	/**
-	 * Sets variables `name` key to `value`
+	 * Sets variables `name` key to `value`.
+	 * 
+	 * if `name` is null, the result is unspecified.
 	 */
 	public function setVariable(name:String, value:Dynamic):Dynamic
 	{
@@ -49,7 +55,11 @@ class RuleScriptAccess
 	}
 
 	/**
-	 * Calls function `name` with arguments `args`, if function `name` exists.
+	 * Calls function `name` with arguments `args`
+	 * 
+	 * if function `name` is null, returns null.
+	 * 
+	 * if `name` or `args` are null, the result is unspecified.
 	 */
 	public function callFunction(name:String, args:Array<Dynamic>):Dynamic
 	{
@@ -58,6 +68,8 @@ class RuleScriptAccess
 
 	/**
 	 * Calls function `name` with arguments `args`
+	 * 
+	 * if function `name`, `name` or `args` are null, the result is unspecified.
 	 */
 	public function callFunctionUnsafe(name:String, args:Array<Dynamic>):Dynamic
 	{

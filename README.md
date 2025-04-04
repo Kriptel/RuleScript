@@ -1,6 +1,6 @@
 # RuleScript
 
-Hscript addon featuring script classes, imports, usings, properties, string interpolation and more.
+[Hscript](https://github.com/HaxeFoundation/hscript) addon featuring script classes, imports, usings, properties, string interpolation and more.
 
 ## Features:
 
