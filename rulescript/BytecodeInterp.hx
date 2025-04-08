@@ -36,10 +36,11 @@ enum abstract Command(Int) from Int
 	var FOR = 22;
 	var FOR_KEY_VALUE = 23;
 	var WHILE = 24;
-	var IF = 25;
-	var IF_ELSE = 26;
-	var NEW = 27;
-	var IDENT_NATIVE = 28;
+	var DO_WHILE = 25;
+	var IF = 26;
+	var IF_ELSE = 27;
+	var NEW = 28;
+	var IDENT_NATIVE = 29;
 
 	// TYPES
 	var INT = 40;
@@ -142,8 +143,6 @@ enum abstract Command(Int) from Int
 
 /**
  * TODO:
- * - While
- * - Do-while
  * - Properties
  * - Switch
  * - Rest
@@ -407,13 +406,8 @@ class BytecodeInterp implements IInterp
 				final id:Int = next();
 
 				final lastValue:Int = _buffer[id];
-				switch (linkType)
-				{
-					case INT:
-						_buffer[id] = _buffer[id].toInt() + 1;
-					default:
-						throw linkType;
-				}
+
+				_buffer[id] = _buffer[id].toInt() + 1;
 
 				linkID = lastValue;
 				return linkType = INT;
@@ -423,13 +417,8 @@ class BytecodeInterp implements IInterp
 				final id:Int = next();
 
 				final lastValue:Int = _buffer[id];
-				switch (linkType)
-				{
-					case INT:
-						_buffer[id] = _buffer[id].toInt() - 1;
-					default:
-						throw linkType;
-				}
+
+				_buffer[id] = _buffer[id].toInt() - 1;
 
 				linkID = lastValue;
 				return linkType = INT;
@@ -711,6 +700,45 @@ class BytecodeInterp implements IInterp
 						default:
 					}
 				}
+				return linkType = VOID;
+
+			case WHILE:
+				final endPos:Int = next();
+
+				final pos:Int = this.pos;
+
+				trace(_buffer);
+
+				while (
+					{
+						command();
+						getValue() == true;
+					})
+				{
+					command();
+
+					this.pos = pos;
+				}
+
+				this.pos = endPos;
+
+				return linkType = VOID;
+
+			case DO_WHILE:
+				final pos:Int = this.pos;
+
+				do
+				{
+					this.pos = pos;
+
+					command();
+				}
+				while (
+						{
+							command();
+							getValue() == true;
+						});
+
 				return linkType = VOID;
 
 			case INT_ITERATOR:
@@ -2318,7 +2346,7 @@ class Converter
 										case '>=': OP_GT_EQUAL;
 										case '<=': OP_LT_EQUAL;
 										default:
-											throw 'Unkrown operator "$op"';
+											throw 'Unknown operator "$op"';
 									});
 									ce(e1);
 									ce(e2);
@@ -2521,6 +2549,21 @@ class Converter
 					add(BREAK);
 				case EUntyped(e):
 					ce(e);
+				case EWhile(cond, e):
+					add(WHILE);
+
+					final endId:Int = add(-1) - 1; // for end ID
+
+					ce(cond);
+					ce(e);
+
+					buffer[endId] = buffer.length;
+				case EDoWhile(cond, e):
+					add(DO_WHILE);
+
+					ce(e);
+					ce(cond);
+
 				default:
 					throw 'Unsupported expression "${e.getExpr()}"';
 			}
@@ -2668,7 +2711,7 @@ class Converter
 							TInt;
 						else
 							TDynamic;
-					case 'is', '&&', '||', '==', '>=', '<=', '>', '<':
+					case 'is', '&&', '||', '==', '!=', '>=', '<=', '>', '<':
 						TBool;
 					case '=':
 						typeof(e2);
