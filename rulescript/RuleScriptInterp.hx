@@ -594,11 +594,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	 */
 	override function get(o:Dynamic, f:String):Dynamic
 	{
-		#if cpp
-		if (Type.typeof(o).match(TEnum(_)))
-		#else
-		if (o is Enum)
-		#end
+		if (Tools.isEnum(o))
 		{
 			if (Type.getEnumConstructs(o).contains(f))
 			{

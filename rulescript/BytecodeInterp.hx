@@ -1959,7 +1959,7 @@ class Converter
 								add(DYNAMIC);
 								addLink(DYNAMIC, type);
 							case TObject if (field != null):
-								if (type is Enum)
+								if (Tools.isEnum(type))
 								{
 									add(LINK);
 									add(DYNAMIC);
@@ -2817,7 +2817,8 @@ class Converter
 								TMap(TClass(String));
 							case 'Int':
 								TMap(TInt);
-							case _ if ((variables.exists(path[0]) && variables[path[0]] is Enum) || resolveType(path.join('.')) is Enum):
+							case _ if ((variables.exists(path[0]) && Tools.isEnum(variables[path[0]]))
+								|| Tools.isEnum(resolveType(path.join('.')))):
 								TMap(TEnum);
 							default:
 								throw 'Invalid map params';

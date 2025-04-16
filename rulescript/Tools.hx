@@ -80,6 +80,15 @@ class Tools
 		return e;
 	#end
 
+	inline public static function isEnum(t:Dynamic):Bool
+	{
+		#if cpp
+		return Type.typeof(t).match(TEnum(_));
+		#else
+		return t is Enum;
+		#end
+	}
+
 	inline public static function startsWithLowerCase(s:String):Bool
 		return s.charAt(0) == s.charAt(0).toLowerCase();
 
