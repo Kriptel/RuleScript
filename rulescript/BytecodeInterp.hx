@@ -888,8 +888,8 @@ class BytecodeInterp implements IInterp
 				final id:Int = next();
 				final op = next();
 
-				final f:(a:Int, b:Int) -> Dynamic = cast dynamicBuffer[next().toInt()];
-				final id:Int = next().toInt();
+				final f:(a:Dynamic, b:Dynamic) -> Dynamic = cast dynamicBuffer[next().toInt()];
+				next();
 
 				command();
 				var a:Dynamic = getValue();
