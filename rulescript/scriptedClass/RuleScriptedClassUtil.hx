@@ -161,7 +161,9 @@ class RuleScriptedClassUtil
 						exprList.push(expr);
 				}
 		}
-		exprList.push(lastNew);
+
+		if (lastNew != null)
+			exprList.push(lastNew);
 
 		rulescript.execute(EBlock(exprList).toExpr());
 	}
