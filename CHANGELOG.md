@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Typedefs.
 - `final` variables.
 - Bytecode interpreter.
 - RuleScriptAccess (see [#20](https://github.com/Kriptel/RuleScript/pull/20)).
@@ -33,13 +34,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed missing static modifier for the HxParser.defaultPreprocesorValues ​​field.
 
 ### Changed
+- `rulescript.Abstracts` moved to `rulescript.types.Abstracts`.
+- `rulescript.RuleScriptProperty` moved to `rulescript.types.Property`.
+- `rulescript.RuleScriptProperty.Property` moved to `rulescript.types.Property.PropertyAccess`.
 - Reworked AbstractMacro.
 - Renamed rulescript.macro.RuleScriptedClass to rulescript.macro.RuleScriptedClassMacro.
 
 ### Removed
+- `rulescript.Abstracts.AbstractDecl` typedef.
+- `rulescript.Parser` typedef.
+- `rulescript.HxParser` typedef.
 - Converter macro.
 
 ### Deprecated
+- rulescript.RulescriptInterp.
 - HScriptParserPlus.
 
 ## [0.2.0] 2024.12.07

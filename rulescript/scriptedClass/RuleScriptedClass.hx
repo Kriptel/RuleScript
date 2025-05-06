@@ -2,6 +2,7 @@ package rulescript.scriptedClass;
 
 import hscript.Expr.ClassDecl;
 import hscript.Expr.ModuleDecl;
+import rulescript.interps.RuleScriptInterp;
 import rulescript.types.ScriptedType;
 
 @:autoBuild(rulescript.macro.RuleScriptedClassMacro.build())

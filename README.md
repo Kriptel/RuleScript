@@ -4,6 +4,7 @@
 
 ## Features:
 
+- [Bytecode interpeter](#bytecode-interpeter)
 - [Package](#package)
 - [Import](#import)
 	- [Alias](#import-with-alias)
@@ -17,6 +18,17 @@
 - [Key => value iterator](#key--value-iterator)
 - [`??` and `??=` operators](#and--operators)
 - [Rest](#rest)
+- [HxParser settings](#hxparser-settings)
+
+### Bytecode interpeter
+
+Optimizes and converts `hscript.Expr` to bytecode, distributes objects into buffers. Works much faster than RuleScriptInterp.
+
+```haxe
+script = new RuleScript(new rulescript.interps.BytecodeInterp());
+
+script.execute('trace("Hello World")'); // Hello World
+```
 
 ### Package
 ```haxe
@@ -84,6 +96,9 @@ trace(a); // Hello World
 ```
 
 ### Type path
+
+Use any types without importing them using their type path.
+
 ```haxe
 sys.FileSystem;
 ```
@@ -135,6 +150,17 @@ class ScriptedClassTest implements RuleScriptedClass extends SrcClass {}
 
 See [`Main.hx`](./test/src/Main.hx#l232), [`ScriptedClassTest.hx`](./test/src/test/ScriptedClassTest.hx), [`ScriptedClass`](./test/scripts/haxe/ScriptedClass.rhx).
 
+### Typedefs
+
+Allows you to set the type path to any value. Has a higher resolve priority than classes, abstracts, or enums, but lower than `resolveScript`
+
+```haxe
+Typedefs.register('hello.world.HxParser', HxParser);
+
+var script = new RuleScript();
+trace(script.execute('hello.world.HxParser') == HxParser); // true
+```
+
 ### Abstracts in script
 
 `RuleScriptAbstracts.txt` in any classpath :
@@ -183,7 +209,7 @@ a ??= 'world';
 trace(a) // world
 ```
 
-# Rest
+### Rest
 ```haxe
 var f = function(hello:String, ...rest:Dynamic)
 {
@@ -194,6 +220,26 @@ trace(f('Rulescript','Hello','World','!')); // Rulescript: Hello World !
 
 trace(f('Rulescript',...['Hello','World','!'])); // Rulescript: Hello World !
 ```
+
+### HxParser settings
+
+The parser can be configured, some functions can be disabled or enabled.
+
+Use the `setParameters` function to configure the parser.
+
+List of parameters:
+- allowJSON
+- allowMetadata
+- allowTypes
+- allowPackage
+- allowImport
+- allowUsing
+- allowStringInterpolation
+- allowTypePath
+
+Parser modes:
+- HxParserMode.DEFAULT
+- HxParserMode.MODULE
 
 # Limitations
 

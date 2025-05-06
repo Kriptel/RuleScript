@@ -3,12 +3,13 @@ package;
 import hscript.Expr.ClassDecl;
 import hscript.Expr.ModuleDecl;
 import hscript.Printer;
-import rulescript.BytecodeInterp;
 import rulescript.RuleScript;
-import rulescript.RuleScriptInterp;
+import rulescript.interps.BytecodeInterp;
+import rulescript.interps.RuleScriptInterp;
 import rulescript.parsers.HxParser;
 import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.scriptedClass.RuleScriptedClassUtil;
+import rulescript.types.Typedefs;
 import sys.FileSystem;
 import sys.io.File;
 import test.HelloWorldAbstract;
@@ -35,7 +36,7 @@ class Main
 
 		script = new RuleScript(new HxParser());
 
-		script.scriptName = ' [[RULESCRIPT TEST]]';
+		script.scriptName = 'rulescript.test';
 
 		script.getParser(HxParser).allowAll();
 
@@ -50,6 +51,7 @@ class Main
 			importAndUsingTest();
 			stringInterpolationTest();
 			abstractTest();
+			typedefTest();
 			typePathTest();
 			moduleTest();
 			scriptClassesTest();
@@ -177,6 +179,12 @@ class Main
 
 		var module = script.getParser(HxParser).parseModule(File.getContent('scripts/abstracts/AbstractTest.rhx'));
 		trace(module);
+	}
+
+	static function typedefTest()
+	{
+		Typedefs.register('hello.world.HxParser', HxParser);
+		runScript('hello.world.HxParser', HxParser);
 	}
 
 	static function typePathTest()

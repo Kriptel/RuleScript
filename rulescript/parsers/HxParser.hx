@@ -3,7 +3,7 @@ package rulescript.parsers;
 import haxe.extern.EitherType;
 import hscript.Expr;
 import hscript.Parser.Token;
-import rulescript.types.EnumDecl.EnumField;
+import rulescript.types.decl.EnumDecl.EnumField;
 
 using StringTools;
 using rulescript.Tools;

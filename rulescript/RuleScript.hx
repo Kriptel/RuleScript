@@ -2,7 +2,9 @@ package rulescript;
 
 import haxe.extern.EitherType;
 import hscript.Expr;
-import rulescript.parsers.*;
+import rulescript.interps.RuleScriptInterp;
+import rulescript.parsers.HxParser;
+import rulescript.parsers.Parser;
 
 /**
  * ## Adding script:
@@ -16,7 +18,7 @@ import rulescript.parsers.*;
  * // Run execute inside try-catch
  * script.tryExecute('trace("Hello World");'); // Hello World
  *
- * script.execute('1+1;'); // 2
+ * script.execute('1+1'); // 2
  * ```
  *
  * ## Example:

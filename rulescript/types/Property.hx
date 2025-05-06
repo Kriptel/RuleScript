@@ -1,6 +1,6 @@
-package rulescript;
+package rulescript.types;
 
-enum Property
+enum PropertyAccess
 {
 	DEFAULT;
 	GET(f:() -> Dynamic);
@@ -10,19 +10,19 @@ enum Property
 	NEVER;
 }
 
-class RuleScriptProperty
+class Property
 {
-	var _get:Property;
-	var _set:Property;
+	var _get:PropertyAccess;
+	var _set:PropertyAccess;
 
-	@:allow(rulescript.RuleScriptInterp)
+	@:allow(rulescript.interps.RuleScriptInterp)
 	var _lazyValue:() -> Dynamic;
 
 	@:isVar public var value(get, set):Dynamic;
 
 	var _inProperty:Bool = false;
 
-	public function new(?get:Property = DEFAULT, ?set:Property = DEFAULT)
+	public function new(?get:PropertyAccess = DEFAULT, ?set:PropertyAccess = DEFAULT)
 	{
 		this._get = get;
 		this._set = set;

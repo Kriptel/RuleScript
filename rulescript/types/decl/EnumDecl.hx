@@ -1,4 +1,4 @@
-package rulescript.types;
+package rulescript.types.decl;
 
 import hscript.Expr;
 

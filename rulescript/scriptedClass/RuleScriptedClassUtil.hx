@@ -1,8 +1,8 @@
 package rulescript.scriptedClass;
 
 import hscript.Expr;
+import rulescript.interps.RuleScriptInterp;
 import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
-import rulescript.scriptedClass.RuleScriptedClass.ScriptedInstance;
 
 using rulescript.Tools;
 
