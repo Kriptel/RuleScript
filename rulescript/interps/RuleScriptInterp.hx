@@ -212,7 +212,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case ETypeVarPath(path):
 				var id:String = path[0];
 
-				if (!locals.exists(id) && !variables.exists(id))
+				if (!locals.exists(id) && !variables.exists(id)  && !superFields.contains(id) && !superFields.contains('get_$id'))
 				{
 					final typePath:String = path.join('.');
 
