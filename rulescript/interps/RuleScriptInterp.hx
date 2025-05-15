@@ -212,7 +212,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case ETypeVarPath(path):
 				var id:String = path[0];
 
-				if (!locals.exists(id) && !variables.exists(id)  && !superFields.contains(id) && !superFields.contains('get_$id'))
+				if (!locals.exists(id) && !variables.exists(id) && !superFields.contains(id) && !superFields.contains('get_$id'))
 				{
 					final typePath:String = path.join('.');
 
@@ -420,27 +420,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					return r;
 				};
 				#if hl
-				var f:Dynamic = switch (params.length)
-				{
-					case 0:
-						() -> f([]);
-					case 1:
-						Tools.callMethod1.bind(f, _);
-					case 2:
-						Tools.callMethod2.bind(f, _, _);
-					case 3:
-						Tools.callMethod3.bind(f, _, _, _);
-					case 4:
-						Tools.callMethod4.bind(f, _, _, _, _);
-					case 5, 6:
-						Tools.callMethod6.bind(f, _, _, _, _, _, _);
-					case 7, 8:
-						Tools.callMethod8.bind(f, _, _, _, _, _, _, _, _);
-					case 9, 10, 11, 12:
-						Tools.callMethod12.bind(f, _, _, _, _, _, _, _, _, _, _, _, _);
-					default:
-						Reflect.makeVarArgs(f);
-				}
+				var f = Tools.__hl_makeVarArgs(f, params.length);
 				#else
 				var f = Reflect.makeVarArgs(f);
 				#end

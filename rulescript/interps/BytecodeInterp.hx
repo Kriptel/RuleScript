@@ -6,14 +6,13 @@ import rulescript.RuleScript.IInterp;
 import rulescript.interps.bytecode.Command;
 import rulescript.interps.bytecode.Converter;
 import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
+import rulescript.types.Property;
 
 using StringTools;
 using rulescript.Tools;
 
 /**
  * TODO:
- * - Properties
- * - Rest
  * - Try
  */
 class BytecodeInterp implements IInterp
@@ -31,6 +30,8 @@ class BytecodeInterp implements IInterp
 	public var errorHandler(default, set):haxe.Exception->Void;
 
 	public var isSuperCall:Bool = false;
+
+	public var staticOptimization:Bool = true;
 
 	/**
 	 * used by the interpreter when type is dynamic
@@ -216,20 +217,24 @@ class BytecodeInterp implements IInterp
 				final type = next();
 				final id:Int = next();
 				command();
-				final valueId:Int = linkID;
+				final value:Dynamic = getValue();
 
 				switch (type)
 				{
 					case STRING:
-						stringBuffer[id] = stringBuffer[valueId];
+						stringBuffer[id] = value;
 					case INT:
-						_buffer[id] = valueId;
+						_buffer[id] = value;
 					case BOOL:
-						_buffer[id] = valueId;
+						_buffer[id] = value;
 					case FLOAT:
-						floatBuffer[id] = floatBuffer[valueId];
+						floatBuffer[id] = value;
 					case DYNAMIC:
-						dynamicBuffer[id] = dynamicBuffer[valueId];
+						final obj:Dynamic = dynamicBuffer[id];
+						if (obj is Property)
+							cast(obj, Property).value = value;
+						else
+							dynamicBuffer[id] = value;
 					default:
 						throw type;
 				}
@@ -352,26 +357,38 @@ class BytecodeInterp implements IInterp
 				return linkType = BOOL;
 
 			case AND:
-				command();
-				final a:Dynamic = getValue();
-				command();
-				final b:Dynamic = getValue();
+				final endId:Int = next();
 
-				linkID = (a && b) ? BOOL_TRUE : BOOL_FALSE;
+				command();
+
+				if (getValue())
+				{
+					command();
+					linkID = (getValue()) ? BOOL_TRUE : BOOL_FALSE;
+				}
+				else
+				{
+					linkID = BOOL_FALSE;
+					this.pos = endId;
+				}
 
 				return linkType = BOOL;
 
 			case OR:
-				inline function getCommandValue():Bool
+				final endId:Int = next();
+
+				command();
+
+				if (getValue())
+				{
+					linkID = BOOL_TRUE;
+					this.pos = endId;
+				}
+				else
 				{
 					command();
-					return cast getValue();
+					linkID = (getValue()) ? BOOL_TRUE : BOOL_FALSE;
 				}
-
-				linkID = if (getCommandValue() || getCommandValue())
-					BOOL_TRUE
-				else
-					BOOL_FALSE;
 
 				return linkType = BOOL;
 
@@ -472,7 +489,7 @@ class BytecodeInterp implements IInterp
 				command();
 				_buffer[id] = cast getValue();
 
-				return linkType;
+				return VOID;
 
 			case VARIABLE_FLOAT:
 				final id:Int = next();
@@ -480,7 +497,7 @@ class BytecodeInterp implements IInterp
 				command();
 				floatBuffer[id] = cast getValue();
 
-				return linkType;
+				return VOID;
 
 			case VARIABLE_STRING:
 				final id:Int = next();
@@ -488,7 +505,7 @@ class BytecodeInterp implements IInterp
 				command();
 				stringBuffer[id] = cast getValue();
 
-				return linkType;
+				return VOID;
 
 			case VARIABLE_DYNAMIC:
 				final id:Int = next();
@@ -496,7 +513,58 @@ class BytecodeInterp implements IInterp
 				command();
 				dynamicBuffer[id] = cast getValue();
 
-				return linkType;
+				return VOID;
+
+			case CREATE_PROPERTY:
+				final id:Int = next();
+
+				var getF:PropertyAccess = switch (next())
+				{
+					case PROP_DEFAULT:
+						DEFAULT;
+					case PROP_CALLBACK:
+						command();
+						GET(getValue());
+					case PROP_NULL:
+						NULL;
+					case PROP_DYNAMIC:
+						command();
+						DYNAMIC(getValue());
+					case PROP_NEVER:
+						NEVER;
+					default:
+						null;
+				}
+
+				var setF:PropertyAccess = switch (next())
+				{
+					case PROP_DEFAULT:
+						DEFAULT;
+					case PROP_CALLBACK:
+						command();
+
+						var value:Dynamic->Dynamic = cast getValue();
+
+						SET(value);
+					case PROP_NULL:
+						NULL;
+					case PROP_DYNAMIC:
+						command();
+						DYNAMIC(getValue());
+					case PROP_NEVER:
+						NEVER;
+					default:
+						null;
+				}
+
+				command();
+				var lazyF:() -> Dynamic = cast getValue();
+
+				final prop = new Property(getF, setF);
+				prop._lazyValue = lazyF;
+				dynamicBuffer[id] = prop;
+
+				return VOID;
 
 			case CAST_INT_TO_FLOAT:
 				command();
@@ -801,12 +869,22 @@ class BytecodeInterp implements IInterp
 
 				final func:Dynamic = Reflect.getProperty(obj, field) ?? __usings[field];
 
+				final argNum:Int = next();
+				final isRest:Bool = next() == PARAM_REST;
 				final args:Array<Dynamic> = [obj];
 
-				for (i in 1...next().toInt() + 1)
+				for (i in 1...argNum + 1)
 				{
 					command();
 					args[i] = getValue();
+				}
+
+				if (isRest)
+				{
+					for (i in cast(args.pop(), Array<Dynamic>))
+					{
+						args.push(i);
+					}
 				}
 
 				dynamicBuffer[id] = Reflect.callMethod(obj, func, args);
@@ -944,17 +1022,26 @@ class BytecodeInterp implements IInterp
 
 				command();
 
-				var func:Dynamic = getValue();
+				final func:Dynamic = getValue();
 
 				var argNum:Int = next();
+				final isRest:Bool = next() == PARAM_REST;
 
-				var args:Array<Dynamic> = [
+				final args:Array<Dynamic> = [
 					while (argNum-- != 0)
 					{
 						command();
 						getValue();
 					}
 				];
+
+				if (isRest)
+				{
+					for (i in cast(args.pop(), Array<Dynamic>))
+					{
+						args.push(i);
+					}
+				}
 
 				#if hl
 				dynamicBuffer[id] = Tools.__hl_callMethod(func, args);
@@ -1100,6 +1187,7 @@ class BytecodeInterp implements IInterp
 
 				final endPos:Int = next();
 				final argNum:Int = next();
+				final isRest:Bool = next() == REST;
 				final startPos:Int = this.pos;
 				this.pos = endPos;
 
@@ -1154,6 +1242,7 @@ class BytecodeInterp implements IInterp
 				final endPos:Int = next();
 				final name:String = stringBuffer[next().toInt()];
 				final argNum:Int = next();
+				final isRest:Bool = next() == REST;
 				final startPos:Int = this.pos;
 				this.pos = endPos;
 
@@ -1171,7 +1260,7 @@ class BytecodeInterp implements IInterp
 							final argId:Int = next();
 							dynamicBuffer[argId] = args[i];
 						}
-						while (i++ <= argNum);
+						while (++i < argNum);
 					}
 
 					command();
@@ -1181,31 +1270,18 @@ class BytecodeInterp implements IInterp
 					return v;
 				}
 
-				#if hl
-				var f:Dynamic = switch (argNum)
+				var f:Dynamic = if (isRest)
 				{
-					case 0:
-						() -> f([]);
-					case 1:
-						Tools.callMethod1.bind(f, _);
-					case 2:
-						Tools.callMethod2.bind(f, _, _);
-					case 3:
-						Tools.callMethod3.bind(f, _, _, _);
-					case 4:
-						Tools.callMethod4.bind(f, _, _, _, _);
-					case 5, 6:
-						Tools.callMethod6.bind(f, _, _, _, _, _, _);
-					case 7, 8:
-						Tools.callMethod8.bind(f, _, _, _, _, _, _, _, _);
-					case 9, 10, 11, 12:
-						Tools.callMethod12.bind(f, _, _, _, _, _, _, _, _, _, _, _, _);
-					default:
-						Reflect.makeVarArgs(f);
+					makeRest(f, argNum);
 				}
-				#else
-				var f = Reflect.makeVarArgs(f);
-				#end
+				else
+				{
+					#if hl
+					Tools.__hl_makeVarArgs(f, argNum);
+					#else
+					Reflect.makeVarArgs(f);
+					#end
+				}
 
 				variables[name] = dynamicBuffer[id] = f;
 				linkID = id;
@@ -1217,6 +1293,7 @@ class BytecodeInterp implements IInterp
 				final endPos:Int = next();
 				final name:String = stringBuffer[next().toInt()];
 				final argNum:Int = next();
+				final isRest:Bool = next() == REST;
 				final startPos:Int = this.pos;
 				this.pos = endPos;
 
@@ -1234,41 +1311,29 @@ class BytecodeInterp implements IInterp
 							final argId:Int = next();
 							dynamicBuffer[argId] = args[i];
 						}
-						while (i++ <= argNum);
+						while (++i < argNum);
 					}
 
 					command();
 
 					var v:Dynamic = getValue();
 					this.pos = lastPos;
+
 					return v;
 				}
 
-				#if hl
-				var f:Dynamic = switch (argNum)
+				var f:Dynamic = if (isRest)
 				{
-					case 0:
-						() -> f([]);
-					case 1:
-						Tools.callMethod1.bind(f, _);
-					case 2:
-						Tools.callMethod2.bind(f, _, _);
-					case 3:
-						Tools.callMethod3.bind(f, _, _, _);
-					case 4:
-						Tools.callMethod4.bind(f, _, _, _, _);
-					case 5, 6:
-						Tools.callMethod6.bind(f, _, _, _, _, _, _);
-					case 7, 8:
-						Tools.callMethod8.bind(f, _, _, _, _, _, _, _, _);
-					case 9, 10, 11, 12:
-						Tools.callMethod12.bind(f, _, _, _, _, _, _, _, _, _, _, _, _);
-					default:
-						Reflect.makeVarArgs(f);
+					makeRest(f, argNum);
 				}
-				#else
-				var f = Reflect.makeVarArgs(f);
-				#end
+				else
+				{
+					#if hl
+					Tools.__hl_makeVarArgs(f, argNum);
+					#else
+					Reflect.makeVarArgs(f);
+					#end
+				}
 
 				variables[name] = dynamicBuffer[id] = f;
 				linkID = id;
@@ -1277,7 +1342,8 @@ class BytecodeInterp implements IInterp
 			case ANON_FUNCTION:
 				final id:Int = next();
 				final endPos:Int = next();
-				final argNum:Int = next();
+				final argNum:Int = next().toInt();
+				final isRest:Bool = next() == REST;
 				final startPos:Int = this.pos;
 				this.pos = endPos;
 
@@ -1295,7 +1361,7 @@ class BytecodeInterp implements IInterp
 							final argId:Int = next();
 							dynamicBuffer[argId] = args[i];
 						}
-						while (i++ <= argNum);
+						while (++i < argNum);
 					}
 
 					command();
@@ -1305,31 +1371,18 @@ class BytecodeInterp implements IInterp
 					return v;
 				}
 
-				#if hl
-				var f:Dynamic = switch (argNum)
+				var f:Dynamic = if (isRest)
 				{
-					case 0:
-						() -> f([]);
-					case 1:
-						Tools.callMethod1.bind(f, _);
-					case 2:
-						Tools.callMethod2.bind(f, _, _);
-					case 3:
-						Tools.callMethod3.bind(f, _, _, _);
-					case 4:
-						Tools.callMethod4.bind(f, _, _, _, _);
-					case 5, 6:
-						Tools.callMethod6.bind(f, _, _, _, _, _, _);
-					case 7, 8:
-						Tools.callMethod8.bind(f, _, _, _, _, _, _, _, _);
-					case 9, 10, 11, 12:
-						Tools.callMethod12.bind(f, _, _, _, _, _, _, _, _, _, _, _, _);
-					default:
-						Reflect.makeVarArgs(f);
+					makeRest(f, argNum);
 				}
-				#else
-				var f = Reflect.makeVarArgs(f);
-				#end
+				else
+				{
+					#if hl
+					Tools.__hl_makeVarArgs(f, argNum);
+					#else
+					Reflect.makeVarArgs(f);
+					#end
+				}
 
 				dynamicBuffer[id] = f;
 				linkID = id;
@@ -1380,8 +1433,27 @@ class BytecodeInterp implements IInterp
 			case NULL:
 				return linkType = NULL;
 			case command:
-				throw command.toString();
+				throw command.toString() + ' (${command.toInt()}) at pos $pos';
 		}
+	}
+
+	function makeRest(f:Array<Dynamic>->Dynamic, argNum:Int):Dynamic
+	{
+		final restId:Int = argNum - 1;
+		final f = function(args:Array<Dynamic>)
+		{
+			return if (args.length > argNum)
+			{
+				final newArgs:Array<Dynamic> = args.slice(0, restId);
+				newArgs.push(args.slice(restId, args.length));
+
+				return f(newArgs);
+			}
+			else
+				f(args);
+		};
+
+		return Reflect.makeVarArgs(f);
 	}
 
 	function makeIterator(obj:Dynamic):Iterator<Dynamic>

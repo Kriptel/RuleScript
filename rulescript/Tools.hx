@@ -177,6 +177,31 @@ class Tools
 	}
 
 	#if hl
+	@:noCompletion public inline static function __hl_makeVarArgs(f:Array<Dynamic>->Dynamic, numArgs:Int):Dynamic
+	{
+		return switch (numArgs)
+		{
+			case 0:
+				() -> f([]);
+			case 1:
+				Tools.callMethod1.bind(f, _);
+			case 2:
+				Tools.callMethod2.bind(f, _, _);
+			case 3:
+				Tools.callMethod3.bind(f, _, _, _);
+			case 4:
+				Tools.callMethod4.bind(f, _, _, _, _);
+			case 5, 6:
+				Tools.callMethod6.bind(f, _, _, _, _, _, _);
+			case 7, 8:
+				Tools.callMethod8.bind(f, _, _, _, _, _, _, _, _);
+			case 9, 10, 11, 12:
+				Tools.callMethod12.bind(f, _, _, _, _, _, _, _, _, _, _, _, _);
+			default:
+				Reflect.makeVarArgs(f);
+		}
+	}
+
 	@:noCompletion public inline static function __hl_callMethod(func:haxe.Constraints.Function, args:Array<Dynamic>):Dynamic
 	{
 		final ft = hl.Type.getDynamic(func);

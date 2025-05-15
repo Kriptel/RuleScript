@@ -32,7 +32,12 @@ class Main
 
 		trace('Testing Commands:');
 
-		RuleScript.createInterp = () -> new BytecodeInterp();
+		RuleScript.createInterp = () ->
+		{
+			var interp = new BytecodeInterp();
+			interp.staticOptimization = false;
+			interp;
+		};
 
 		script = new RuleScript(new HxParser());
 

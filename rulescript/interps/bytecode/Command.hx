@@ -67,20 +67,30 @@ enum abstract Command(Int) from Int
 	var VARIABLE_BOOL = 63;
 	var VARIABLE_DYNAMIC = 64;
 
-	// OTHER FEATURES
-	var CAST_INT_TO_FLOAT = 70;
-	var CREATE_OBJECT = 71;
-	var BOOL_TRUE = 72;
-	var BOOL_FALSE = 73;
-	var BUFFER_LINK = 74;
-	var ARRAY_GET = 75;
-	var ARRAY_SET = 76;
-	var MAP_GET = 77;
-	var MAP_SET = 78;
-	var OBJECT_SET = 79;
-	var OBJECT_SET_PROP = 80;
-	var INT_ITERATOR = 81;
+	// PROPERTY
+	var CREATE_PROPERTY = 65;
+	var PROP_DEFAULT = 66;
+	var PROP_CALLBACK = 67;
+	var PROP_DYNAMIC = 68;
+	var PROP_NULL = 69;
+	var PROP_NEVER = 70;
 
+	// OTHER FEATURES
+	var CAST_INT_TO_FLOAT = 80;
+	var CREATE_OBJECT = 81;
+	var BOOL_TRUE = 82;
+	var BOOL_FALSE = 83;
+	var BUFFER_LINK = 84;
+	var ARRAY_GET = 85;
+	var ARRAY_SET = 86;
+	var MAP_GET = 87;
+	var MAP_SET = 88;
+	var OBJECT_SET = 89;
+	var OBJECT_SET_PROP = 90;
+	var INT_ITERATOR = 91;
+	var REST = 92;
+	var PARAM = 93;
+	var PARAM_REST = 94;
 	// OPERATORS
 	var OP_PLUS = 100;
 	var OP_MINUS = 101;

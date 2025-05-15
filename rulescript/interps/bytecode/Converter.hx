@@ -61,7 +61,10 @@ class Converter
 
 		for (key => value in interp.variables)
 		{
-			variables[key] = TId(DYNAMIC, link(DYNAMIC, value));
+			variables[key] = if (interp.staticOptimization)
+				TId(DYNAMIC, link(DYNAMIC, value));
+			else
+				TDynamic;
 		}
 
 		var imports:Map<String, VarType> = [];
@@ -84,7 +87,7 @@ class Converter
 								lastValues.push({name: name, t: variables[name]});
 								variables.set(name, isFinal ? TFinal(TUnknown) : TUnknown);
 
-							case EFunction(args, e, name, ret):
+							case EFunction(args, e, name, ret) if (name != null):
 								lastValues.push({name: name, t: variables[name]});
 								variables.set(name, TFunction(null));
 							default:
@@ -125,6 +128,68 @@ class Converter
 
 				case ECheckType(e, _):
 					ce(e);
+
+				case EProp(name, get, set, t, expr, global):
+					final type:VarType = t != null ? typeofCType(t) : typeof(expr);
+
+					final isMap:Bool = type.match(TMap(_));
+
+					lastValues.push({name: name, t: variables[name]});
+
+					add(CREATE_PROPERTY);
+
+					final id = link(DYNAMIC, null, true);
+					add(id);
+
+					variables.set(name, TId(DYNAMIC, id));
+
+					// Get function
+
+					switch (get)
+					{
+						case 'default':
+							add(PROP_DEFAULT);
+						case 'get':
+							add(PROP_CALLBACK);
+							ce(EFunction([], ECall(EIdent('get_$name').toExpr(), []).toExpr()).toExpr());
+						case 'null':
+							add(PROP_NULL);
+						case 'dynamic':
+							add(PROP_DYNAMIC);
+							ce(EFunction([], ECall(EIdent('get_$name').toExpr(), []).toExpr()).toExpr());
+						case 'never':
+							add(PROP_NEVER);
+						default:
+							throw '$name: Custom property accessor is no longer supported, please use `get`';
+					}
+
+					// Set function
+
+					switch (set)
+					{
+						case 'default':
+							add(PROP_DEFAULT);
+						case 'set':
+							add(PROP_CALLBACK);
+
+							ce(EFunction([{name: 'v'}], ECall(EIdent('set_$name').toExpr(), [EIdent('v').toExpr()]).toExpr()).toExpr());
+						case 'null':
+							add(PROP_NULL);
+						case 'dynamic':
+							add(PROP_DYNAMIC);
+							ce(EFunction([{name: 'v'}], ECall(EIdent('set_$name').toExpr(), [EIdent('v').toExpr()]).toExpr()).toExpr());
+						case 'never':
+							add(PROP_NEVER);
+						default:
+							throw '$name: Custom property accessor is no longer supported, please use `set`';
+					}
+
+					// Lazy value function
+
+					if (expr != null)
+						ce(EFunction([], EBlock([EVar('__v', t, expr).toExpr(), EIdent('__v').toExpr()]).toExpr()).toExpr());
+					else
+						add(NULL);
 
 				case EVar(name, t, expr, global, isFinal):
 					final type:VarType = t != null ? typeofCType(t) : typeof(expr);
@@ -381,8 +446,14 @@ class Converter
 						addLink(STRING, fieldName);
 
 					add(params.length);
+
+					final isRest = (params.length > 0 && params[params.length - 1].e.match(EUnop('...', true, _)));
+					add(isRest ? PARAM_REST : PARAM);
+
 					for (param in params)
+					{
 						ce(param);
+					}
 
 				case EImport(name, _, alias, func):
 					var type:Dynamic = resolveType(name);
@@ -521,6 +592,10 @@ class Converter
 					if (name != null && name != 'new')
 						addLink(STRING, name);
 					add(args.length);
+
+					final isRest = (args.length > 0 && args[args.length - 1].t.match(CTPath(["haxe", "Rest"], _)));
+
+					add(isRest ? REST : NULL);
 
 					final oldVariables:Int = lastValues.length;
 					final oldDepth:Int = depth++;
@@ -687,8 +762,18 @@ class Converter
 										default:
 											throw 'Unknown operator "$op"';
 									});
-									ce(e1);
-									ce(e2);
+
+									switch (op)
+									{
+										case '&&', '||':
+											final endId:Int = add(-1) - 1; // for end ID
+											ce(e1);
+											ce(e2);
+											buffer[endId] = buffer.length;
+										default:
+											ce(e1);
+											ce(e2);
+									}
 
 									return;
 								}
@@ -866,6 +951,8 @@ class Converter
 								default:
 									throw 'Invalid operator "$op"';
 							}
+						default:
+							ce(e);
 					}
 				case ENew(cl, params):
 					add(NEW);
@@ -955,6 +1042,7 @@ class Converter
 					throw 'Unsupported expression "${e.getExpr()}"';
 			}
 		}
+
 		ce(switch (e.getExpr())
 		{
 			case EBlock(_):
@@ -1055,7 +1143,7 @@ class Converter
 	{
 		return switch (e.getExpr())
 		{
-			case EVar(_):
+			case EVar(_) | EProp(_):
 				TVoid;
 			case ECheckType(_, t):
 				TDynamic;
@@ -1144,7 +1232,7 @@ class Converter
 								}
 							case TInstance(TClass(ScriptedClass)):
 								return TScriptedClass;
-							case null if (!variables.exists(v)):
+							case null if (interp.staticOptimization && !variables.exists(v)):
 								throw 'Unknown variable "$v"';
 							case t:
 								t;
