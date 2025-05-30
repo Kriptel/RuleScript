@@ -75,8 +75,6 @@ import rulescript.types.ScriptedTypeUtil;
  */
 class RuleScript
 {
-	/**
-	 */
 	@:deprecated('`resolveScript` is deprecated, use `ScriptedTypeUtil.resolveScript`')
 	public static var resolveScript(get, set):String->Dynamic;
 
