@@ -5,6 +5,7 @@ import hscript.Expr;
 import rulescript.interps.RuleScriptInterp;
 import rulescript.parsers.HxParser;
 import rulescript.parsers.Parser;
+import rulescript.types.ScriptedTypeUtil;
 
 /**
  * ## Adding script:
@@ -78,9 +79,17 @@ class RuleScript
 	 * Edit, if you want make importable script
 	 * @see [dynamic keyword](https://haxe.org/manual/class-field-dynamic.html)
 	 */
-	public static dynamic function resolveScript(name:String):Dynamic
+	@:deprecated('`resolveScript` is deprecated, use `ScriptedTypeUtil.resolveScript`')
+	public static var resolveScript(get, set):String->Dynamic;
+
+	static function get_resolveScript():String->Dynamic
 	{
-		return null;
+		return ScriptedTypeUtil.resolveScript;
+	}
+
+	static function set_resolveScript(v:String->Dynamic):String->Dynamic
+	{
+		return ScriptedTypeUtil.resolveScript = v;
 	}
 
 	public static dynamic function createInterp():IInterp

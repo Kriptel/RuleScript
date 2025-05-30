@@ -1,0 +1,18 @@
+package abstracts;
+
+import abstracts.AbstractTest;
+import haxe.Int64;
+
+class Main
+{
+	static function main()
+	{
+		var a:AbstractTest = new AbstractTest("String");
+
+		a.helloWorld();
+
+		final int64 = Int64.make(0,123);
+		int64 = Int64.div(int64,12);
+		trace(int64);
+	}
+}

@@ -2,6 +2,10 @@ package abstracts;
 
 abstract AbstractTest(String) from String
 {
+	function new(arg:String){
+		this = arg;
+	}
+
 	var HELLO:AbstractTest = "Hello World";
 
 	inline public static function helloWorld():String

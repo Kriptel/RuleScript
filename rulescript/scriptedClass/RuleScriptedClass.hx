@@ -1,7 +1,6 @@
 package rulescript.scriptedClass;
 
 import hscript.Expr.ClassDecl;
-import hscript.Expr.ModuleDecl;
 import rulescript.interps.RuleScriptInterp;
 import rulescript.types.ScriptedType;
 
@@ -52,13 +51,6 @@ abstract Access(RuleScriptedClass)
 	}
 }
 
-typedef ScriptedModule =
-{
-	var path:String;
-	var name:String;
-	var decl:Array<ModuleDecl>;
-}
-
 @:noBuild class ScriptedClass implements RuleScriptedClass
 {
 	public var module:ScriptedModule;
@@ -83,7 +75,7 @@ typedef ScriptedModule =
 					pack = path.join('.');
 				case DClass(c) if (typeName == null || c.name == typeName):
 					this.impl = c;
-				case _:
+				default:
 			}
 		}
 

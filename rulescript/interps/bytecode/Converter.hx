@@ -3,6 +3,7 @@ package rulescript.interps.bytecode;
 import hscript.Expr;
 import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
 import rulescript.types.Abstracts;
+import rulescript.types.ScriptedTypeUtil;
 import rulescript.types.Typedefs;
 
 using StringTools;
@@ -447,7 +448,7 @@ class Converter
 
 					add(params.length);
 
-					final isRest = (params.length > 0 && params[params.length - 1].e.match(EUnop('...', true, _)));
+					final isRest = (params.length > 0 && params[params.length - 1].getExpr().match(EUnop('...', true, _)));
 					add(isRest ? PARAM_REST : PARAM);
 
 					for (param in params)
@@ -462,13 +463,11 @@ class Converter
 
 					final id:String = alias ?? func ?? name.substring(name.lastIndexOf('.') + 1, name.length);
 
-					imports[id] = toVarType(type);
-
 					add(IMPORT);
 					addLink(STRING, id);
 
 					lastValues.push({name: id, t: variables[id]});
-					variables[id] = imports[id];
+					variables[id] = imports[id] = toVarType(type);
 
 					if (type is Class)
 					{
@@ -1093,7 +1092,7 @@ class Converter
 
 	private function resolveType(path:String):Dynamic
 	{
-		var t:Dynamic = RuleScript.resolveScript(path);
+		var t:Dynamic = ScriptedTypeUtil.resolveScript(path);
 
 		if (t != null)
 			return t;
@@ -1323,6 +1322,8 @@ class Converter
 				TClass(String);
 			case CTPath(['Bool'], null):
 				TBool;
+			case CTPath(path, null):
+				return TDynamic;
 			default:
 				TDynamic;
 		}

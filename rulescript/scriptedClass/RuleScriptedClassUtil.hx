@@ -3,6 +3,7 @@ package rulescript.scriptedClass;
 import hscript.Expr;
 import rulescript.interps.RuleScriptInterp;
 import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
+import rulescript.types.ScriptedTypeUtil;
 
 using rulescript.Tools;
 
@@ -36,7 +37,7 @@ class RuleScriptedClassUtil
 		}
 		else
 		{
-			var type:ScriptedClassType = types[typePath] ?? RuleScript.resolveScript(typePath);
+			var type:ScriptedClassType = types[typePath] ?? ScriptedTypeUtil.resolveScript(typePath);
 
 			var rulescript = new rulescript.RuleScript();
 			rulescript.superInstance = superInstance;

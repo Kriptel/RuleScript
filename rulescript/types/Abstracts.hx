@@ -2,6 +2,7 @@ package rulescript.types;
 
 using StringTools;
 
+@:haxe.warning("-WDeprecated")
 @:build(rulescript.macro.AbstractMacro.build())
 class Abstracts
 {

@@ -5,6 +5,8 @@ import rulescript.RuleScript.IInterp;
 import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.types.Abstracts;
 import rulescript.types.Property;
+import rulescript.types.ScriptedAbstract;
+import rulescript.types.ScriptedTypeUtil;
 import rulescript.types.Typedefs;
 
 using rulescript.Tools;
@@ -490,7 +492,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	function resolveType(path:String):Dynamic
 	{
-		var t:Dynamic = RuleScript.resolveScript(path);
+		var t:Dynamic = ScriptedTypeUtil.resolveScript(path);
 
 		if (t != null)
 			return t;
@@ -682,11 +684,13 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	{
 		var c:Dynamic = Type.resolveClass(cl);
 
-		c ??= RuleScript.resolveScript(cl);
+		c ??= ScriptedTypeUtil.resolveScript(cl);
 		c ??= resolve(cl);
 
 		if (c is ScriptedClass)
 			return cast(c, ScriptedClass).createInstance(args);
+		if (c is ScriptedAbstract)
+			return cast(c, ScriptedAbstract).constructor(args);
 
 		#if hl
 		return Reflect.isFunction(c) ? Tools.__hl_callMethod(c, args) : c is Class ? Tools.__hl_createInstance(c, args) : c;

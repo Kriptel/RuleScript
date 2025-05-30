@@ -1155,7 +1155,7 @@ private class HScriptParser extends hscript.Parser
 					implement: implement,
 					fields: fields,
 					isPrivate: isPrivate,
-					isExtern: isExtern,
+					isExtern: isExtern
 				});
 			case "typedef":
 				var name = getIdent();
@@ -1167,7 +1167,7 @@ private class HScriptParser extends hscript.Parser
 					meta: meta,
 					params: params,
 					isPrivate: isPrivate,
-					t: t,
+					t: t
 				});
 			case "abstract":
 				var name = getIdent();
@@ -1242,7 +1242,7 @@ private class HScriptParser extends hscript.Parser
 						type: type,
 						meta: meta,
 						index: id++,
-						params: params,
+						params: params
 					}
 
 					constructs[name] = field;

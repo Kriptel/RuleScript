@@ -9,6 +9,7 @@ import rulescript.interps.RuleScriptInterp;
 import rulescript.parsers.HxParser;
 import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.scriptedClass.RuleScriptedClassUtil;
+import rulescript.types.ScriptedTypeUtil;
 import rulescript.types.Typedefs;
 import sys.FileSystem;
 import sys.io.File;
@@ -47,7 +48,7 @@ class Main
 
 		script.errorHandler = onError;
 
-		RuleScript.resolveScript = resolveScript;
+		ScriptedTypeUtil.resolveModule = resolveModule;
 
 		try
 		{
@@ -182,6 +183,11 @@ class Main
             test.HelloWorldAbstract.rulescriptPrint();
         ', HelloWorldAbstract.rulescriptPrint());
 
+		var cl = new Access(ScriptedTypeUtil.resolveScript('abstracts.Main'));
+		cl.main();
+
+		script.getParser(HxParser).mode = DEFAULT;
+
 		var module = script.getParser(HxParser).parseModule(File.getContent('scripts/abstracts/AbstractTest.rhx'));
 		trace(module);
 	}
@@ -272,7 +278,7 @@ class Main
 		script.getParser(HxParser).mode = MODULE;
 
 		// Get class
-		var cl = new Access(RuleScript.resolveScript('scriptedClass.RuleScriptedClass.ScriptedClassStrict'));
+		var cl = new Access(ScriptedTypeUtil.resolveScript('scriptedClass.RuleScriptedClass.ScriptedClassStrict'));
 
 		// Create Scripted class instance
 		var instance = cl.createInstance(['hello']);
@@ -302,15 +308,8 @@ class Main
 			trace(scriptClass.getVariable('scriptFunction')());
 	}
 
-	public static function resolveScript(name:String):Dynamic
+	public static function resolveModule(name:String):Array<ModuleDecl>
 	{
-		// Check if it has been parsed before.
-
-		var cl = RuleScriptedClassUtil.getClass(name);
-		if (cl != null)
-			return cl;
-
-		// Parse type path.
 		var path:Array<String> = name.split('.');
 
 		var pack:Array<String> = [];
@@ -330,58 +329,12 @@ class Main
 		if (!FileSystem.exists(filePath))
 			return null;
 
-		var typeName = path[0];
-
 		// Parse code.
 		var parser = new HxParser();
 		parser.allowAll();
 		parser.mode = MODULE;
 
-		var module:Array<ModuleDecl> = parser.parseModule(File.getContent(filePath));
-
-		// Remove other types, include packages, imports and etc.
-		var newModule:Array<ModuleDecl> = [];
-
-		var extend:String = null;
-
-		var classImpl:ClassDecl = null;
-
-		for (decl in module)
-		{
-			switch (decl)
-			{
-				case DPackage(_), DUsing(_), DImport(_):
-					newModule.push(decl);
-				case DClass(c):
-					if (c.name == typeName)
-					{
-						newModule.push(decl);
-
-						classImpl = c;
-
-						if (c.extend != null)
-						{
-							extend = new Printer().typeToString(c.extend);
-						}
-					}
-				default:
-			}
-		}
-
-		var obj:Null<ScriptedClass> = null;
-
-		if (classImpl != null)
-		{
-			obj = new ScriptedClass({
-				name: moduleName ?? path[0],
-				path: pack.join('.'),
-				decl: newModule
-			}, classImpl?.name);
-
-			RuleScriptedClassUtil.registerRuleScriptedClass(obj.toString(), obj);
-		}
-
-		return obj;
+		return parser.parseModule(File.getContent(filePath));
 	}
 
 	static function fileScriptTest()
@@ -399,7 +352,7 @@ class Main
 		script.variables.get('main')();
 
 		// Scripted class
-		var ScriptedClassC:Access = new Access(RuleScript.resolveScript('scriptedClass.ScriptedClass.ScriptedClassC'));
+		var ScriptedClassC:Access = new Access(ScriptedTypeUtil.resolveScript('scriptedClass.ScriptedClass.ScriptedClassC'));
 
 		// Scripted class instance
 		var instance = ScriptedClassC.createInstance();

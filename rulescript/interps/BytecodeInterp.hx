@@ -7,6 +7,7 @@ import rulescript.interps.bytecode.Command;
 import rulescript.interps.bytecode.Converter;
 import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
 import rulescript.types.Property;
+import rulescript.types.ScriptedTypeUtil;
 
 using StringTools;
 using rulescript.Tools;
@@ -39,6 +40,8 @@ class BytecodeInterp implements IInterp
 	public var binops:Map<String, (Dynamic, Dynamic) -> Dynamic> = [];
 
 	var converter:Converter;
+
+	var curLine:Int = 0;
 
 	public function new()
 	{
@@ -143,7 +146,7 @@ class BytecodeInterp implements IInterp
 		{
 			haxe.Log.trace(args.join(', '), cast {
 				fileName: scriptName,
-				lineNumber: 0
+				lineNumber: curLine
 			});
 
 			return;
@@ -1497,7 +1500,7 @@ class BytecodeInterp implements IInterp
 	{
 		var c:Dynamic = Type.resolveClass(cl);
 
-		c ??= RuleScript.resolveScript(cl);
+		c ??= ScriptedTypeUtil.resolveScript(cl);
 		c ??= variables.get(cl);
 
 		if (c is ScriptedClass)

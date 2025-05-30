@@ -3,6 +3,7 @@ package rulescript.types;
 class Typedefs
 {
 	private static var typedefs:Map<String, Dynamic> = [
+		'haxe.Int32' => Int,
 		'rulescript.BytecodeInterp' => rulescript.interps.BytecodeInterp,
 		'rulescript.Parser' => rulescript.parsers.Parser,
 		'rulescript.HxParser' => rulescript.parsers.HxParser

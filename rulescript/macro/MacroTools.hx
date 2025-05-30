@@ -8,7 +8,7 @@ using StringTools;
 
 class MacroTools
 {
-	public static function parseClassPath(classPath:String):ClassPath
+	public static function parseTypePath(classPath:String):TypePath
 	{
 		if (classPath == null || classPath.length == 0)
 			return null;
@@ -47,7 +47,7 @@ class MacroTools
 	}
 }
 
-typedef ClassPath =
+typedef TypePath =
 {
 	var fullPath:String;
 	var name:String;

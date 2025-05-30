@@ -12,6 +12,7 @@ enum abstract Command(Int) from Int
 	var BREAK = 5;
 	var SUPER = 6;
 	var CONSTRUCTOR = 7;
+	var LINE = 8;
 
 	var GET = 10;
 	var GET_NATIVE = 11;
@@ -91,6 +92,7 @@ enum abstract Command(Int) from Int
 	var REST = 92;
 	var PARAM = 93;
 	var PARAM_REST = 94;
+
 	// OPERATORS
 	var OP_PLUS = 100;
 	var OP_MINUS = 101;
