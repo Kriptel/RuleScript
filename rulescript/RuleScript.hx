@@ -76,8 +76,6 @@ import rulescript.types.ScriptedTypeUtil;
 class RuleScript
 {
 	/**
-	 * Edit, if you want make importable script
-	 * @see [dynamic keyword](https://haxe.org/manual/class-field-dynamic.html)
 	 */
 	@:deprecated('`resolveScript` is deprecated, use `ScriptedTypeUtil.resolveScript`')
 	public static var resolveScript(get, set):String->Dynamic;
