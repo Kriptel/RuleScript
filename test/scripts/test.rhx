@@ -12,9 +12,10 @@ class A
 			'World' => 8
 		];
 
-		for(key => value in map){
+		for(key => value in map)
+		{
 			trace('Map key => value Iterator: $key => $value');
-		}
+		};
 
 		restTest('Rulescript','Hello','World','!');
 

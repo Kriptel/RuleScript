@@ -274,12 +274,6 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				if (l != null)
 					return getScriptProp(l.r);
 				return resolve(id);
-			case EFor(key, it, e, value):
-				if (value == null)
-					forLoop(key, it, e);
-				else
-					forLoopKeyValue(key, value, it, e);
-				return null;
 			case ECall(e, params):
 				var args = new Array();
 				for (p in params)
@@ -538,7 +532,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		return t;
 	}
 
-	function makeKeyValueIterator(v:Dynamic)
+	override function makeKeyValueIterator(v:Dynamic)
 	{
 		#if ((flash && !flash9) || (php && !php7 && haxe_ver < '4.0.0'))
 		if (v.keyValueIterator != null)
@@ -558,25 +552,24 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		return v;
 	}
 
-	function forLoopKeyValue(key:String, value:String, it:Expr, e:Expr)
-	{
-		var old = declared.length;
-
-		declared.push({n: key, old: locals.get(key)});
-		declared.push({n: value, old: locals.get(value)});
-
-		var it:{hasNext:() -> Bool, next:() -> Dynamic} = makeKeyValueIterator(expr(it));
-		while (it.hasNext())
+	/*function forLoopKeyValue(key:String, value:String, it:Expr, e:Expr)
 		{
-			var itNext = it.next();
-			locals.set(key, {r: itNext.key});
-			locals.set(value, {r: itNext.value});
-			if (!loopRun(() -> expr(e)))
-				break;
-		}
-		restore(old);
-	}
+			var old = declared.length;
 
+			declared.push({n: key, old: locals.get(key)});
+			declared.push({n: value, old: locals.get(value)});
+
+			var it:{hasNext:() -> Bool, next:() -> Dynamic} = makeKeyValueIterator(expr(it));
+			while (it.hasNext())
+			{
+				var itNext = it.next();
+				locals.set(key, {r: itNext.key});
+				locals.set(value, {r: itNext.value});
+				if (!loopRun(() -> expr(e)))
+					break;
+			}
+			restore(old);
+	}*/
 	/**
 	 * hasField not works for properties
 	 * If getProperty object is null, interp tries to get prop from usings

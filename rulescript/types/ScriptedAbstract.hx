@@ -98,8 +98,6 @@ class ScriptedAbstractInstance implements RuleScriptedClass
 	{
 		this.impl = impl;
 		this.value = value;
-
-		trace(impl);
 	}
 
 	public function getVariables():Map<String, Dynamic>

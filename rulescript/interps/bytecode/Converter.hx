@@ -494,22 +494,15 @@ class Converter
 						addLink(CLASS, type);
 					}
 
-				case EFor(key, iterator, e, value):
-					add(value == null ? FOR : FOR_KEY_VALUE);
+				case EFor(key, iterator, e):
+					add(FOR);
 
 					final endId:Int = add(-1) - 1; // for end ID
 
 					final keyId:Int = link(DYNAMIC, null, true);
 					add(keyId);
 
-					final valueId:Int = if (value != null)
-					{
-						final id = link(DYNAMIC, null, true);
-						add(id);
-						id;
-					}
-					else
-						-1;
+					final valueId:Int = -1;
 
 					ce(iterator);
 
@@ -519,11 +512,64 @@ class Converter
 					lastValues.push({name: key, t: variables[key]});
 					variables[key] = TId(DYNAMIC, keyId);
 
-					if (value != null)
+					ce(e);
+
+					depth = oldDepth;
+					regenVariables(oldVariables);
+
+					buffer[endId] = buffer.length;
+				case EForGen(it, e):
+					var key:String, value:String;
+					var iterator:Expr;
+
+					switch (it.getExpr())
 					{
-						lastValues.push({name: value, t: variables[value]});
-						variables[value] = TId(DYNAMIC, valueId);
+						case EBinop('in', e1, e2):
+							switch (e1.getExpr())
+							{
+								case EBinop('=>', e1, e2):
+									key = switch (e1.getExpr())
+									{
+										case EIdent(v): v;
+										default: throw 'Unexpected expression';
+									}
+
+									value = switch (e2.getExpr())
+									{
+										case EIdent(v): v;
+										default: throw 'Unexpected expression';
+									}
+								case EBinop(op, _, _):
+									throw 'Unexpected operator $op';
+								default:
+									throw 'Unexpected expression';
+							}
+
+							iterator = e2;
+						default:
+							throw 'for key => value loop requires `in` operator';
 					}
+
+					add(FOR_KEY_VALUE);
+
+					final endId:Int = add(-1) - 1; // for end ID
+
+					final keyId:Int = link(DYNAMIC, null, true);
+					add(keyId);
+
+					final valueId:Int = link(DYNAMIC, null, true);
+					add(valueId);
+
+					ce(iterator);
+
+					final oldVariables:Int = lastValues.length;
+					final oldDepth:Int = depth++;
+
+					lastValues.push({name: key, t: variables[key]});
+					variables[key] = TId(DYNAMIC, keyId);
+
+					lastValues.push({name: value, t: variables[value]});
+					variables[value] = TId(DYNAMIC, valueId);
 
 					ce(e);
 

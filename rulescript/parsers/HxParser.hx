@@ -769,24 +769,10 @@ private class HScriptParser extends hscript.Parser
 					push(tk);
 
 				if (props == null)
-				{
 					mk(EVar(ident, t, e, false, id == 'final'), p1, (e == null) ? tokenMax : pmax(e));
-				}
 				else
-				{
 					mk(EProp(ident, props.get, props.set, t, e), p1, (e == null) ? tokenMax : pmax(e));
-				}
 
-			case "for":
-				ensure(TPOpen);
-				var vname:String = getIdent();
-				var vval:String = maybe(TOp("=>")) ? getIdent() : null;
-
-				ensureToken(TId("in"));
-				var eiter = parseExpr();
-				ensure(TPClose);
-				var e = parseExpr();
-				mk(EFor(vname, eiter, e, vval), p1, pmax(e));
 			default:
 				super.parseStructure(id);
 		}
