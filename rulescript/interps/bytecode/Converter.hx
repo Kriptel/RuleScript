@@ -1108,6 +1108,7 @@ class Converter
 					if (defaultExpr != null)
 						ce(defaultExpr);
 					buffer[endId] = buffer.length;
+
 				case EUntyped(e):
 					switch (e.getExpr())
 					{
@@ -1116,6 +1117,32 @@ class Converter
 						default:
 							ce(e);
 					}
+				case ETry(e, v, t, ecatch):
+					add(TRY);
+
+					final tryId:Int = add(-1) - 1; // try end ID
+					final endId:Int = add(-1) - 1; // try-catch end ID
+
+					final vId:Int = link(DYNAMIC, null, true);
+					add(vId);
+
+					ce(e);
+
+					buffer[tryId] = buffer.length;
+
+					final oldVariables:Int = lastValues.length;
+					final oldDepth:Int = depth++;
+
+					lastValues.push({name: v, t: variables[v]});
+					variables[v] = TId(DYNAMIC, vId);
+
+					ce(ecatch);
+
+					depth = oldDepth;
+					regenVariables(oldVariables);
+
+					buffer[endId] = buffer.length;
+
 				default:
 					throw 'Unsupported expression "${e.getExpr()}"';
 			}
@@ -1364,7 +1391,7 @@ class Converter
 				else
 					TDynamic;
 			default:
-				throw e;
+				TDynamic;
 		}
 	}
 

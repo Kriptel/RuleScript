@@ -12,10 +12,6 @@ import rulescript.types.ScriptedTypeUtil;
 using StringTools;
 using rulescript.Tools;
 
-/**
- * TODO:
- * - Try
- */
 class BytecodeInterp implements IInterp
 {
 	public var scriptName:String;
@@ -593,6 +589,27 @@ class BytecodeInterp implements IInterp
 
 			case BREAK:
 				return BREAK;
+
+			case TRY:
+				final tryEndPos:Int = next();
+				final endPos:Int = next();
+
+				final vId:Int = next();
+
+				try
+				{
+					command();
+					this.pos = endPos;
+				}
+				catch (v:Dynamic)
+				{
+					this.pos = tryEndPos;
+
+					dynamicBuffer[vId] = v;
+					command();
+				}
+
+				return linkType;
 
 			case FOR:
 				final endPos:Int = next();

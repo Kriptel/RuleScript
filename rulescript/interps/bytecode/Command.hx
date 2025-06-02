@@ -36,6 +36,7 @@ enum abstract Command(Int) from Int
 	var IDENT_NATIVE = 29;
 	var SWITCH = 30;
 	var SWITCH_DEFAULT = 31;
+	var TRY = 32;
 
 	// TYPES
 	var INT = 40;
