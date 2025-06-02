@@ -50,6 +50,8 @@ class Main
 
 		ScriptedTypeUtil.resolveModule = resolveModule;
 
+		runScript('untyped __rulescript__interpType');
+
 		try
 		{
 			mathTest();

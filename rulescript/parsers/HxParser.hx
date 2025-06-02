@@ -772,7 +772,8 @@ private class HScriptParser extends hscript.Parser
 					mk(EVar(ident, t, e, false, id == 'final'), p1, (e == null) ? tokenMax : pmax(e));
 				else
 					mk(EProp(ident, props.get, props.set, t, e), p1, (e == null) ? tokenMax : pmax(e));
-
+			case 'untyped':
+				mk(EUntyped(parseExpr()));
 			default:
 				super.parseStructure(id);
 		}

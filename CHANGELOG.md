@@ -8,8 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- ScriptedAbstract
-- ScriptedTypeUtil
+- `untyped __rulescript__interpType` expression.
+- `:forceOverride` metadata.
+- ScriptedAbstract.
+- ScriptedTypeUtil.
 - Typedefs.
 - `final` variables.
 - Bytecode interpreter.

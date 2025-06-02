@@ -319,6 +319,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						__constructors[__constructors.length - 1].restoreVars();
 						__constructors.pop().finish();
 
+					case EIdent(__rulescript__interpType):
+						return 'RuleScriptInterp';
+
 					default:
 						return this.expr(e);
 				}

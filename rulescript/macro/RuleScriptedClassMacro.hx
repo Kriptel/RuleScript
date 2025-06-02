@@ -68,21 +68,49 @@ class RuleScriptedClassMacro
 			}
 		};
 
+		final forceOverride = curType.meta.has(':forceOverride');
+		var forceOverrideFields:Array<String> = null;
+
+		if (forceOverride)
+		{
+			for (meta in curType.meta.extract(':forceOverride'))
+			{
+				if (meta.params[0] != null)
+					switch (meta.params[0].expr)
+					{
+						case EArrayDecl(values):
+							forceOverrideFields ??= [];
+
+							for (value in values)
+								switch (value.expr)
+								{
+									case EConst(CIdent(s)):
+										forceOverrideFields.push(s);
+									default:
+								}
+						default:
+					}
+			}
+		}
+
 		for (name => field in typefields)
 		{
+			final forceOverrideField = forceOverrideFields?.contains(name) ?? forceOverride;
 			if (!ignoredFields.contains(name))
-				fields.push(overrideField(field));
+				fields.push(overrideField(field, forceOverrideField));
 		}
 
 		if (constructor.isFinal)
 			Context.error("Constructor can't be final in RuleScriptedClass", pos);
 
-		var strict = curType.meta.has(':strictScriptedConstructor') || curType.meta.has(':strictConstructor');
+		final strict = curType.meta.has(':strictScriptedConstructor') || curType.meta.has(':strictConstructor');
+
+		final forceOverrideConstructor = forceOverrideFields?.contains('new') ?? forceOverride;
 
 		fields.push({
 			name: 'new',
 			access: [APublic],
-			kind: FFun(createConstructor(constructor, strict)),
+			kind: FFun(createConstructor(constructor, strict, forceOverrideConstructor)),
 			pos: pos
 		});
 
@@ -109,7 +137,7 @@ class RuleScriptedClassMacro
 			meta: [{name: ':noCompletion', pos: pos}]
 		});
 
-		var functions = [
+		final functions = [
 			'getVariables' => macro function():Map<String, Dynamic>
 			{
 				return __rulescript.variables;
@@ -143,7 +171,7 @@ class RuleScriptedClassMacro
 		return fields;
 	}
 
-	static function createConstructor(constructor:ClassField, strict:Bool = false):Function
+	static function createConstructor(constructor:ClassField, strict:Bool = false, forceOverride:Bool):Function
 	{
 		var args = null;
 
@@ -181,7 +209,7 @@ class RuleScriptedClassMacro
 					{
 						name: arg.name,
 						opt: arg.opt,
-						type: getOverrideType(arg.t)
+						type: forceOverride ? macro :Dynamic : getOverrideType(arg.t)
 					}
 			]);
 		else
@@ -224,27 +252,29 @@ class RuleScriptedClassMacro
 							});
 					}
 				} : macro {},
-			params: [for (param in constructor.params) {name: param.name}]
+			params: forceOverride ? [] : [for (param in constructor.params) {name: param.name}]
 		}
 	}
 
-	static function overrideField(field:ClassField):Field
+	static function overrideField(field:ClassField, forceOverride:Bool):Field
 	{
 		var kind = null;
 
 		var fieldName = field.name;
 
-		var fieldParams = [for (param in field.params) macro $i{param.name}];
-
-		var tFunToExr:(Array<ClassFunctionArg>, ret:haxe.macro.Type) -> Function = (args, ret) ->
+		var tFunToExpr:(Array<ClassFunctionArg>, ret:haxe.macro.Type) -> Function = (args, ret) ->
 		{
-			var fieldArgs = [for (argument in args) macro $i{argument.name}];
+			var fieldArgs = [
+				for (argument in args)
+					macro $i{argument.name}
+			];
+
 			return {
 				args: [
 					for (id => arg in args)
 						{
 							name: arg.name,
-							type: getOverrideType(arg.t),
+							type: forceOverride ? macro :Dynamic : getOverrideType(arg.t),
 							value: switch (Context.getTypedExpr(field.expr()).expr)
 							{
 								case EFunction(kind, f):
@@ -254,7 +284,7 @@ class RuleScriptedClassMacro
 							}
 						}
 				],
-				ret: getOverrideType(ret),
+				ret: forceOverride ? null : getOverrideType(ret),
 				expr: macro
 				{
 					return if (!__rulescript.access.isSuperCall && __rulescript.access.variableExists($v{field.name}))
@@ -263,22 +293,28 @@ class RuleScriptedClassMacro
 					}
 					else
 					{
-						super.$fieldName($a{fieldArgs});
+						cast super.$fieldName($a{fieldArgs});
 					}
 				},
-				params: [for (param in field.params) {name: param.name}]
+				params: if (forceOverride)
+					[]
+				else
+					[
+						for (param in field.params)
+							{name: param.name}
+					]
 			}
 		}
 
 		switch (field.type)
 		{
 			case TFun(args, ret):
-				kind = tFunToExr(args, ret);
+				kind = tFunToExpr(args, ret);
 			case TLazy(type):
 				switch (type())
 				{
 					case TFun(args, ret):
-						kind = tFunToExr(args, ret);
+						kind = tFunToExpr(args, ret);
 					default:
 				};
 			default:
@@ -294,7 +330,7 @@ class RuleScriptedClassMacro
 
 	inline static function getOverrideType(type:haxe.macro.Type):ComplexType
 	{
-		return Context.toComplexType(transformTypeParams(type));
+		return type != null ? Context.toComplexType(transformTypeParams(type)) : null;
 	}
 
 	static function transformTypeParams(type:haxe.macro.Type):haxe.macro.Type

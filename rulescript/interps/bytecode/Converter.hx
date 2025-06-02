@@ -1018,8 +1018,6 @@ class Converter
 					add(CONTINUE);
 				case EBreak:
 					add(BREAK);
-				case EUntyped(e):
-					ce(e);
 				case EWhile(cond, e):
 					add(WHILE);
 
@@ -1083,6 +1081,14 @@ class Converter
 					if (defaultExpr != null)
 						ce(defaultExpr);
 					buffer[endId] = buffer.length;
+				case EUntyped(e):
+					switch (e.getExpr())
+					{
+						case EIdent('__rulescript__interpType'):
+							ce(EConst(CString('BytecodeInterp')).toExpr());
+						default:
+							ce(e);
+					}
 				default:
 					throw 'Unsupported expression "${e.getExpr()}"';
 			}

@@ -64,6 +64,11 @@ class SrcClassTest<T:Hello<K>, K>
 	public function stringArray(arg:Array<T>)
 		return Std.string(arg);
 
+	public function typedFunction<A:Hello<Any>, B, C>(a:A, b:B, c:C, d:Dynamic):A
+	{
+		return a;
+	}
+
 	public static function staticField() {}
 }
 
@@ -75,8 +80,9 @@ class SrcClassTest2 extends SrcClassTest<Hello<Dynamic>, Dynamic>
 	}
 }
 
+@:forceOverride([typedFunction])
 class ScriptedClassTest implements RuleScriptedClass extends SrcClassTest2 {}
 
-@:ignoreFields([stringArray])
+@:ignoreFields([stringArray, typedFunction])
 @:strictScriptedConstructor
 class ScriptedClassTestStrict implements RuleScriptedClass extends SrcClassTest2 {}
