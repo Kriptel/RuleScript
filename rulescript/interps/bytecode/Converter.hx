@@ -72,8 +72,26 @@ class Converter
 		var usings:Array<String> = [];
 
 		var depth:Int = -1;
+
+		var lastLine:Int = -1;
+
+		var skipNextLine:Bool = false;
+
 		function ce(e:Expr):Void // convert expr
 		{
+			#if hscriptPos
+			if (interp.lineInfo)
+			{
+				if (skipNextLine)
+					skipNextLine = false;
+				else if (lastLine != e.line)
+				{
+					add(LINE);
+					add(lastLine = e.line);
+				}
+			}
+			#end
+
 			switch (e.getExpr())
 			{
 				case EBlock(exprs):
@@ -243,6 +261,15 @@ class Converter
 
 					if (expr != null)
 					{
+						#if hscriptPos
+						if (interp.lineInfo)
+						{
+							skipNextLine = true;
+							add(LINE);
+							add(expr.line);
+						}
+						#end
+
 						if (isMap && expr.getExpr().match(EArrayDecl(_)))
 						{
 							switch (type)

@@ -39,6 +39,8 @@ class BytecodeInterp implements IInterp
 	 */
 	public var binops:Map<String, (Dynamic, Dynamic) -> Dynamic> = [];
 
+	public var lineInfo:Bool = true;
+
 	var converter:Converter;
 
 	var curLine:Int = 0;
@@ -145,8 +147,8 @@ class BytecodeInterp implements IInterp
 		variables.set('trace', Reflect.makeVarArgs(function(args:Array<Dynamic>)
 		{
 			haxe.Log.trace(args.join(', '), cast {
-				fileName: scriptName,
-				lineNumber: curLine
+				fileName: scriptName ?? "rulescript",
+				lineNumber: lineInfo ? curLine : 0
 			});
 
 			return;
@@ -178,8 +180,16 @@ class BytecodeInterp implements IInterp
 					case command:
 						throw command.toString();
 				}
+
 			case SUPER:
 				return linkType = SUPER;
+
+			case LINE:
+				curLine = next();
+
+				command();
+
+				return linkType;
 
 			case NATIVE_FIELD:
 				final field:String = stringBuffer[next().toInt()];
