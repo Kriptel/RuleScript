@@ -204,6 +204,10 @@ class BytecodeInterp implements IInterp
 				linkID = BOOL_FALSE;
 				return linkType = BOOL;
 
+			case THROW:
+				command();
+				throw getValue();
+
 			case BLOCK:
 				var i:Int = next().toInt();
 

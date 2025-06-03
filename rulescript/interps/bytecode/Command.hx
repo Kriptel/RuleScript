@@ -13,6 +13,7 @@ enum abstract Command(Int) from Int
 	var SUPER = 6;
 	var CONSTRUCTOR = 7;
 	var LINE = 8;
+	var THROW = 9;
 
 	var GET = 10;
 	var GET_NATIVE = 11;

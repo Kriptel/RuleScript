@@ -1151,7 +1151,9 @@ class Converter
 					regenVariables(oldVariables);
 
 					buffer[endId] = buffer.length;
-
+				case EThrow(e):
+					add(THROW);
+					ce(e);
 				default:
 					throw 'Unsupported expression "${e.getExpr()}"';
 			}
