@@ -325,6 +325,14 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					default:
 						return this.expr(e);
 				}
+			case ECast(e, t):
+				switch (t)
+				{
+					case CTPath(["Int"], _):
+						return cast(this.expr(e), Int);
+					default:
+						return this.expr(e);
+				}
 			case EFunction(params, fexpr, name, _):
 				if (name == 'new')
 					__constructor = expr;
@@ -803,7 +811,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	}
 
 	@:noCompletion
-	var superFields:Array<String>;
+	var superFields:Array<String> = [];
 
 	function set_superInstance(value:Dynamic):Dynamic
 	{

@@ -79,20 +79,21 @@ enum abstract Command(Int) from Int
 
 	// OTHER FEATURES
 	var CAST_INT_TO_FLOAT = 80;
-	var CREATE_OBJECT = 81;
-	var BOOL_TRUE = 82;
-	var BOOL_FALSE = 83;
-	var BUFFER_LINK = 84;
-	var ARRAY_GET = 85;
-	var ARRAY_SET = 86;
-	var MAP_GET = 87;
-	var MAP_SET = 88;
-	var OBJECT_SET = 89;
-	var OBJECT_SET_PROP = 90;
-	var INT_ITERATOR = 91;
-	var REST = 92;
-	var PARAM = 93;
-	var PARAM_REST = 94;
+	var CAST_TO_INT = 81;
+	var CREATE_OBJECT = 82;
+	var BOOL_TRUE = 83;
+	var BOOL_FALSE = 84;
+	var BUFFER_LINK = 85;
+	var ARRAY_GET = 86;
+	var ARRAY_SET = 87;
+	var MAP_GET = 88;
+	var MAP_SET = 89;
+	var OBJECT_SET = 90;
+	var OBJECT_SET_PROP = 91;
+	var INT_ITERATOR = 92;
+	var REST = 93;
+	var PARAM = 94;
+	var PARAM_REST = 95;
 
 	// OPERATORS
 	var OP_PLUS = 100;

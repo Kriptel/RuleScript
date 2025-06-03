@@ -1117,6 +1117,15 @@ class Converter
 						default:
 							ce(e);
 					}
+				case ECast(e, t):
+					switch (t)
+					{
+						case CTPath(['Int'], _):
+							add(CAST_TO_INT);
+							ce(e);
+						default:
+							ce(e);
+					}
 				case ETry(e, v, t, ecatch):
 					add(TRY);
 

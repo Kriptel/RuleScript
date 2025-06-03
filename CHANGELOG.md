@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `cast` expression.
 - `untyped __rulescript__interpType` expression.
+- `untyped` expression.
 - `:forceOverride` metadata.
 - ScriptedAbstract.
 - ScriptedTypeUtil.

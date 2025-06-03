@@ -65,6 +65,7 @@ class Main
 			scriptClassesTest();
 			fileScriptTest();
 			enumTest();
+			castTest();
 		}
 		catch (e)
 			trace(e?.details());
@@ -371,6 +372,17 @@ class Main
 
 		var module = script.getParser(HxParser).parseModule(File.getContent('scripts/enumTest/EnumTest.rhx'));
 		trace(module);
+	}
+
+	static function castTest()
+	{
+		runScript("
+		var a = 1.2;
+		cast a;
+		cast(a);
+		var b = cast(a,Int);
+		b;
+		", 1);
 	}
 
 	static function runScript(code:String, ?value:Dynamic):Dynamic

@@ -580,6 +580,11 @@ class BytecodeInterp implements IInterp
 				linkID = floatBuffer.push(linkID) - 1;
 				return linkType = FLOAT;
 
+			case CAST_TO_INT:
+				command();
+				linkID = cast(getValue(), Int);
+				return linkType = INT;
+
 			case RETURN:
 				command();
 				return RETURN;
