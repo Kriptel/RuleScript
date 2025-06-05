@@ -1257,7 +1257,7 @@ class Converter
 
 	private function typeof(e:Expr):VarType
 	{
-		return switch (e.getExpr())
+		return switch (e?.getExpr())
 		{
 			case EVar(_) | EProp(_):
 				TVoid;
