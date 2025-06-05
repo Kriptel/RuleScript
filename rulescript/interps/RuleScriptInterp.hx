@@ -543,44 +543,16 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		return t;
 	}
 
-	override function makeKeyValueIterator(v:Dynamic)
+	override function makeKeyValueIterator(v:Dynamic):KeyValueIterator<Dynamic,Dynamic>
 	{
-		#if ((flash && !flash9) || (php && !php7 && haxe_ver < '4.0.0'))
-		if (v.keyValueIterator != null)
-			v = v.keyValueIterator();
-		#else
-		if (v.keyValueIterator != null)
-			v = v.keyValueIterator();
-		#end
-
 		#if hl
 		if (v is StringMap)
-			v = new haxe.iterators.MapKeyValueIterator(v);
+			return new haxe.iterators.MapKeyValueIterator(v);
 		#end
 
-		if (v.hasNext == null || v.next == null)
-			error(EInvalidIterator(v));
-		return v;
+		return super.makeKeyValueIterator(v);
 	}
 
-	/*function forLoopKeyValue(key:String, value:String, it:Expr, e:Expr)
-		{
-			var old = declared.length;
-
-			declared.push({n: key, old: locals.get(key)});
-			declared.push({n: value, old: locals.get(value)});
-
-			var it:{hasNext:() -> Bool, next:() -> Dynamic} = makeKeyValueIterator(expr(it));
-			while (it.hasNext())
-			{
-				var itNext = it.next();
-				locals.set(key, {r: itNext.key});
-				locals.set(value, {r: itNext.value});
-				if (!loopRun(() -> expr(e)))
-					break;
-			}
-			restore(old);
-	}*/
 	/**
 	 * hasField not works for properties
 	 * If getProperty object is null, interp tries to get prop from usings

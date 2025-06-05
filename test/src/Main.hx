@@ -343,7 +343,7 @@ class Main
 	static function fileScriptTest()
 	{
 		script.getParser(HxParser).mode = DEFAULT;
-		runFileScript('PropertyTest.rhx');
+		runFileScript('PropertyTest.rhx', 'Hello World');
 
 		script.getParser(HxParser).mode = MODULE;
 		runFileScript('test.rhx');
