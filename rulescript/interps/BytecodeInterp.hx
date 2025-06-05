@@ -105,7 +105,9 @@ class BytecodeInterp implements IInterp
 			case STRING:
 				stringBuffer[linkID];
 			case DYNAMIC, FUNCTION, OBJECT:
-				dynamicBuffer[linkID];
+				final v:Dynamic = dynamicBuffer[linkID];
+
+				(v is Property) ? cast(v, Property).value : v;
 			case CLASS:
 				nativeClassBuffer[linkID];
 			case BOOL:
