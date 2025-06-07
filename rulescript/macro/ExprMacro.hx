@@ -144,7 +144,7 @@ class ExprMacro
 			});
 
 	public static function buildBytesDefaults():Array<Field>
-		return addDefaultPattern('doEncode');
+		return addDefaultPattern('doEncode', addDefaultPattern('exprIndex', macro - 1));
 
 	public static function buildCheckerDefaults():Array<Field>
 		return addDefaultPattern('typeExpr');
