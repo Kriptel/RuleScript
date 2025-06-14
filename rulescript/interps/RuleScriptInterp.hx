@@ -185,7 +185,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					if (t == null)
 						error(ECustom('Type not found : $path'));
 
-					var value = if (func != null && t is Class)
+					var value = if (func != null && Tools.isClass(t))
 					{
 						name = alias ?? func;
 						Reflect.getProperty(t, func);
@@ -328,8 +328,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case ECast(e, t):
 				switch (t)
 				{
+					#if hl
 					case CTPath(["Int"], _):
-						return cast(this.expr(e), Int);
+						return cast((this.expr(e) : Float), Int);
+					#end
 					default:
 						return this.expr(e);
 				}
@@ -543,7 +545,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		return t;
 	}
 
-	override function makeKeyValueIterator(v:Dynamic):KeyValueIterator<Dynamic,Dynamic>
+	override function makeKeyValueIterator(v:Dynamic):KeyValueIterator<Dynamic, Dynamic>
 	{
 		#if hl
 		if (v is StringMap)
@@ -669,9 +671,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			return cast(c, ScriptedAbstract).constructor(args);
 
 		#if hl
-		return Reflect.isFunction(c) ? Tools.__hl_callMethod(c, args) : c is Class ? Tools.__hl_createInstance(c, args) : c;
+		return Reflect.isFunction(c) ? Tools.__hl_callMethod(c, args) : Tools.isClass(c) ? Tools.__hl_createInstance(c, args) : c;
 		#else
-		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : c is Class ? Type.createInstance(c, args) : c;
+		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : Tools.isClass(c) ? Type.createInstance(c, args) : c;
 		#end
 	}
 
@@ -789,7 +791,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	{
 		if (value != null)
 		{
-			var o:Class<Dynamic> = value is Class ? cast value : Type.getClass(value);
+			var o:Class<Dynamic> = Tools.isClass(value) ? cast value : Type.getClass(value);
 			superFields = (o != null) ? Type.getInstanceFields(o) : [];
 		}
 
@@ -869,6 +871,11 @@ class RuleScriptInterpAccess extends RuleScriptAccess
 	override function setVariable(name:String, value:Dynamic):Dynamic
 	{
 		return interp.variables[name] = value;
+	}
+
+	override function removeVariable(name:String):Bool
+	{
+		return interp.variables.remove(name);
 	}
 
 	override function callFunction(name:String, args:Array<Dynamic>):Dynamic

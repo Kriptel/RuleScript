@@ -789,7 +789,7 @@ private class HScriptParser extends hscript.Parser
 					e = parseExpr();
 				}
 
-				mk(ECast(e, t));
+				mk(ECast(e, t), p1, tokenMax);
 			default:
 				super.parseStructure(id);
 		}
@@ -797,55 +797,63 @@ private class HScriptParser extends hscript.Parser
 
 	function parseStringInterpolation():Expr
 	{
-		var char:Int = 0;
+		var parts:Array<Expr> = [];
 		var backslash = false, dollar = false;
-		var parts:Array<EitherType<String, Expr>> = [''];
-		var currentPart:Int = 0;
-
 		var old = line;
+		var currentString:String = '';
 
 		#if hscriptPos
 		var p1 = currentPos - 1;
 		#end
 
+		inline function pushString()
+		{
+			if (currentString != '')
+			{
+				parts.push(mk(EConst(CString(currentString)), p1, tokenMax));
+				currentString = '';
+			}
+		}
+
 		while (true)
 		{
+			var c:Int = -1;
+
 			if (this.char < 0)
-				char = readChar();
+				c = readChar();
 			else
 			{
-				char = this.char;
+				c = this.char;
 				this.char = -1;
 			}
 
-			if (StringTools.isEof(char))
+			if (StringTools.isEof(c))
 			{
 				line = old;
 				error(EUnterminatedString, p1, p1);
 				break;
 			}
-
 			if (backslash)
 			{
 				backslash = false;
-				switch (char)
+				switch (c)
 				{
 					case 'n'.code:
-						this.char = '\n'.code;
+						currentString += '\n';
 					case 'r'.code:
-						this.char = '\r'.code;
+						currentString += '\r';
 					case 't'.code:
-						this.char = '\t'.code;
+						currentString += '\t';
 					case "'".code, '"'.code, '\\'.code:
-						this.char = char;
+						currentString += String.fromCharCode(c);
 					case '/'.code:
 						if (allowJSON)
-							this.char = char;
+							currentString += String.fromCharCode(c);
 						else
-							invalidChar(char);
+							invalidChar(c);
 					case "u".code:
 						if (!allowJSON)
-							invalidChar(char);
+							invalidChar(c);
 						var k = 0;
 						for (i in 0...4)
 						{
@@ -868,79 +876,84 @@ private class HScriptParser extends hscript.Parser
 									invalidChar(char);
 							}
 						}
-						this.char = k;
+						currentString += String.fromCharCode(k);
 					default:
-						invalidChar(char);
+						invalidChar(c);
 				}
 			}
-			else if (char == '$'.code && !dollar)
+			else if (dollar)
 			{
-				var c = readChar();
-				this.char = c;
-				if (c == '$'.code)
+				dollar = false;
+
+				switch (c)
 				{
-					dollar = true;
+					case '{'.code:
+						pushString();
+
+						parts.push(parseExpr());
+						ensure(TBrClose);
+					case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57: // 0-9
+						currentString += '$' + String.fromCharCode(c);
+					case "'".code:
+						currentString += '$';
+						break;
+					default:
+						if (idents[c])
+						{
+							pushString();
+
+							currentString = '';
+
+							var id:String = String.fromCharCode(c);
+
+							var char:Int = 0;
+							while (true)
+							{
+								char = readChar();
+								if (StringTools.isEof(char))
+									char = 0;
+								if (!idents[char])
+								{
+									this.char = char;
+									break;
+								}
+								id += String.fromCharCode(char);
+							}
+
+							parts.push(EIdent(id).toExpr());
+						}
+						else
+							currentString += String.fromCharCode(c);
 				}
-				else
-					switch (token())
-					{
-						case TBrOpen:
-							currentPart = parts.push(parseExpr());
-							ensure(TBrClose);
-						case TId(s):
-							currentPart = parts.push(mk(EIdent(s)));
-						case TApostr:
-							parts[currentPart] += String.fromCharCode(char);
-							this.char = "'".code;
-						default:
-					}
 			}
-			else if (char == '\\'.code)
-			{
+			else if (c == '\\'.code)
 				backslash = true;
-			}
-			else if (char == "'".code)
-			{
+			else if (c == '$'.code)
+				dollar = true;
+			else if (c == "'".code)
 				break;
-			}
 			else
 			{
-				parts[currentPart] ??= '';
-
-				if (char == '\n'.code)
+				if (c == '\n'.code)
 					line++;
-
-				parts[currentPart] += String.fromCharCode(char);
+				currentString += String.fromCharCode(c);
 			}
 		}
 
-		if (parts.length > 1 && parts[1] is String)
-			parts.shift();
+		pushString();
 
-		var e:Expr = null;
+		final lastPart:Expr = parts[parts.length - 1];
 
-		var currentPart:Int = 0;
-		while (currentPart < parts.length)
+		if (lastPart == null || !lastPart.getExpr().match(EConst(CString(_))))
+			parts.push(mk(EConst(CString('')), tokenMax, tokenMax));
+
+		var e = parts.pop();
+		while (parts.length > 0)
 		{
-			var part:Dynamic = parts[currentPart++];
-			if (part is String)
-				part = mk(EConst(CString(cast part)));
-			else
-			{
-				switch (Tools.getExpr(part))
-				{
-					case EConst(c):
-					default:
-						part = mk(EParent(part));
-				}
-			}
-
-			if (e == null)
-				e = part;
-			else
-				e = makeBinop('+', e, part);
+			e = mk(EBinop('+', parts.pop(), e), tokenMin, tokenMax);
 		}
-		return e ?? mk(EConst(CString('')));
+
+		return e;
 	}
 
 	override function parseFunctionArgs()

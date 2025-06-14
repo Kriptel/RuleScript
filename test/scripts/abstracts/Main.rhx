@@ -12,7 +12,7 @@ class Main
 		a.helloWorld();
 
 		final int64 = Int64.make(0,123);
-		int64 = Int64.div(int64,12);
+		int64 = Int64.divInt(int64,12);
 		trace(int64);
 	}
 }

@@ -55,6 +55,16 @@ class RuleScriptAccess
 	}
 
 	/**
+	 * Removes variable `name`.
+	 * 
+	 * if `name` is null, the result is unspecified.
+	 */
+	public function removeVariable(name:String):Bool
+	{
+		return false;
+	}
+
+	/**
 	 * Calls function `name` with arguments `args`
 	 * 
 	 * if function `name` is null, returns null.

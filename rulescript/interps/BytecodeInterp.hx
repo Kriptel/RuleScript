@@ -1545,9 +1545,9 @@ class BytecodeInterp implements IInterp
 			return cast(c, ScriptedClass).createInstance(args);
 
 		#if hl
-		return Reflect.isFunction(c) ? Tools.__hl_callMethod(c, args) : c is Class ? Tools.__hl_createInstance(c, args) : c;
+		return Reflect.isFunction(c) ? Tools.__hl_callMethod(c, args) : Tools.isClass(c) ? Tools.__hl_createInstance(c, args) : c;
 		#else
-		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : c is Class ? Type.createInstance(c, args) : c;
+		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : Tools.isClass(c) ? Type.createInstance(c, args) : c;
 		#end
 	}
 
@@ -1620,6 +1620,11 @@ class InterpAccess extends RuleScriptAccess
 	override function setVariable(name:String, value:Dynamic):Dynamic
 	{
 		return interp.variables[name] = value;
+	}
+
+	override function removeVariable(name:String):Bool
+	{
+		return interp.variables.remove(name);
 	}
 
 	override function callFunction(name:String, args:Array<Dynamic>):Dynamic

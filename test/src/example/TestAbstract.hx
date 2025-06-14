@@ -1,6 +1,6 @@
-package test;
+package example;
 
-import test.Test;
+import example.Test;
 
 @:alias('hello.TestAbstract', true)
 abstract TestAbstract(Test) from Test to Test

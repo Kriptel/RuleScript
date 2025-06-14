@@ -1,0 +1,7 @@
+test/build-cpp.hxml
+--next
+--cwd ..
+test/build-hl.hxml
+--next
+--cwd ..
+test/build-interp.hxml

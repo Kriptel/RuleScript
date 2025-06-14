@@ -99,12 +99,11 @@ class RuleScript
 	public static var defaultImports:Map<String, Map<String, Dynamic>> = [
 		'' => [
 			#if hl
-			'Std' => rulescript.std.hl.Std, 'Math' => rulescript.std.hl.Math,
+			'Std' => rulescript.std.hl.Std, 'Math' => rulescript.std.hl.Math, 'Reflect' => rulescript.std.hl.Reflect,
 			#else
-			'Std' => Std, 'Math' => Math,
+			'Reflect' => Reflect, 'Std' => Std, 'Math' => Math,
 			#end
 			'Type' => Type,
-			'Reflect' => Reflect,
 			'StringTools' => StringTools,
 			'Date' => Date,
 			'DateTools' => DateTools,

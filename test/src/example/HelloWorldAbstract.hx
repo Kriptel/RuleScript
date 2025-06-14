@@ -1,4 +1,4 @@
-package test;
+package example;
 
 enum abstract HelloWorldAbstract(String) from String to String
 {

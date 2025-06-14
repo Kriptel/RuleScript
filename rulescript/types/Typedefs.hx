@@ -6,7 +6,10 @@ class Typedefs
 		'haxe.Int32' => Int,
 		'rulescript.BytecodeInterp' => rulescript.interps.BytecodeInterp,
 		'rulescript.Parser' => rulescript.parsers.Parser,
-		'rulescript.HxParser' => rulescript.parsers.HxParser
+		'rulescript.HxParser' => rulescript.parsers.HxParser,
+		#if hl
+		'rulescript.Reflect' => rulescript.std.hl.Reflect, 'rulescript.Math' => rulescript.std.hl.Math, 'rulescript.Std' => rulescript.std.hl.Std
+		#end
 	];
 
 	/**

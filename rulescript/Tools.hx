@@ -80,6 +80,15 @@ class Tools
 		return e;
 	#end
 
+	inline public static function isClass(t:Dynamic):Bool
+	{
+		#if cpp
+		return Type.resolveClass(Type.getClassName(t)) != null;
+		#else
+		return t is Class;
+		#end
+	}
+
 	inline public static function isEnum(t:Dynamic):Bool
 	{
 		#if cpp
@@ -99,7 +108,7 @@ class Tools
 	{
 		#if interp
 		// Because interp returns an empty class instead of null
-		return cl != null ? Type.getClassFields(cl).length == 0 : false;
+		return (cl is Class) ? Type.getClassFields(cl).length == 0 : false;
 		#else
 		return false;
 		#end

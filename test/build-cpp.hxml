@@ -1,0 +1,5 @@
+test/build.hxml
+
+-cpp export/cpp/main.exe
+
+--cmd export\\cpp\\main.exe\\Main

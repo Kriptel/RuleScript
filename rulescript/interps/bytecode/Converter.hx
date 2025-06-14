@@ -51,7 +51,7 @@ class Converter
 
 		if (interp.superInstance != null)
 		{
-			final fields:Array<String> = if (Type.getClass(interp.superInstance) is Class)
+			final fields:Array<String> = if (Tools.isClass(Type.getClass(interp.superInstance)))
 				Type.getInstanceFields(Type.getClass(interp.superInstance));
 			else
 				Reflect.fields(interp.superInstance);
@@ -496,7 +496,7 @@ class Converter
 					lastValues.push({name: id, t: variables[id]});
 					variables[id] = imports[id] = toVarType(type);
 
-					if (type is Class)
+					if (Tools.isClass(type))
 					{
 						add(CLASS);
 						addLink(CLASS, type);
@@ -510,7 +510,7 @@ class Converter
 				case EUsing(name):
 					final type:Class<Dynamic> = resolveType(name);
 
-					if (type is Class)
+					if (Tools.isClass(type))
 					{
 						for (field in Type.getClassFields(type))
 							if (!usings.contains(field) && Reflect.isFunction(Reflect.field(type, field)))
@@ -1170,7 +1170,7 @@ class Converter
 
 	function toVarType(type:Dynamic):VarType
 	{
-		if (type is Class)
+		if (Tools.isClass(type))
 			return TClass(type);
 
 		return switch (Type.typeof(type))

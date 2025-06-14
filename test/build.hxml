@@ -1,8 +1,13 @@
 --cwd ./test
 
 --define hscriptPos
+
+--dce no
+
 -lib rulescript
 
 -cp src
 
---run Main
+--macro include('example')
+
+-main Main

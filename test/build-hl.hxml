@@ -1,0 +1,5 @@
+test/build.hxml
+
+-hl export/hl/main.hl
+
+-cmd hl export/hl/main.hl
