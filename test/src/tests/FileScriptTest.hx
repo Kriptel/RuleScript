@@ -16,9 +16,13 @@ class FileScriptTest extends Test
 
 		script.access.callFunctionUnsafe('main', []);
 
+		runFileScript('ModuleTest.rhx');
+
+		script.access.callFunctionUnsafe('main', []);
+
 		runFileScript('importTest/ScriptImportTest.rhx');
 
-		script.variables.get('main')();
+		script.access.callFunctionUnsafe('main', []);
 
 		// Scripted class
 		var ScriptedClassC:Access = new Access(ScriptedTypeUtil.resolveScript('scriptedClass.ScriptedClass.ScriptedClassC'));

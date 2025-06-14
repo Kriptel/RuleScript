@@ -75,7 +75,8 @@ class ExprMacro
 			'DImport' => macro function(name:Array<String>, star:Bool, ?alias:String, ?func:String) {},
 			'DUsing' => macro function(name:String) {},
 			'DAbstract' => macro function(c:rulescript.types.decl.AbstractDecl) {},
-			'DEnum' => macro function(c:rulescript.types.decl.EnumDecl) {}
+			'DEnum' => macro function(c:rulescript.types.decl.EnumDecl) {},
+			'DField' => macro function(f:FieldDecl) {}
 		];
 
 		for (key => value in newFields)

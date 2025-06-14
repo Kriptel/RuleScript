@@ -1,0 +1,15 @@
+package;
+
+var a = 1;
+final b = 123;
+
+function c(){
+	return b;
+}
+
+class Main
+{
+	function main(){
+		trace(a + c());
+	}
+}

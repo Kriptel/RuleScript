@@ -1,6 +1,5 @@
 package rulescript.parsers;
 
-import haxe.extern.EitherType;
 import hscript.Expr;
 import hscript.Parser.Token;
 import rulescript.types.decl.EnumDecl.EnumField;
@@ -1274,6 +1273,9 @@ private class HScriptParser extends hscript.Parser
 					constructs: constructs,
 					names: names
 				});
+			case 'var', 'final', 'function':
+				push(TId(ident));
+				return DField(parseField());
 			default:
 				unexpected(TId(ident));
 		}

@@ -118,11 +118,29 @@ class Tools
 	{
 		var fields:Array<Expr> = [];
 
-		#if hscriptPos
-		var pushExpr = (e:ExprDef) -> fields.push(toExpr(e));
-		#else
-		var pushExpr = (e:Expr) -> fields.push(e);
-		#end
+		var pushExpr = (e) -> fields.push(toExpr(e));
+
+		function pushField(field:FieldDecl, ?hasExtend:Bool = false)
+		{
+			if (parameters?.fieldFilter(field) ?? true)
+				switch (field.kind)
+				{
+					case KFunction(f):
+						if (parameters?.isScriptedClass && (field.access.contains(AOverride) || (field.name == 'new' && hasExtend)))
+							pushExpr(EVar('__super_${field.name}', null, toExpr(EIdent(field.name)), false));
+
+						pushExpr(EFunction(f.args, f.expr, field.name, f.ret));
+					case KVar(v):
+						if (v.get == null && v.set == null)
+						{
+							pushExpr(EVar(field.name, v.type, v.expr, field.access.contains(APublic), field.access.contains(AFinal)));
+						}
+						else
+						{
+							pushExpr(EProp(field.name, v.get, v.set, v.type, v.expr, field.access.contains(APublic)));
+						}
+				}
+		}
 
 		for (moduleDecl in moduleDecls)
 			switch (moduleDecl)
@@ -145,30 +163,10 @@ class Tools
 					});
 
 					for (field in c.fields)
-					{
-						if (parameters?.fieldFilter(field) ?? true)
-							switch (field.kind)
-							{
-								case KFunction(f):
-									if (parameters?.isScriptedClass
-										&& (field.access.contains(AOverride) || (field.name == 'new' && c.extend != null)))
-										pushExpr(EVar('__super_${field.name}', null, toExpr(EIdent(field.name)), false));
-
-									pushExpr(EFunction(f.args, f.expr, field.name, f.ret));
-								case KVar(v):
-									if (v.get == null && v.set == null)
-									{
-										pushExpr(EVar(field.name, v.type, v.expr, field.access.contains(APublic), field.access.contains(AFinal)));
-									}
-									else
-									{
-										pushExpr(EProp(field.name, v.get, v.set, v.type, v.expr, field.access.contains(APublic)));
-									}
-							}
-					}
-
+						pushField(field, c.extend != null);
 				case DTypedef(c):
-
+				case DField(f):
+					pushField(f);
 				default:
 			}
 
