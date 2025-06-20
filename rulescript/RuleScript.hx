@@ -157,7 +157,7 @@ class RuleScript
 		return cast parser;
 	}
 
-	public function getInterp<T>(?interpClass:Class<T>):T
+	public function getInterp<T:IInterp>(?interpClass:Class<T>):T
 	{
 		return cast interp;
 	}

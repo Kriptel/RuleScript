@@ -1351,7 +1351,7 @@ class Converter
 							case null if (interp.staticOptimization && !variables.exists(v)):
 								throw 'Unknown variable "$v"';
 							case t:
-								t;
+								t ?? TDynamic;
 						}
 				}
 
