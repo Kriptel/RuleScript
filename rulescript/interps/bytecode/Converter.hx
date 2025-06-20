@@ -243,11 +243,11 @@ class Converter
 
 						case TBool:
 							add(VARIABLE_BOOL);
-							final id = add(-1) - 1;
-							buffer[id] = id;
-							add(id);
+							final id = add(-1);
+							add(-1);
+							buffer[id - 1] = id;
 
-							TBool;
+							TId(BOOL, id);
 
 						default:
 							add(VARIABLE_DYNAMIC);
@@ -345,6 +345,10 @@ class Converter
 
 								case TId(INT, id), TFinal(TId(INT, id)):
 									add(BUFFER_LINK);
+									add(id);
+
+								case TId(BOOL, id), TFinal(TId(BOOL, id)):
+									add(BUFFER_LINK_BOOL);
 									add(id);
 
 								case TId(type, id), TFinal(TId(type, id)):
@@ -1346,6 +1350,8 @@ class Converter
 										TDynamic;
 									case OBJECT:
 										TObject;
+									case BOOL:
+										TBool;
 									default:
 										throw 'Unknown type "$type"';
 								}

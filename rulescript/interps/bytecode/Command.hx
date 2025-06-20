@@ -85,16 +85,17 @@ enum abstract Command(Int) from Int
 	var BOOL_TRUE = 83;
 	var BOOL_FALSE = 84;
 	var BUFFER_LINK = 85;
-	var ARRAY_GET = 86;
-	var ARRAY_SET = 87;
-	var MAP_GET = 88;
-	var MAP_SET = 89;
-	var OBJECT_SET = 90;
-	var OBJECT_SET_PROP = 91;
-	var INT_ITERATOR = 92;
-	var REST = 93;
-	var PARAM = 94;
-	var PARAM_REST = 95;
+	var BUFFER_LINK_BOOL = 86;
+	var ARRAY_GET = 87;
+	var ARRAY_SET = 88;
+	var MAP_GET = 89;
+	var MAP_SET = 90;
+	var OBJECT_SET = 91;
+	var OBJECT_SET_PROP = 92;
+	var INT_ITERATOR = 93;
+	var REST = 94;
+	var PARAM = 95;
+	var PARAM_REST = 96;
 
 	// OPERATORS
 	var OP_PLUS = 100;

@@ -114,8 +114,6 @@ class BytecodeInterp implements IInterp
 				linkID == BOOL_TRUE;
 			case NULL, VOID:
 				null;
-			case BUFFER_LINK:
-				_buffer[linkID];
 			case SUPER:
 				superInstance ?? resolve('super');
 			default:
@@ -506,6 +504,19 @@ class BytecodeInterp implements IInterp
 
 				command();
 				_buffer[id] = cast getValue();
+
+				return VOID;
+
+			case VARIABLE_BOOL:
+				final id:Int = next();
+				next();
+
+				command();
+
+				_buffer[id] = if (getValue())
+					BOOL_TRUE
+				else
+					BOOL_FALSE;
 
 				return VOID;
 
@@ -1474,6 +1485,9 @@ class BytecodeInterp implements IInterp
 			case BUFFER_LINK:
 				linkID = _buffer[next().toInt()];
 				return linkType = INT;
+			case BUFFER_LINK_BOOL:
+				linkID = _buffer[next().toInt()];
+				return linkType = BOOL;
 			case NULL:
 				return linkType = NULL;
 			case command:
