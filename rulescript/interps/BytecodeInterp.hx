@@ -261,7 +261,10 @@ class BytecodeInterp implements IInterp
 				final name = stringBuffer[next().toInt()];
 				command();
 
-				dynamicBuffer[id] = variables[name] = getValue();
+				if (superFields.contains(name) || superFields.contains('set_' + name))
+					Reflect.setProperty(superInstance, name, dynamicBuffer[id] = getValue());
+				else
+					dynamicBuffer[id] = variables[name] = getValue();
 
 				linkID = id;
 
