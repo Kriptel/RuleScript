@@ -117,7 +117,7 @@ class BytecodeInterp implements IInterp
 			case BUFFER_LINK:
 				_buffer[linkID];
 			case SUPER:
-				superInstance;
+				superInstance ?? resolve('super');
 			default:
 				throw linkType.toString();
 		}
@@ -1460,7 +1460,7 @@ class BytecodeInterp implements IInterp
 				final id:Int = linkID = next();
 				final name:String = stringBuffer[next().toInt()];
 
-				dynamicBuffer[id] = variables[name];
+				dynamicBuffer[id] = resolve(name);
 
 				return linkType = DYNAMIC;
 			case LINK:
@@ -1476,6 +1476,19 @@ class BytecodeInterp implements IInterp
 			case command:
 				throw command.toString() + ' (${command.toInt()}) at pos $pos';
 		}
+	}
+
+	function resolve(id:String):Dynamic
+	{
+		if (variables.exists(id))
+			return variables[id];
+
+		var v:Dynamic = null;
+
+		if (superInstance != null)
+			v = Reflect.getProperty(superInstance, id);
+
+		return v ?? error('Unknown variable "$id"');
 	}
 
 	function makeRest(f:Array<Dynamic>->Dynamic, argNum:Int):Dynamic
@@ -1551,7 +1564,7 @@ class BytecodeInterp implements IInterp
 		#end
 	}
 
-	function error(info:String)
+	function error(info:String):Dynamic
 	{
 		var error:String = '';
 
@@ -1592,14 +1605,23 @@ class BytecodeInterp implements IInterp
 		return scriptPackage = value;
 	}
 
-	private function set_superInstance(v:Dynamic):Dynamic
+	@:noCompletion
+	var superFields:Array<String> = [];
+
+	private function set_superInstance(value:Dynamic):Dynamic
 	{
-		return superInstance = v;
+		if (value != null)
+		{
+			var o:Class<Dynamic> = Tools.isClass(value) ? cast value : Type.getClass(value);
+			superFields = (o != null) ? Type.getInstanceFields(o) : [];
+		}
+
+		return superInstance = value;
 	}
 
-	private function set_errorHandler(v:haxe.Exception->Void):haxe.Exception->Void
+	private function set_errorHandler(value:haxe.Exception->Void):haxe.Exception->Void
 	{
-		return errorHandler = v;
+		return errorHandler = value;
 	}
 }
 

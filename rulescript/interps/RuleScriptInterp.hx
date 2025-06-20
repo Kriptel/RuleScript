@@ -315,11 +315,11 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 							default:
 						}
-					case EFunction(args, e, '__super_end', _):
+					case EFunction(_, _, '__super_end', _):
 						__constructors[__constructors.length - 1].restoreVars();
 						__constructors.pop().finish();
 
-					case EIdent(__rulescript__interpType):
+					case EIdent('__rulescript__interpType'):
 						return 'RuleScriptInterp';
 
 					default:
