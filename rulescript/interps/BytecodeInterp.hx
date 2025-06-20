@@ -1435,7 +1435,7 @@ class BytecodeInterp implements IInterp
 				command();
 				final o:Dynamic = getValue();
 				if (o == null)
-					throw 'Null access';
+					error('Null access');
 
 				dynamicBuffer[id] = Reflect.getProperty(o, stringBuffer[next().toInt()]);
 				linkID = id;
@@ -1549,6 +1549,21 @@ class BytecodeInterp implements IInterp
 		#else
 		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : Tools.isClass(c) ? Type.createInstance(c, args) : c;
 		#end
+	}
+
+	function error(info:String)
+	{
+		var error:String = '';
+
+		if (scriptName != null)
+			error += '$scriptName: ';
+
+		error += info;
+
+		if (lineInfo)
+			error += ' (line: $curLine)';
+
+		throw error;
 	}
 
 	private function set_scriptPackage(value:String):String
