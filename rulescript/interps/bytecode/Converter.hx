@@ -692,37 +692,40 @@ class Converter
 								null;
 						}
 
-						var superID:Int = 0;
-
-						for (expr in exprs)
+						if (exprs?.length > 0)
 						{
-							switch (rulescript.Tools.getExpr(expr))
+							var superID:Int = 0;
+
+							for (expr in exprs)
 							{
-								case ECall(e, _):
-									if (rulescript.Tools.getExpr(e).match(EIdent('super')))
-										break;
-								default:
-									null;
+								switch (rulescript.Tools.getExpr(expr))
+								{
+									case ECall(e, _):
+										if (rulescript.Tools.getExpr(e).match(EIdent('super')))
+											break;
+									default:
+										null;
+								}
+								superID++;
 							}
-							superID++;
+
+							final superCallArgs:Array<Expr> = switch (rulescript.Tools.getExpr(exprs[superID]))
+							{
+								case ECall(_, params): params;
+								default: null;
+							};
+
+							ce(EBlock(exprs.slice(0, superID)).toExpr());
+
+							add(superCallArgs.length);
+
+							for (expr in superCallArgs)
+							{
+								ce(expr);
+							}
+
+							ce(EBlock(exprs.slice(superID + 1)).toExpr());
 						}
-
-						final superCallArgs:Array<Expr> = switch (rulescript.Tools.getExpr(exprs[superID]))
-						{
-							case ECall(_, params): params;
-							default: null;
-						};
-
-						ce(EBlock(exprs.slice(0, superID)).toExpr());
-
-						add(superCallArgs.length);
-
-						for (expr in superCallArgs)
-						{
-							ce(expr);
-						}
-
-						ce(EBlock(exprs.slice(superID + 1)).toExpr());
 					}
 					else
 					{
