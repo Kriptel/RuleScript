@@ -362,6 +362,12 @@ class BytecodeInterp implements IInterp
 
 				return linkType = BOOL;
 
+			case NOT:
+				command();
+				linkID = (!getValue()) ? BOOL_TRUE : BOOL_FALSE;
+
+				return linkType = BOOL;
+
 			case NOT_EQUAL:
 				command();
 				final a:Dynamic = getValue();
