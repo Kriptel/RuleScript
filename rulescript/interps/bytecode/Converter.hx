@@ -143,7 +143,11 @@ class Converter
 
 				case EReturn(e):
 					add(RETURN);
-					ce(e);
+
+					if (e != null)
+						ce(e);
+					else
+						add(NULL);
 
 				case ECheckType(e, _):
 					ce(e);
