@@ -17,27 +17,27 @@ enum abstract Command(Int) from Int
 
 	var GET = 10;
 	var GET_NATIVE = 11;
-	var GET_SCRIPTED_TYPE = 12;
-	var SET = 13;
-	var SET_NATIVE = 14;
-	var OP = 15;
-	var OP_FLOAT = 16;
-	var OP_NATIVE = 17;
-	var CALL = 18;
-	var CALL_USING = 19;
-	var BLOCK = 20;
-	var STRING_CONCAT = 21;
-	var FOR = 22;
-	var FOR_KEY_VALUE = 23;
-	var WHILE = 24;
-	var DO_WHILE = 25;
-	var IF = 26;
-	var IF_ELSE = 27;
-	var NEW = 28;
-	var IDENT_NATIVE = 29;
-	var SWITCH = 30;
-	var SWITCH_DEFAULT = 31;
-	var TRY = 32;
+	var SET = 12;
+	var SET_NATIVE = 13;
+	var OP = 14;
+	var OP_FLOAT = 15;
+	var OP_NATIVE = 16;
+	var CALL = 17;
+	var CALL_USING = 18;
+	var BLOCK = 19;
+	var STRING_CONCAT = 20;
+	var FOR = 21;
+	var FOR_KEY_VALUE = 22;
+	var WHILE = 23;
+	var DO_WHILE = 24;
+	var IF = 25;
+	var IF_ELSE = 26;
+	var NEW = 27;
+	var IDENT_NATIVE = 28;
+	var SWITCH = 29;
+	var SWITCH_DEFAULT = 30;
+	var TRY = 31;
+	var SUPER_CALL = 32;
 
 	// TYPES
 	var INT = 40;
@@ -96,6 +96,8 @@ enum abstract Command(Int) from Int
 	var REST = 94;
 	var PARAM = 95;
 	var PARAM_REST = 96;
+	var CONSTRUCTOR_SUPER_CALL = 97;
+	var CONSTRUCTOR_NO_SUPER_CALL = 98;
 
 	// OPERATORS
 	var OP_PLUS = 100;

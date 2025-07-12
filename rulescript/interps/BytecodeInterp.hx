@@ -3,10 +3,13 @@ package rulescript.interps;
 import haxe.Constraints.IMap;
 import hscript.Expr;
 import rulescript.RuleScript.IInterp;
+import rulescript.Tools.getScriptProp;
 import rulescript.interps.bytecode.Command;
 import rulescript.interps.bytecode.Converter;
 import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
+import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.types.Property;
+import rulescript.types.ScriptedAbstract;
 import rulescript.types.ScriptedTypeUtil;
 
 using StringTools;
@@ -29,6 +32,8 @@ class BytecodeInterp implements IInterp
 	public var isSuperCall:Bool = false;
 
 	public var staticOptimization:Bool = true;
+
+	public var context:Dynamic;
 
 	/**
 	 * used by the interpreter when type is dynamic
@@ -125,7 +130,21 @@ class BytecodeInterp implements IInterp
 	{
 		converter.convertExpr(e);
 
-		command();
+		if (errorHandler != null)
+		{
+			var pos:Int = this.pos;
+			try
+			{
+				command();
+			}
+			catch (e)
+			{
+				errorHandler(e);
+				this.pos = pos;
+			}
+		}
+		else
+			command();
 
 		return getValue();
 	}
@@ -1078,6 +1097,14 @@ class BytecodeInterp implements IInterp
 				linkID = id;
 
 				return linkType = DYNAMIC;
+			case SUPER_CALL:
+				isSuperCall = true;
+
+				command();
+
+				isSuperCall = false;
+
+				return linkType;
 			case CALL:
 				final id:Int = next();
 
@@ -1111,8 +1138,6 @@ class BytecodeInterp implements IInterp
 				#end
 
 				linkID = id;
-
-				isSuperCall = false;
 
 				return linkType = DYNAMIC;
 			case NEW:
@@ -1249,51 +1274,95 @@ class BytecodeInterp implements IInterp
 				final endPos:Int = next();
 				final argNum:Int = next();
 				final isRest:Bool = next() == REST;
+				final superCall:Bool = next() == CONSTRUCTOR_SUPER_CALL;
+
 				final startPos:Int = this.pos;
 				this.pos = endPos;
 
 				linkID = id;
 
-				variables['__constructor'] = dynamicBuffer[id] = function(args:Array<Dynamic>):rulescript.RuleScriptAccess.ConstructorAccess
+				if (superCall)
+					variables['__constructor'] = dynamicBuffer[id] = function(args:Array<Dynamic>):rulescript.RuleScriptAccess.ConstructorAccess
 
-				{
-					final lastPos = this.pos;
-
-					this.pos = startPos;
-
-					if (argNum != 0)
 					{
-						var i:Int = 0;
-						do
+						final lastPos = this.pos;
+
+						this.pos = startPos;
+
+						if (argNum != 0)
 						{
-							final argId:Int = next();
-							dynamicBuffer[argId] = args[i];
+							var i:Int = 0;
+							do
+							{
+								final argId:Int = next();
+								dynamicBuffer[argId] = args[i];
+							}
+							while (i++ <= argNum);
 						}
-						while (i++ <= argNum);
+
+						return {
+							pre: () -> command(),
+
+							getSuperArgs: () ->
+							{
+								var superArgNum:Int = next();
+
+								[
+									while (superArgNum-- > 0)
+									{
+										command();
+										getValue();
+									}
+								];
+							},
+							post: () ->
+							{
+								command();
+								this.pos = lastPos;
+							}
+						};
+					};
+				else
+				{
+					var f:Dynamic = function(args:Array<Dynamic>):Dynamic
+					{
+						final lastPos = this.pos;
+
+						this.pos = startPos;
+
+						if (argNum != 0)
+						{
+							var i:Int = 0;
+							do
+							{
+								final argId:Int = next();
+								dynamicBuffer[argId] = args[i];
+							}
+							while (++i < argNum);
+						}
+
+						command();
+
+						var v:Dynamic = getValue();
+						this.pos = lastPos;
+						return v;
 					}
 
-					return {
-						pre: () -> command(),
+					var f:Dynamic = if (isRest)
+					{
+						makeRest(f, argNum);
+					}
+					else
+					{
+						#if hl
+						Tools.__hl_makeVarArgs(f, argNum);
+						#else
+						Reflect.makeVarArgs(f);
+						#end
+					}
 
-						getSuperArgs: () ->
-						{
-							var superArgNum:Int = next();
-
-							[
-								while (superArgNum-- > 0)
-								{
-									command();
-									getValue();
-								}
-							];
-						},
-						post: () ->
-						{
-							command();
-							this.pos = lastPos;
-						}
-					};
-				};
+					variables['new'] = dynamicBuffer[id] = f;
+				}
 
 				return linkType = DYNAMIC;
 
@@ -1457,21 +1526,7 @@ class BytecodeInterp implements IInterp
 				if (o == null)
 					error('Null access');
 
-				dynamicBuffer[id] = Reflect.getProperty(o, stringBuffer[next().toInt()]);
-				linkID = id;
-
-				if (o == superInstance)
-					isSuperCall = true;
-
-				return linkType = DYNAMIC;
-
-			case GET_SCRIPTED_TYPE:
-				final id:Int = next();
-				command();
-				final v:Dynamic = getValue();
-
-				final o:ScriptedClass = cast v;
-				dynamicBuffer[id] = o.getVariable(stringBuffer[next().toInt()]);
+				dynamicBuffer[id] = get(o, stringBuffer[next().toInt()]);
 				linkID = id;
 
 				return linkType = DYNAMIC;
@@ -1512,6 +1567,18 @@ class BytecodeInterp implements IInterp
 			v = Reflect.getProperty(superInstance, id);
 
 		return v ?? error('Unknown variable "$id"');
+	}
+
+	function get(o:Dynamic, f:String):Dynamic
+	{
+		if (o is RuleScriptedClass && (o != superInstance || !isSuperCall))
+		{
+			var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
+			if (cl.variableExists(f))
+				return getScriptProp(cl.getVariable(f));
+		}
+
+		return getScriptProp(Reflect.getProperty(o, f));
 	}
 
 	function makeRest(f:Array<Dynamic>->Dynamic, argNum:Int):Dynamic
@@ -1579,12 +1646,22 @@ class BytecodeInterp implements IInterp
 
 		if (c is ScriptedClass)
 			return cast(c, ScriptedClass).createInstance(args);
+		if (c is ScriptedAbstract)
+			return cast(c, ScriptedAbstract).constructor(args);
 
 		#if hl
 		return Reflect.isFunction(c) ? Tools.__hl_callMethod(c, args) : Tools.isClass(c) ? Tools.__hl_createInstance(c, args) : c;
 		#else
 		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : Tools.isClass(c) ? Type.createInstance(c, args) : c;
 		#end
+	}
+
+	function resolveType(path:String)
+	{
+		if (context != null)
+			return context.resolveType(path)
+		else
+			return Tools.resolveType(path);
 	}
 
 	function error(info:String):Dynamic
@@ -1648,6 +1725,7 @@ class BytecodeInterp implements IInterp
 	}
 }
 
+@:access(rulescript.interps.BytecodeInterp)
 class InterpAccess extends RuleScriptAccess
 {
 	var interp:BytecodeInterp;
@@ -1765,6 +1843,16 @@ class InterpAccess extends RuleScriptAccess
 		return interp.errorHandler = v;
 	}
 
+	override function get_context():Dynamic
+	{
+		return interp.context;
+	}
+
+	override function set_context(v:Dynamic):Dynamic
+	{
+		return interp.context = v;
+	}
+
 	override function get_isSuperCall():Bool
 	{
 		return interp.isSuperCall;
@@ -1778,5 +1866,15 @@ class InterpAccess extends RuleScriptAccess
 	override function createConstructor(args:Array<Dynamic>):rulescript.RuleScriptAccess.ConstructorAccess
 	{
 		return getVariable('__constructor')(args);
+	}
+
+	override function __resolve(path:String):Dynamic
+	{
+		return interp.resolve(path);
+	}
+
+	override function __resolveType(path:String):Dynamic
+	{
+		return interp.resolveType(path);
 	}
 }

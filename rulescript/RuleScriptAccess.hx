@@ -101,6 +101,8 @@ class RuleScriptAccess
 
 	var errorHandler(get, set):haxe.Exception->Void;
 
+	var context(get, set):Context;
+
 	function get_scriptName():String
 	{
 		return null;
@@ -151,6 +153,16 @@ class RuleScriptAccess
 		return null;
 	}
 
+	function get_context():Dynamic
+	{
+		return null;
+	}
+
+	function set_context(v:Dynamic):Dynamic
+	{
+		return null;
+	}
+
 	@:noCompletion public var isSuperCall(get, never):Bool;
 
 	function get_isSuperCall():Bool
@@ -166,6 +178,16 @@ class RuleScriptAccess
 	}
 
 	@:noCompletion public function createConstructor(args:Array<Dynamic>):ConstructorAccess
+	{
+		return null;
+	}
+
+	@:noCompletion private function __resolve(path:String):Dynamic
+	{
+		return null;
+	}
+
+	@:noCompletion private function __resolveType(path:String):Dynamic
 	{
 		return null;
 	}

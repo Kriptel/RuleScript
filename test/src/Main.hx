@@ -5,6 +5,7 @@ import example.ScriptedClassTest;
 import example.TestAbstract;
 import hscript.Expr.ClassDecl;
 import hscript.Expr.ModuleDecl;
+import rulescript.Context;
 import rulescript.RuleScript;
 import rulescript.interps.BytecodeInterp;
 import rulescript.interps.RuleScriptInterp;
@@ -43,7 +44,7 @@ class Main
 
 		ScriptedTypeUtil.resolveModule = resolveModule;
 
-		script = new RuleScript(new HxParser());
+		script = new RuleScript(new HxParser(), new Context());
 		script.scriptName = 'rulescript.test';
 
 		final tests:Array<Test> = [
@@ -59,7 +60,8 @@ class Main
 			new ScriptClassesTest(),
 			new FileScriptTest(),
 			new EnumTest(),
-			new CastTest()
+			new CastTest(),
+			new ContextTest()
 		];
 
 		for (test in tests)

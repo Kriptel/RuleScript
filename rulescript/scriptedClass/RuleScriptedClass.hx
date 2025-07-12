@@ -1,6 +1,7 @@
 package rulescript.scriptedClass;
 
 import hscript.Expr.ClassDecl;
+import rulescript.RuleScript.IInterp;
 import rulescript.interps.RuleScriptInterp;
 import rulescript.types.ScriptedType;
 
@@ -59,7 +60,7 @@ abstract Access(RuleScriptedClass)
 	public var nativeClass:Null<Dynamic>;
 	public var constructor:(args:Array<Dynamic>) -> Dynamic;
 
-	public var interp:RuleScriptInterp;
+	public var interp:IInterp;
 
 	var pack:String;
 
@@ -79,8 +80,9 @@ abstract Access(RuleScriptedClass)
 			}
 		}
 
-		interp = new RuleScriptInterp();
-		interp.execute(Tools.moduleDeclsToExpr(module.decl, {
+		interp = RuleScript.createInterp();
+
+		interp.access.execute(Tools.moduleDeclsToExpr(module.decl, {
 			fieldFilter: f -> f.access.contains(AStatic)
 		}));
 
@@ -90,11 +92,11 @@ abstract Access(RuleScriptedClass)
 
 			@:privateAccess {
 				// Check module
-				superClass ??= interp.resolveType('${((pack.length > 0) ? pack + '.' : '')}${module.name}.$type');
+				superClass ??= interp.access.__resolveType('${((pack.length > 0) ? pack + '.' : '')}${module.name}.$type');
 				// Check type
-				superClass ??= interp.resolveType(type);
+				superClass ??= interp.access.__resolveType(type);
 				// Check imported types
-				superClass ??= interp.resolve(type);
+				superClass ??= interp.access.__resolve(type);
 			}
 
 			if (superClass == null)
@@ -161,40 +163,43 @@ abstract Access(RuleScriptedClass)
 
 	public function getVariables():Map<String, Dynamic>
 	{
-		return interp.variables;
+		return interp.access.getVariables();
 	}
 
 	public function variableExists(name:String):Bool
 	{
-		return interp.variables.exists(name);
+		return interp.access.variableExists(name);
 	}
 
 	public function getVariable(name:String):Dynamic
 	{
-		return interp.variables[name];
+		return interp.access.getVariable(name);
 	}
 
 	public function setVariable(name:String, value:Dynamic):Dynamic
 	{
-		return interp.variables[name] = value;
+		return interp.access.setVariable(name, value);
 	}
 
+	@:access(rulescript.RuleScriptAccess)
 	public function toString():String
 	{
 		return if (variableExists('toString'))
 			getVariable('toString')();
 		else
 		{
-			(interp.scriptPackage != '' ? interp.scriptPackage + '.' : '') + (module.name != impl.name ? module.name + '.' + impl.name : impl.name);
+			(interp.access.scriptPackage != '' ? interp.access.scriptPackage + '.' : '')
+				+ (module.name != impl.name ? module.name + '.' + impl.name : impl.name);
 		}
 	}
 }
 
+@:access(rulescript.RuleScriptAccess)
 @:noBuild class ScriptedInstance implements RuleScriptedClass
 {
 	var cl:ScriptedClass;
 
-	public var interp:RuleScriptInterp;
+	public var interp:IInterp;
 
 	var _superInstance:ScriptedInstance;
 
@@ -205,7 +210,7 @@ abstract Access(RuleScriptedClass)
 	{
 		this.cl = cl;
 
-		interp = new RuleScriptInterp();
+		interp = RuleScript.createInterp();
 
 		var list = [];
 
@@ -219,7 +224,7 @@ abstract Access(RuleScriptedClass)
 
 		for (cl in list)
 		{
-			interp.execute(Tools.toExpr(EBlock([
+			interp.access.execute(Tools.toExpr(EBlock([
 				Tools.moduleDeclsToExpr(cl.module.decl, {
 					isScriptedClass: true,
 					fieldFilter: f -> !f.access.contains(AStatic)
@@ -229,11 +234,11 @@ abstract Access(RuleScriptedClass)
 			for (field in cl.impl.fields)
 			{
 				if (!field.access.contains(AStatic))
-					setVariable(field.name, interp.variables[field.name]);
+					setVariable(field.name, interp.access.getVariable(field.name));
 			}
 		}
 
-		interp.superInstance = this;
+		interp.access.superInstance = this;
 
 		if (args != null)
 			if (variableExists('new'))
@@ -251,7 +256,7 @@ abstract Access(RuleScriptedClass)
 
 	public function getVariables():Map<String, Dynamic>
 	{
-		return interp.variables;
+		return interp.access.getVariables();
 	}
 
 	public function variableExists(name:String):Bool

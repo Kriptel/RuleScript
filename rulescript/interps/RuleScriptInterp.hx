@@ -2,12 +2,11 @@ package rulescript.interps;
 
 import hscript.Expr;
 import rulescript.RuleScript.IInterp;
+import rulescript.Tools.getScriptProp;
 import rulescript.scriptedClass.RuleScriptedClass;
-import rulescript.types.Abstracts;
 import rulescript.types.Property;
 import rulescript.types.ScriptedAbstract;
 import rulescript.types.ScriptedTypeUtil;
-import rulescript.types.Typedefs;
 
 using rulescript.Tools;
 
@@ -33,6 +32,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	public var hasErrorHandler:Bool = false;
 	public var errorHandler(default, set):haxe.Exception->Void;
+
+	public var context:Dynamic;
 
 	var typePaths:Map<String, Dynamic> = [];
 
@@ -139,11 +140,6 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			else
 				variables.set(name, v);
 		}
-	}
-
-	inline private function getScriptProp(v:Dynamic):Dynamic
-	{
-		return v is Property ? cast(v, Property).value : v;
 	}
 
 	override function exprReturn(e):Dynamic
@@ -499,50 +495,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	function resolveType(path:String):Dynamic
 	{
-		var t:Dynamic = ScriptedTypeUtil.resolveScript(path);
-
-		if (t != null)
-			return t;
-
-		var shortPath:String = null;
-
-		if (StringTools.contains(path, '.'))
-		{
-			var _shortPath = path.split('.');
-			if (_shortPath.length > 1)
-			{
-				_shortPath.remove(_shortPath[_shortPath.length - 2]);
-				shortPath = _shortPath.join('.');
-			}
-		}
-
-		t ??= Typedefs.resolveTypedef(path);
-
-		if (shortPath != null)
-			t ??= Typedefs.resolveTypedef(shortPath);
-
-		t ??= Type.resolveClass(path);
-
-		#if interp t = Tools.isEmptyClass(t) ? null : t; #end
-
-		if (t == null && shortPath != null)
-		{
-			t = Type.resolveClass(shortPath);
-
-			#if interp t = Tools.isEmptyClass(t) ? null : t; #end
-		}
-
-		t ??= Abstracts.resolveAbstract(path);
-
-		if (shortPath != null)
-			t ??= Abstracts.resolveAbstract(shortPath);
-
-		t ??= Type.resolveEnum(path);
-
-		if (shortPath != null)
-			t ??= Type.resolveEnum(shortPath);
-
-		return t;
+		if (context != null)
+			return context.resolveType(path)
+		else
+			return Tools.resolveType(path);
 	}
 
 	override function makeKeyValueIterator(v:Dynamic):KeyValueIterator<Dynamic, Dynamic>
@@ -580,17 +536,17 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				o = superInstance;
 		}
 
-		var prop:Dynamic = super.get(o, f);
-
-		if (prop != null)
-			return getScriptProp(prop);
-
 		if (o is RuleScriptedClass)
 		{
 			var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
 			if (cl.variableExists(f))
 				return getScriptProp(cl.getVariable(f));
 		}
+
+		var prop:Dynamic = super.get(o, f);
+
+		if (prop != null)
+			return getScriptProp(prop);
 
 		for (cl in usings)
 		{
@@ -839,6 +795,7 @@ private typedef SuperFunction =
 	finish:Void->Void
 }
 
+@:access(rulescript.interps.RuleScriptInterp)
 class RuleScriptInterpAccess extends RuleScriptAccess
 {
 	var interp:RuleScriptInterp;
@@ -956,6 +913,16 @@ class RuleScriptInterpAccess extends RuleScriptAccess
 		return interp.errorHandler = v;
 	}
 
+	override function get_context():Dynamic
+	{
+		return interp.context;
+	}
+
+	override function set_context(v:Dynamic):Dynamic
+	{
+		return interp.context = v;
+	}
+
 	override function get_isSuperCall():Bool
 	{
 		return interp.isSuperCall;
@@ -1026,5 +993,15 @@ class RuleScriptInterpAccess extends RuleScriptAccess
 			default:
 				null;
 		}
+	}
+
+	override function __resolve(path:String):Dynamic
+	{
+		return interp.resolve(path);
+	}
+
+	override function __resolveType(path:String):Dynamic
+	{
+		return interp.resolveType(path);
 	}
 }

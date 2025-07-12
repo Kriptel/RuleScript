@@ -94,7 +94,9 @@ class RuleScript
 	}
 
 	/**
-	 * Package => Imports
+	 * Functions similarly to import.hx (https://haxe.org/manual/type-system-import-defaults.html).
+	 * 
+	 * Package => Types.
 	 */
 	public static var defaultImports:Map<String, Map<String, Dynamic>> = [
 		'' => [
@@ -130,11 +132,16 @@ class RuleScript
 
 	public var errorHandler(get, set):haxe.Exception->Void;
 
-	public function new(?interp:IInterp, ?parser:Parser)
+	public var context(get, set):Context;
+
+	public function new(?interp:IInterp, ?parser:Parser, ?context:Context)
 	{
 		// You can register custom parser in a child class
 		this.interp ??= interp ?? createInterp();
 		this.parser ??= parser ?? new HxParser();
+
+		if (context != null)
+			this.context = context;
 	}
 
 	public function execute(code:EitherType<String, Expr>):Dynamic
@@ -226,6 +233,16 @@ class RuleScript
 	function set_errorHandler(v:haxe.Exception->Void):haxe.Exception->Void
 	{
 		return access.errorHandler = v;
+	}
+
+	function get_context():Dynamic
+	{
+		return access.context;
+	}
+
+	function set_context(v:Dynamic):Dynamic
+	{
+		return access.context = v;
 	}
 }
 

@@ -1,0 +1,11 @@
+package;
+
+class ContextTest
+{
+	public static var a = init();
+
+	static function init(){
+		trace('hello world');
+		return 123;
+	} 
+}

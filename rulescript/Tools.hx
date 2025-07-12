@@ -3,6 +3,10 @@ package rulescript;
 import haxe.Constraints.Function;
 import hscript.Expr;
 import hscript.Printer;
+import rulescript.types.Abstracts;
+import rulescript.types.Property;
+import rulescript.types.ScriptedTypeUtil;
+import rulescript.types.Typedefs;
 
 #if hl
 @:build(rulescript.macro.CallMethodMacro.build())
@@ -116,9 +120,11 @@ class Tools
 
 	public static function moduleDeclsToExpr(moduleDecls:Array<ModuleDecl>, ?parameters:{?isScriptedClass:Bool, ?fieldFilter:FieldDecl->Bool}):Expr
 	{
-		var fields:Array<Expr> = [];
+		final fields:Array<Expr> = [];
 
-		var pushExpr = (e) -> fields.push(toExpr(e));
+		final pushExpr = (e) -> fields.push(toExpr(e));
+
+		final values:Array<Expr> = [];
 
 		function pushField(field:FieldDecl, ?hasExtend:Bool = false)
 		{
@@ -133,12 +139,14 @@ class Tools
 					case KVar(v):
 						if (v.get == null && v.set == null)
 						{
-							pushExpr(EVar(field.name, v.type, v.expr, field.access.contains(APublic), field.access.contains(AFinal)));
+							pushExpr(EVar(field.name, v.type, null, field.access.contains(APublic), field.access.contains(AFinal)));
 						}
 						else
 						{
-							pushExpr(EProp(field.name, v.get, v.set, v.type, v.expr, field.access.contains(APublic)));
+							pushExpr(EProp(field.name, v.get, v.set, v.type, null, field.access.contains(APublic)));
 						}
+
+						values.push(toExpr(EBinop('=', toExpr(EIdent(field.name)), v.expr)));
 				}
 		}
 
@@ -170,6 +178,9 @@ class Tools
 				default:
 			}
 
+		for (value in values)
+			fields.push(value);
+
 		#if hscriptPos
 		return {
 			e: EBlock(fields),
@@ -181,6 +192,59 @@ class Tools
 		#else
 		return EBlock(fields);
 		#end
+	}
+
+	public static function resolveType(path:String):Dynamic
+	{
+		var t:Dynamic = ScriptedTypeUtil.resolveScript(path);
+
+		if (t != null)
+			return t;
+
+		var shortPath:String = null;
+
+		if (StringTools.contains(path, '.'))
+		{
+			var _shortPath = path.split('.');
+			if (_shortPath.length > 1)
+			{
+				_shortPath.remove(_shortPath[_shortPath.length - 2]);
+				shortPath = _shortPath.join('.');
+			}
+		}
+
+		t ??= Typedefs.resolveTypedef(path);
+
+		if (shortPath != null)
+			t ??= Typedefs.resolveTypedef(shortPath);
+
+		t ??= Type.resolveClass(path);
+
+		#if interp t = Tools.isEmptyClass(t) ? null : t; #end
+
+		if (t == null && shortPath != null)
+		{
+			t = Type.resolveClass(shortPath);
+
+			#if interp t = Tools.isEmptyClass(t) ? null : t; #end
+		}
+
+		t ??= Abstracts.resolveAbstract(path);
+
+		if (shortPath != null)
+			t ??= Abstracts.resolveAbstract(shortPath);
+
+		t ??= Type.resolveEnum(path);
+
+		if (shortPath != null)
+			t ??= Type.resolveEnum(shortPath);
+
+		return t;
+	}
+
+	inline public static function getScriptProp(v:Dynamic):Dynamic
+	{
+		return v is Property ? cast(v, Property).value : v;
 	}
 
 	#if hl

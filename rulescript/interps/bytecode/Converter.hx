@@ -1,10 +1,6 @@
 package rulescript.interps.bytecode;
 
 import hscript.Expr;
-import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
-import rulescript.types.Abstracts;
-import rulescript.types.ScriptedTypeUtil;
-import rulescript.types.Typedefs;
 
 using StringTools;
 using rulescript.Tools;
@@ -31,7 +27,9 @@ class Converter
 		final buffer:Array<Command> = interp._buffer;
 
 		inline function add(command:Command):Int
+		{
 			return buffer.push(command);
+		}
 
 		inline function addLink<T>(type:Command, o:T, createNew:Bool = false):Void
 			add(link(type, o, createNew));
@@ -214,7 +212,16 @@ class Converter
 					else
 						add(NULL);
 
-				case EVar(name, t, expr, global, isFinal):
+				case EVar(name, t, expr, true, isFinal):
+					lastValues.push({name: name, t: variables[name]});
+					variables[name] = TDynamic;
+
+					if (expr != null)
+						ce(EBinop('=', EIdent(name).toExpr(), expr).toExpr());
+					else
+						add(NULL);
+
+				case EVar(name, t, expr, _, isFinal):
 					final type:VarType = t != null ? typeofCType(t) : typeof(expr);
 
 					final isMap:Bool = type.match(TMap(_));
@@ -372,7 +379,7 @@ class Converter
 							}
 					}
 				case EField(e, f):
-					add(typeof(e) == TScriptedClass ? GET_SCRIPTED_TYPE : GET_NATIVE);
+					add(GET_NATIVE);
 
 					addLink(DYNAMIC, null, true);
 					ce(e);
@@ -455,6 +462,18 @@ class Converter
 						ce(field.e);
 					}
 				case ECall(e, params):
+					switch (e.getExpr())
+					{
+						case EField(e, _):
+							switch (e.getExpr())
+							{
+								case EIdent('super'):
+									add(SUPER_CALL);
+								default:
+							}
+						default:
+					}
+
 					var isUsing:Bool = false, fieldName:String = null;
 
 					for (field in usings)
@@ -493,6 +512,10 @@ class Converter
 
 				case EImport(name, _, alias, func):
 					var type:Dynamic = resolveType(name);
+
+					if (type == null)
+						throw 'Type not found : $name';
+
 					if (func != null)
 						type = Reflect.getProperty(type, func);
 
@@ -503,6 +526,7 @@ class Converter
 
 					lastValues.push({name: id, t: variables[id]});
 					variables[id] = imports[id] = toVarType(type);
+					interp.variables[id] = type;
 
 					if (Tools.isClass(type))
 					{
@@ -677,7 +701,13 @@ class Converter
 
 					add(isRest ? REST : NULL);
 
+					var constructorType:Int = -1;
+
+					if (name == 'new')
+						constructorType = add(-1) - 1;
+
 					final oldVariables:Int = lastValues.length;
+
 					final oldDepth:Int = depth++;
 
 					for (arg in args)
@@ -692,10 +722,12 @@ class Converter
 
 					if (name == 'new')
 					{
-						final exprs = switch (rulescript.Tools.getExpr(e))
+						final exprs:Array<Expr> = switch (rulescript.Tools.getExpr(e))
 						{
 							case EBlock(exprs):
 								exprs;
+							case EObject([]):
+								[];
 							default:
 								null;
 						}
@@ -717,22 +749,33 @@ class Converter
 								superID++;
 							}
 
-							final superCallArgs:Array<Expr> = switch (rulescript.Tools.getExpr(exprs[superID]))
+							if (exprs.length != superID)
 							{
-								case ECall(_, params): params;
-								default: null;
-							};
+								buffer[constructorType] = CONSTRUCTOR_SUPER_CALL;
 
-							ce(EBlock(exprs.slice(0, superID)).toExpr());
+								final superCallArgs:Array<Expr> = switch (rulescript.Tools.getExpr(exprs[superID]))
+								{
+									case ECall(_, params): params;
+									default: null;
+								};
 
-							add(superCallArgs.length);
+								ce(EBlock(exprs.slice(0, superID)).toExpr());
 
-							for (expr in superCallArgs)
-							{
-								ce(expr);
+								add(superCallArgs.length);
+
+								for (expr in superCallArgs)
+								{
+									ce(expr);
+								}
+
+								ce(EBlock(exprs.slice(superID + 1)).toExpr());
 							}
+							else
+							{
+								buffer[constructorType] = CONSTRUCTOR_NO_SUPER_CALL;
 
-							ce(EBlock(exprs.slice(superID + 1)).toExpr());
+								ce(e);
+							}
 						}
 					}
 					else
@@ -1220,50 +1263,7 @@ class Converter
 
 	private function resolveType(path:String):Dynamic
 	{
-		var t:Dynamic = ScriptedTypeUtil.resolveScript(path);
-
-		if (t != null)
-			return t;
-
-		var shortPath:String = null;
-
-		if (StringTools.contains(path, '.'))
-		{
-			var _shortPath = path.split('.');
-			if (_shortPath.length > 1)
-			{
-				_shortPath.remove(_shortPath[_shortPath.length - 2]);
-				shortPath = _shortPath.join('.');
-			}
-		}
-
-		t ??= Typedefs.resolveTypedef(path);
-
-		if (shortPath != null)
-			t ??= Typedefs.resolveTypedef(shortPath);
-
-		t ??= Type.resolveClass(path);
-
-		#if interp t = Tools.isEmptyClass(t) ? null : t; #end
-
-		if (t == null && shortPath != null)
-		{
-			t = Type.resolveClass(shortPath);
-
-			#if interp t = Tools.isEmptyClass(t) ? null : t; #end
-		}
-
-		t ??= Abstracts.resolveAbstract(path);
-
-		if (shortPath != null)
-			t ??= Abstracts.resolveAbstract(shortPath);
-
-		t ??= Type.resolveEnum(path);
-
-		if (shortPath != null)
-			t ??= Type.resolveEnum(shortPath);
-
-		return t;
+		return interp.resolveType(path);
 	}
 
 	private function typeof(e:Expr):VarType
@@ -1359,8 +1359,6 @@ class Converter
 									default:
 										throw 'Unknown type "$type"';
 								}
-							case TInstance(TClass(ScriptedClass)):
-								return TScriptedClass;
 							case null if (interp.staticOptimization && !variables.exists(v)):
 								throw 'Unknown variable "$v"';
 							case t:
@@ -1391,8 +1389,6 @@ class Converter
 					{
 						case TEnum:
 							(field != null) ? TEnumValue : TEnum;
-						case TInstance(TClass(ScriptedClass)):
-							TScriptedClass;
 						default:
 							TDynamic;
 					};
@@ -1487,7 +1483,6 @@ class Converter
 
 enum VarType
 {
-	TScriptedClass;
 	TNativeField;
 	TClass(c:Class<Dynamic>);
 	TFunction(f:Dynamic);
