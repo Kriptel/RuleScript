@@ -146,7 +146,8 @@ class Tools
 							pushExpr(EProp(field.name, v.get, v.set, v.type, null, field.access.contains(APublic)));
 						}
 
-						values.push(toExpr(EBinop('=', toExpr(EIdent(field.name)), v.expr)));
+						if (v.expr != null)
+							values.push(toExpr(EBinop('=', toExpr(EIdent(field.name)), v.expr)));
 				}
 		}
 
