@@ -203,7 +203,7 @@ abstract Access(RuleScriptedClass)
 
 	var _superInstance:ScriptedInstance;
 
-	public var variables:Map<String, Dynamic> = [];
+	public var variables(get, set):Map<String, Dynamic>;
 
 	@:access(rulescript.scriptedClass.ScriptedClass)
 	public function new(cl:ScriptedClass, args:Array<Dynamic>)
@@ -261,17 +261,17 @@ abstract Access(RuleScriptedClass)
 
 	public function variableExists(name:String):Bool
 	{
-		return variables.exists(name);
+		return interp.access.variableExists(name);
 	}
 
 	public function getVariable(name:String):Dynamic
 	{
-		return variables[name];
+		return interp.access.getVariable(name);
 	}
 
 	public function setVariable(name:String, value:Dynamic):Dynamic
 	{
-		return variables[name] = value;
+		return interp.access.setVariable(name, value);
 	}
 
 	public function toString():String
@@ -282,5 +282,15 @@ abstract Access(RuleScriptedClass)
 		{
 			cl.toString();
 		}
+	}
+
+	function get_variables():Map<String, Dynamic>
+	{
+		return interp.access.getVariables();
+	}
+
+	function set_variables(v:Map<String, Dynamic>):Map<String, Dynamic>
+	{
+		return interp.access.setVariables(v);
 	}
 }
