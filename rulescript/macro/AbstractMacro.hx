@@ -38,7 +38,7 @@ class AbstractMacro
 		final list = [
 			for (abstractType in abstractsList)
 			{
-				if (!ignoreList.contains(abstractType))
+				if (!ignoreList.contains('-#$abstractType'))
 					buildAbstract(MacroTools.parseTypePath(abstractType));
 			}
 		];
