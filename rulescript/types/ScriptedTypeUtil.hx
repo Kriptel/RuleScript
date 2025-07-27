@@ -33,7 +33,7 @@ class ScriptedTypeUtil
 
 		final pack:Array<String> = [];
 
-		while (Tools.startsWithLowerCase(path[0]))
+		while (path[0] != null && Tools.startsWithLowerCase(path[0]))
 			pack.push(path.shift());
 
 		var moduleName:String = null;
