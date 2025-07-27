@@ -475,7 +475,7 @@ class BytecodeInterp implements IInterp
 			case IF:
 				final endPos:Int = next();
 				command();
-				if (linkID == BOOL_TRUE)
+				if (getValue() == true)
 					return switch (command())
 					{
 						case RETURN:
@@ -500,7 +500,7 @@ class BytecodeInterp implements IInterp
 
 				var returnValue:Command = -1;
 
-				if (linkID == BOOL_TRUE)
+				if (getValue() == true)
 				{
 					returnValue = command();
 					this.pos = endPosElse;
