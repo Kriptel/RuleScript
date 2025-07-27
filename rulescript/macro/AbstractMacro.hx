@@ -18,32 +18,38 @@ class AbstractMacro
 		final filename:String = Context.definedValue('rulescript_abstracts_file_path');
 
 		final abstractsList:Array<String> = [];
+		final ignoreList:Array<String> = [];
 
 		for (dir in Context.getClassPath())
 		{
 			for (name in (filename != null ? [defaultFilename, filename] : [defaultFilename]))
 				if (FileSystem.exists(dir + name))
 					for (abs in parseFile(File.getContent(dir + name)))
-						if (!abstractsList.contains(abs))
+					{
+						if (abs.startsWith('#') || abs.startsWith('//') || abs.length == 0) // Comment
+						{}
+						else if (abs.startsWith('-#')) // Ignore
+							ignoreList.push(abs);
+						else if (!abstractsList.contains(abs)) // Add
 							abstractsList.push(abs);
+					}
 		}
 
 		final list = [
 			for (abstractType in abstractsList)
 			{
-				buildAbstract(MacroTools.parseTypePath(abstractType));
+				if (!ignoreList.contains(abstractType))
+					buildAbstract(MacroTools.parseTypePath(abstractType));
 			}
 		];
 
 		final fields = Context.getBuildFields();
-
 		fields.push({
 			name: 'list',
 			access: [APublic, AStatic],
 			kind: FVar(macro :Map<String, Dynamic>, macro $a{list}),
 			pos: Context.currentPos()
 		});
-
 		return fields;
 	}
 

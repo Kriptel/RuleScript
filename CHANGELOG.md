@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed missing static modifier for the HxParser.defaultPreprocesorValues ​​field.
 
 ### Changed
+- Improved `RuleScriptAbstracts.txt`: Added ignore and comment syntax, and empty lines are automatically ignored.
 - `rulescript.Abstracts` moved to `rulescript.types.Abstracts`.
 - `rulescript.RuleScriptProperty` moved to `rulescript.types.Property`.
 - `rulescript.RuleScriptProperty.Property` moved to `rulescript.types.Property.PropertyAccess`.
