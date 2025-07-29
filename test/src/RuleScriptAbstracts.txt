@@ -4,4 +4,4 @@ example.HelloWorldAbstract
 
 // `-#` excludes `haxe.Int64`
 
--# haxe.Int64
+// -# haxe.Int64
