@@ -1,7 +1,6 @@
 package rulescript.types;
 
 import hscript.Expr;
-import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
 import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.types.ScriptedType;
 import rulescript.types.decl.AbstractDecl;

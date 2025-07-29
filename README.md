@@ -13,6 +13,7 @@
 - [Property](#property)
 - [Type path](#type-path)
 - [String interpolation](#string-interpolation)
+- [Regular expressions.](#regular-expressions)
 - [Script Class](#rulescriptedclass)
 - [Abstracts in script](#abstracts-in-script)
 - [Key => value iterator](#key--value-iterator)
@@ -119,6 +120,12 @@ var a = {
 };
         
 trace('${a.a}: ${a.b() + ' ' + a.c(true)}'); // RuleScript: Hello World
+```
+
+
+### Regular expressions
+```haxe
+~/haxe/i;
 ```
 
 ### RuleScriptedClass
@@ -247,10 +254,6 @@ Parser modes:
 - [Wildcard imports](https://haxe.org/manual/type-system-import.html#wildcard-import) are not supported.
 - AbstractMacro only supports `static` [abstract](https://haxe.org/manual/types-abstract-class.html) fields.
 
-# To Do
-- Improve hscript module parser
-- Improve abstracts
-
 # Install
 
 1. Installing the library: 
@@ -263,6 +266,7 @@ Parser modes:
 		- Haxelib : `haxelib git rulescript https://github.com/Kriptel/RuleScript.git`
 		- Hmm : `hmm git rulescript https://github.com/Kriptel/RuleScript.git`
 	- github version (dev)
+		> ⚠️ **Warning:** Dev version of RuleScript requires [git version of hscript](https://github.com/HaxeFoundation/hscript)
 
     	- Haxelib : `haxelib git rulescript https://github.com/Kriptel/RuleScript.git dev`
     	- Hmm : `hmm git rulescript https://github.com/Kriptel/RuleScript.git dev`

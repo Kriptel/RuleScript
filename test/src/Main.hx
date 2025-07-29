@@ -53,6 +53,7 @@ class Main
 			new ImportTest(),
 			new UsingTest(),
 			new StringInterpolationTest(),
+			new RegexTest(),
 			new AbstractTest(),
 			new TypedefTest(),
 			new TypePathTest(),

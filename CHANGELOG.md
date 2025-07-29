@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Regular expressions.
 - Module fields.
 - `cast` expression.
 - `untyped __rulescript__interpType` expression.

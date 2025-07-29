@@ -568,6 +568,23 @@ private class HScriptParser extends hscript.Parser
 
 			case TApostr:
 				parseExprNext(parseStringInterpolation());
+
+			case TOp('~'):
+				var char:Int;
+
+				if (this.char != -1)
+				{
+					char = this.char;
+					this.char = -1;
+				}
+				else
+					char = readChar();
+
+				if (char == '/'.code)
+					return parseRegex();
+
+				this.char = char;
+				return makeUnop('~', parseExpr());
 			default:
 				push(tk);
 				super.parseExpr();
@@ -930,6 +947,42 @@ private class HScriptParser extends hscript.Parser
 		}
 
 		return e;
+	}
+
+	function parseRegex():Expr
+	{
+		var r:String = '', opt:String = '';
+
+		var backslash:Bool = false;
+		while (true)
+		{
+			var char = readChar();
+
+			switch (char)
+			{
+				case _ if (StringTools.isEof(char)):
+					error(ECustom('Unterminated regular expression'), tokenMin, tokenMax);
+				case '\\'.code:
+					r += '\\';
+					backslash = true;
+				case '/'.code if (!backslash):
+					break;
+				default:
+					r += String.fromCharCode(char);
+					backslash = false;
+			}
+		}
+
+		var char = readChar();
+
+		switch (char)
+		{
+			case 'i'.code, 'g'.code, 'm'.code, 's'.code, 'u'.code:
+				opt = String.fromCharCode(char);
+			default:
+				this.char = char;
+		}
+		return mk(ENew('EReg', [mk(EConst(CString(r))), mk(EConst(CString(opt)))]));
 	}
 
 	override function parseFunctionArgs()
