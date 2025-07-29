@@ -46,6 +46,7 @@ class Main
 
 		script = new RuleScript(new HxParser(), new Context());
 		script.scriptName = 'rulescript.test';
+		script.getParser(HxParser).allowAll();
 
 		final tests:Array<Test> = [
 			new InterpTest(),

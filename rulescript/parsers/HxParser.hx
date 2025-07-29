@@ -783,6 +783,57 @@ private class HScriptParser extends hscript.Parser
 				}
 
 				mk(ECast(e, t), p1, tokenMax);
+			case 'new':
+				var hasTypeParams:Bool = false;
+
+				var a = new Array();
+				a.push(getIdent());
+				while (true)
+				{
+					var tk = token();
+					switch (tk)
+					{
+						case TDot:
+							a.push(getIdent());
+						case TPOpen:
+							break;
+						case TOp('<') if (allowTypes):
+							hasTypeParams = true;
+							break;
+						default:
+							trace(tk, allowTypes);
+
+							unexpected(tk);
+							break;
+					}
+				}
+
+				var typeParams:Array<CType> = null;
+
+				if (hasTypeParams)
+				{
+					if (maybe(TOp('>')))
+						unexpected(TOp('>'));
+
+					typeParams = [];
+
+					while (true)
+					{
+						typeParams.push(parseType());
+
+						switch (token())
+						{
+							case TComma:
+							case TOp('>'): break;
+							case tk: unexpected(tk);
+						}
+					}
+
+					ensure(TPOpen);
+				}
+
+				var args = parseExprList(TPClose);
+				mk(ENew(a.join("."), args, typeParams), p1);
 			default:
 				super.parseStructure(id);
 		}
