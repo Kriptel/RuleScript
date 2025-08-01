@@ -293,7 +293,10 @@ class RuleScriptedClassMacro
 					}
 					else
 					{
-						cast super.$fieldName($a{fieldArgs});
+						__rulescript.access.isSuperCall = false;
+						final value = cast super.$fieldName($a{fieldArgs});
+						__rulescript.access.isSuperCall = true;
+						value;
 					}
 				},
 				params: if (forceOverride)

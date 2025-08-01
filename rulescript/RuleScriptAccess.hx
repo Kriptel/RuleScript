@@ -163,9 +163,14 @@ class RuleScriptAccess
 		return null;
 	}
 
-	@:noCompletion public var isSuperCall(get, never):Bool;
+	@:noCompletion public var isSuperCall(get, set):Bool;
 
 	function get_isSuperCall():Bool
+	{
+		return false;
+	}
+
+	function set_isSuperCall(v:Bool):Bool
 	{
 		return false;
 	}

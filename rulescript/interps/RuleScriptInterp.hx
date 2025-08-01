@@ -928,6 +928,11 @@ class RuleScriptInterpAccess extends RuleScriptAccess
 		return interp.isSuperCall;
 	}
 
+	override function set_isSuperCall(v:Bool):Bool
+	{
+		return interp.isSuperCall = v;
+	}
+
 	override function get_hasConstructor():Bool
 	{
 		return interp.__constructor != null;
