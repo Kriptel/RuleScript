@@ -269,6 +269,13 @@ class RuleScriptedClassMacro
 					macro $i{argument.name}
 			];
 
+			final returnsVoid:Bool = getOverrideType(ret).match(TPath({
+				name: 'StdTypes',
+				params: [],
+				sub: 'Void',
+				pack: []
+			}));
+
 			return {
 				args: [
 					for (id => arg in args)
@@ -293,10 +300,24 @@ class RuleScriptedClassMacro
 					}
 					else
 					{
-						__rulescript.access.isSuperCall = false;
-						final value = cast super.$fieldName($a{fieldArgs});
-						__rulescript.access.isSuperCall = true;
-						value;
+						$
+						{
+							if (returnsVoid)
+								macro
+								{
+									__rulescript.access.isSuperCall = false;
+									cast super.$fieldName($a{fieldArgs});
+									__rulescript.access.isSuperCall = true;
+								}
+							else
+								macro
+								{
+									__rulescript.access.isSuperCall = false;
+									final value = cast super.$fieldName($a{fieldArgs});
+									__rulescript.access.isSuperCall = true;
+									value;
+								}
+						}
 					}
 				},
 				params: if (forceOverride)

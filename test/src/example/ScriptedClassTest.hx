@@ -31,6 +31,8 @@ class SrcClassTest<T:Hello<K>, K>
 		return finalVar;
 	}
 
+	public function voidFunc():Void {}
+
 	public function info()
 	{
 		return 'ScrClassTest';
