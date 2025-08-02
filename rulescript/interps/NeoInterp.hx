@@ -21,7 +21,6 @@ import rulescript.types.ScriptedTypeUtil;
  * Import
  * Meta
  * New
- * Package
  * Prop
  * Switch
  * Try
@@ -334,6 +333,11 @@ class NeoInterp implements IInterp
 
 			case BREAK:
 				throw CBreak;
+
+			case PACKAGE:
+				scriptPackage = stringBuffer[next()];
+
+				VOID;
 
 			case id:
 				error(EUnknownCommand(id));

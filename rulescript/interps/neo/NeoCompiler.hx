@@ -313,20 +313,23 @@ using rulescript.Tools;
 			case EBreak:
 				addCmd(BREAK);
 
-			case EDoWhile(cond, e):
-			case EFor(v, it, e):
-			case EForGen(it, e):
-			case EFunction(args, e, name, ret):
-			case EImport(name, star, alias, func):
-			case EMeta(name, args, e):
-			case ENew(cl, params, typeParams):
 			case EPackage(path):
-			case EProp(n, g, s, t, e, global):
-			case ESwitch(e, cases, defaultExpr):
-			case ETry(e, v, t, ecatch):
-			case ETypeVarPath(path):
-			case EUsing(name):
-			case EWhile(cond, e):
+				addCmd(PACKAGE);
+				addString(path);
+
+			// case EDoWhile(cond, e):
+			// case EFor(v, it, e):
+			// case EForGen(it, e):
+			// case EFunction(args, e, name, ret):
+			// case EImport(name, star, alias, func):
+			// case EMeta(name, args, e):
+			// case ENew(cl, params, typeParams):
+			// case EProp(n, g, s, t, e, global):
+			// case ESwitch(e, cases, defaultExpr):
+			// case ETry(e, v, t, ecatch):
+			// case ETypeVarPath(path):
+			// case EUsing(name):
+			// case EWhile(cond, e):
 
 			default:
 				error(EUnsupportedExpr(expr));

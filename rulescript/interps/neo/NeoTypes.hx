@@ -51,6 +51,7 @@ enum abstract NeoByte(Int) from Int to Int
 	var META;
 	var CHECK_TYPE;
 	var CAST;
+	var PACKAGE;
 
 	// VALUES
 	var NULL;
