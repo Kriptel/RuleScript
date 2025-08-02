@@ -15,5 +15,34 @@ class MathTest extends Test
 		runScript('2 / (3 * 5)', 2 / (3 * 5));
 
 		runScript('1.153', 1.153);
+
+		runScript('123 % 2', 123 % 2);
+
+		runScript('123 << 1', 123 << 1);
+		runScript('123 >> 1', 123 >> 1);
+		runScript('123 >>> 1', 123 >>> 1);
+		runScript('123 & 1', 123 & 1);
+		runScript('123 | 1', 123 | 1);
+		runScript('123 ^ 1', 123 ^ 1);
+		runScript('~123', ~123);
+		runScript('-123', -123);
+
+		runScript('var i = 0; ++i;', {var i = 0; ++i;});
+		runScript('var i = 0; i++;', {var i = 0; i++;});
+
+		runScript('var i = 0; --i;', {var i = 0; --i;});
+		runScript('var i = 0; i--;', {var i = 0; i++;});
+
+		runScript('var i = [0]; ++i[0];', {var i = [0]; ++i[0];});
+		runScript('var i = [0]; i[0]++;', {var i = [0]; i[0]++;});
+
+		runScript('var i = [0]; --i[0];', {var i = [0]; --i[0];});
+		runScript('var i = [0]; i[0]--;', {var i = [0]; i[0]++;});
+
+		runScript('var a = {b:0}; ++a.b;', {var a = {b: 0}; ++a.b;});
+		runScript('var a = {b:0}; a.b++;', {var a = {b: 0}; a.b++;});
+
+		runScript('var a = {b:0}; --a.b;', {var a = {b: 0}; --a.b;});
+		runScript('var a = {b:0}; a.b--;', {var a = {b: 0}; a.b--;});
 	}
 }

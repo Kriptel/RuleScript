@@ -8,6 +8,7 @@ import hscript.Expr.ModuleDecl;
 import rulescript.Context;
 import rulescript.RuleScript;
 import rulescript.interps.BytecodeInterp;
+import rulescript.interps.NeoInterp;
 import rulescript.interps.RuleScriptInterp;
 import rulescript.parsers.HxParser;
 import rulescript.scriptedClass.RuleScriptedClass;
@@ -35,12 +36,12 @@ class Main
 		Sys.println('========\nCurrent target: ' + #if cpp 'cpp' #elseif hl 'hl' #elseif eval 'eval' #else 'other' #end
 			+ '\n========');
 
-		RuleScript.createInterp = () ->
-		{
-			var interp = new BytecodeInterp();
-			interp.staticOptimization = false;
-			interp;
-		};
+		// RuleScript.createInterp = () ->
+		// {
+		// 	var interp = new BytecodeInterp();
+		// 	interp.staticOptimization = false;
+		// 	interp;
+		// };
 
 		ScriptedTypeUtil.resolveModule = resolveModule;
 
@@ -48,6 +49,7 @@ class Main
 		script.scriptName = 'rulescript.test';
 		script.getParser(HxParser).allowAll();
 
+		#if !neoInterp_test
 		final tests:Array<Test> = [
 			new InterpTest(),
 			new MathTest(),
@@ -73,7 +75,8 @@ class Main
 
 		final interps:Array<{name:String, interp:IInterp}> = [
 			{name: 'RuleScriptInterp', interp: new RuleScriptInterp()},
-			{name: "BytecodeInterp", interp: script.interp}
+			{name: "BytecodeInterp", interp: new BytecodeInterp()}
+			// ,{name: "NeoInterp", interp: new NeoInterp()}
 		];
 
 		for (interp in interps)
@@ -89,6 +92,14 @@ class Main
 				test.test();
 			}
 		}
+		#else
+		script.interp = new NeoInterp();
+
+		final neoTest = new NeoTest();
+		neoTest.script = script;
+
+		neoTest.test();
+		#end
 
 		Sys.println('\n\tTests:[${Test.interpNum}/${Test.callNum}],\n\tErrors: ${Test.errorsNum}');
 	}

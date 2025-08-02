@@ -27,7 +27,7 @@ class Test
 		if (result != null)
 			Sys.println('\t[Result]: ${Std.string(result)}');
 
-		if (value != null && (Reflect.isFunction(value) ? !value() : result != value))
+		if (value != null && (Reflect.isFunction(value) ? !value(value) : result != value))
 			throw 'the result($result) does not match the value';
 
 		return result;

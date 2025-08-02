@@ -5,6 +5,7 @@
 ## Features:
 
 - [Bytecode interpeter](#bytecode-interpeter)
+- [Neo interpeter](#bytecode-interpeter)
 - [Package](#package)
 - [Import](#import)
 	- [Alias](#import-with-alias)
@@ -27,6 +28,17 @@ Optimizes and converts `hscript.Expr` to bytecode, distributes objects into buff
 
 ```haxe
 script = new RuleScript(new rulescript.interps.BytecodeInterp());
+
+script.execute('trace("Hello World")'); // Hello World
+```
+
+### Neo interpeter
+> ⚠️ **Warning:** neo interpreter is currently under development. Its functionality is limited compared to other interpreters.
+
+Neo interpreter is a successor to the previous bytecode interpreter, fixing its stability, performance, and readability problems.
+
+```haxe
+script = new RuleScript(new rulescript.interps.NeoInterp());
 
 script.execute('trace("Hello World")'); // Hello World
 ```
