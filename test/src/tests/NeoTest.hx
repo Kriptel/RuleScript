@@ -51,5 +51,10 @@ class NeoTest extends Test
 
 		return a;
 		');
+
+		runScript('
+		var a = new example.Test(123);
+		a.test;
+		', 123);
 	}
 }

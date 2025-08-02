@@ -317,13 +317,19 @@ using rulescript.Tools;
 				addCmd(PACKAGE);
 				addString(path);
 
+			case ENew(cl, params, _):
+				addCmd(NEW);
+
+				addString(cl);
+				addInt(params.length);
+				for (param in params)
+					compile(param);
 			// case EDoWhile(cond, e):
 			// case EFor(v, it, e):
 			// case EForGen(it, e):
 			// case EFunction(args, e, name, ret):
 			// case EImport(name, star, alias, func):
 			// case EMeta(name, args, e):
-			// case ENew(cl, params, typeParams):
 			// case EProp(n, g, s, t, e, global):
 			// case ESwitch(e, cases, defaultExpr):
 			// case ETry(e, v, t, ecatch):

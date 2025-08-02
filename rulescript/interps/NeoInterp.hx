@@ -339,6 +339,13 @@ class NeoInterp implements IInterp
 
 				VOID;
 
+			case NEW:
+				final cl:String = stringBuffer[next()];
+				final args:Array<Dynamic> = [for (_ in 0...next()) getValue(command())];
+
+				dyn = cnew(cl, args);
+
+				DYNAMIC;
 			case id:
 				error(EUnknownCommand(id));
 		}
@@ -440,11 +447,35 @@ class NeoInterp implements IInterp
 		return result;
 	}
 
+	function get(o:Dynamic, f:String):Dynamic
+	{
+		return Reflect.getProperty(o, f);
+	}
+
 	function set(obj:Dynamic, field:String, value:Dynamic):Dynamic
 	{
 		Reflect.setProperty(obj, field, value);
 
 		return value;
+	}
+
+	function cnew(cl:String, args:Array<Dynamic>):Dynamic
+	{
+		var c:Dynamic = Type.resolveClass(cl);
+
+		c ??= ScriptedTypeUtil.resolveScript(cl);
+		c ??= resolve(cl);
+
+		if (c is ScriptedClass)
+			return cast(c, ScriptedClass).createInstance(args);
+		if (c is ScriptedAbstract)
+			return cast(c, ScriptedAbstract).constructor(args);
+
+		#if hl
+		return Reflect.isFunction(c) ? Tools.__hl_callMethod(c, args) : Tools.isClass(c) ? Tools.__hl_createInstance(c, args) : c;
+		#else
+		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : Tools.isClass(c) ? Type.createInstance(c, args) : c;
+		#end
 	}
 
 	function error(e:NeoError):Dynamic
@@ -460,11 +491,6 @@ class NeoInterp implements IInterp
 		if (superInstance != null)
 			v = Reflect.getProperty(superInstance, id);
 		return v ?? error(EUnknownVariable(id));
-	}
-
-	function get(o:Dynamic, f:String):Dynamic
-	{
-		return Reflect.getProperty(o, f);
 	}
 
 	function isMap(obj:Dynamic):Bool
@@ -522,22 +548,6 @@ class NeoInterp implements IInterp
 		if (v.hasNext == null || v.next == null)
 			error(EInvalidIterator(v));
 		return v;
-	}
-
-	function cnew(cl:String, args:Array<Dynamic>):Dynamic
-	{
-		var c:Dynamic = Type.resolveClass(cl);
-		c ??= ScriptedTypeUtil.resolveScript(cl);
-		c ??= variables.get(cl);
-		if (c is ScriptedClass)
-			return cast(c, ScriptedClass).createInstance(args);
-		if (c is ScriptedAbstract)
-			return cast(c, ScriptedAbstract).constructor(args);
-		#if hl
-		return Reflect.isFunction(c) ? Tools.__hl_callMethod(c, args) : Tools.isClass(c) ? Tools.__hl_createInstance(c, args) : c;
-		#else
-		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : Tools.isClass(c) ? Type.createInstance(c, args) : c;
-		#end
 	}
 
 	function resolveType(path:String)
