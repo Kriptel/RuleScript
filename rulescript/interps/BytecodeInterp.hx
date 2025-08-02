@@ -788,8 +788,7 @@ class BytecodeInterp implements IInterp
 				final op = next();
 				switch (op)
 				{
-					case OP_PLUS, OP_MINUS, OP_MULT, OP_DIVISION, OP_MODULO, OP_SHIFT_LEFT, OP_SHIFT_RIGHT, OP_UNSIGNED_SHIFT_RIGHT, OP_BIT_AND, OP_BIT_OR,
-						OP_BIT_XOR:
+					case OP_PLUS, OP_MINUS, OP_MULT, OP_MODULO, OP_SHIFT_LEFT, OP_SHIFT_RIGHT, OP_UNSIGNED_SHIFT_RIGHT, OP_BIT_AND, OP_BIT_OR, OP_BIT_XOR:
 						command();
 						var a:Int = linkID;
 						command();
@@ -805,6 +804,8 @@ class BytecodeInterp implements IInterp
 								a - b;
 							case OP_MULT:
 								a * b;
+							case OP_MODULO:
+								a % b;
 							case OP_SHIFT_LEFT:
 								a << b;
 							case OP_SHIFT_RIGHT:
@@ -881,7 +882,11 @@ class BytecodeInterp implements IInterp
 					case op:
 						throw op.toString();
 				}
+			case OP_BIT_NEGATION:
+				command();
+				linkID = ~getValue();
 
+				return linkType = INT;
 			case STRING_CONCAT:
 				final id:Int = next();
 				final op = next();
