@@ -300,21 +300,22 @@ class RuleScriptedClassMacro
 					}
 					else
 					{
+						final lastIsSuperCall:Bool = __rulescript.access.isSuperCall;
 						$
 						{
 							if (returnsVoid)
 								macro
 								{
 									__rulescript.access.isSuperCall = false;
-									cast super.$fieldName($a{fieldArgs});
-									__rulescript.access.isSuperCall = true;
+									super.$fieldName($a{fieldArgs});
+									__rulescript.access.isSuperCall = lastIsSuperCall;
 								}
 							else
 								macro
 								{
 									__rulescript.access.isSuperCall = false;
 									final value = cast super.$fieldName($a{fieldArgs});
-									__rulescript.access.isSuperCall = true;
+									__rulescript.access.isSuperCall = lastIsSuperCall;
 									value;
 								}
 						}
