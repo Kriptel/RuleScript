@@ -291,7 +291,7 @@ class RuleScriptedClassMacro
 							}
 						}
 				],
-				ret: forceOverride ? null : getOverrideType(ret),
+				ret: forceOverride ? (returnsVoid ? macro :StdTypes.Void : null) : getOverrideType(ret),
 				expr: macro
 				{
 					return if (!__rulescript.access.isSuperCall && __rulescript.access.variableExists($v{field.name}))
