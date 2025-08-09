@@ -537,7 +537,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		}
 
 		if(o is IRuleScriptCustomAccessor)
-			return cast(o, IRuleScriptCustomAccessor)._rget(f);
+			return cast(o, IRuleScriptCustomAccessor).getField(f);
 
 		if (o is RuleScriptedClass)
 		{
@@ -579,7 +579,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		}
 
 		if(o is IRuleScriptCustomAccessor)
-			return cast(o, IRuleScriptCustomAccessor)._rset(f, v);
+			return cast(o, IRuleScriptCustomAccessor).setField(f, v);
 		
 		if (o is RuleScriptedClass)
 		{

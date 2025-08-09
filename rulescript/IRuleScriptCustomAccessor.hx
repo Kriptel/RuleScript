@@ -2,10 +2,10 @@ package rulescript;
 
 /**
  * Provides custom property access for RuleScript.
- * @param `_rget` is called when **getting** a property.
- * @param `_rset` is called when **setting** a property.
+ * @param `getField` is called when **getting** a property.
+ * @param `setField` is called when **setting** a property.
  */
 interface IRuleScriptCustomAccessor {
-	public function _rset(id:String, value:Dynamic):Dynamic;
-	public function _rget(id:String):Dynamic;
+	public function setField(id:String, value:Dynamic):Dynamic;
+	public function getField(id:String):Dynamic;
 }
