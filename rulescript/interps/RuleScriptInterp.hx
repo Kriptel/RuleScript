@@ -536,6 +536,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				o = superInstance;
 		}
 
+		if(o is IRuleScriptCustomAccessor)
+			return cast(o, IRuleScriptCustomAccessor).getField(f);
+
 		if (o is RuleScriptedClass)
 		{
 			var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
@@ -575,6 +578,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				o = superInstance;
 		}
 
+		if(o is IRuleScriptCustomAccessor)
+			return cast(o, IRuleScriptCustomAccessor).setField(f, v);
+		
 		if (o is RuleScriptedClass)
 		{
 			var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
