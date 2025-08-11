@@ -521,7 +521,7 @@ class Converter
 
 					final id:String = alias ?? func ?? name.substring(name.lastIndexOf('.') + 1, name.length);
 
-					add(IMPORT);
+					add(RS_IMPORT);
 					addLink(STRING, id);
 
 					lastValues.push({name: id, t: variables[id]});
