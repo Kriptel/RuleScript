@@ -924,7 +924,7 @@ class BytecodeInterp implements IInterp
 				scriptPackage = stringBuffer[next().toInt()];
 				return linkType = VOID;
 
-			case IMPORT:
+			case RS_IMPORT:
 				final name:String = stringBuffer[next().toInt()];
 				final type = next();
 				final id:Int = next();

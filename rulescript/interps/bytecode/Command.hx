@@ -140,7 +140,7 @@ enum abstract Command(Int) from Int
 
 	// COMMANDS
 	var PACKAGE = 200;
-	var IMPORT = 201;
+	var RS_IMPORT = 201;
 	var USING = 202;
 
 	@:to inline public function toString():String
