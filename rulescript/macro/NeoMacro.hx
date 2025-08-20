@@ -6,11 +6,11 @@ class NeoMacro
 	{
 		return macro
 		{
-			final v = lastValues.length;
+			final __v = lastValues.length;
 
 			$e;
 
-			restore(v);
+			restore(__v);
 		}
 	}
 

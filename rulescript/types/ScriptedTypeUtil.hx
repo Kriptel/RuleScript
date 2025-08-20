@@ -1,6 +1,7 @@
 package rulescript.types;
 
-import hscript.Expr.ModuleDecl;
+import hscript.Expr;
+import rulescript.Tools.toExpr;
 import rulescript.parsers.HxParser;
 import rulescript.parsers.Parser;
 import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
@@ -64,6 +65,8 @@ class ScriptedTypeUtil
 					typeDecl = decl;
 				case DAbstract(c) if (c.name == typeName):
 					typeDecl = decl;
+				case DTypedef(c) if (c.t.match(CTPath(_))):
+					typeDecl = decl;
 				default:
 			}
 		}
@@ -88,6 +91,15 @@ class ScriptedTypeUtil
 					path: pack.join('.'),
 					decl: newModule
 				}, abstractImpl?.name);
+
+			case DTypedef(c):
+				switch (c.t)
+				{
+					case CTPath(path, params):
+						new ScriptedTypedef(toExpr(ETypeVarPath(path.copy())));
+					default:
+						null;
+				}
 			default: null;
 		}
 	}

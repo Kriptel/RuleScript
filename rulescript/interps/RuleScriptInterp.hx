@@ -7,7 +7,9 @@ import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.types.IRuleScriptCustomAccessor;
 import rulescript.types.Property;
 import rulescript.types.ScriptedAbstract;
+import rulescript.types.ScriptedType;
 import rulescript.types.ScriptedTypeUtil;
+import rulescript.types.ScriptedTypedef;
 
 using rulescript.Tools;
 
@@ -34,7 +36,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	public var hasErrorHandler:Bool = false;
 	public var errorHandler(default, set):haxe.Exception->Void;
 
-	public var context:Dynamic;
+	public var context:Context;
 
 	var typePaths:Map<String, Dynamic> = [];
 
@@ -628,10 +630,20 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		c ??= ScriptedTypeUtil.resolveScript(cl);
 		c ??= resolve(cl);
 
-		if (c is ScriptedClass)
-			return cast(c, ScriptedClass).createInstance(args);
-		if (c is ScriptedAbstract)
-			return cast(c, ScriptedAbstract).constructor(args);
+		if (c is ScriptedTypedef)
+		{
+			c = cast(c, ScriptedTypedef).resolve(this.execute);
+		}
+
+		if (c is ScriptedType)
+			switch (cast(c, ScriptedType).__rulescript_type)
+			{
+				case CLASS:
+					return cast(c, ScriptedClass).createInstance(args);
+				case ABSTRACT:
+					return cast(c, ScriptedAbstract).constructor(args);
+				default:
+			}
 
 		#if hl
 		return Reflect.isFunction(c) ? Tools.__hl_callMethod(c, args) : Tools.isClass(c) ? Tools.__hl_createInstance(c, args) : c;
@@ -920,12 +932,12 @@ class RuleScriptInterpAccess extends RuleScriptAccess
 		return interp.errorHandler = v;
 	}
 
-	override function get_context():Dynamic
+	override function get_context():Context
 	{
 		return interp.context;
 	}
 
-	override function set_context(v:Dynamic):Dynamic
+	override function set_context(v:Context):Context
 	{
 		return interp.context = v;
 	}

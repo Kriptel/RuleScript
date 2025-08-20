@@ -10,7 +10,9 @@ import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
 import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.types.Property;
 import rulescript.types.ScriptedAbstract;
+import rulescript.types.ScriptedType;
 import rulescript.types.ScriptedTypeUtil;
+import rulescript.types.ScriptedTypedef;
 
 using StringTools;
 using rulescript.Tools;
@@ -33,7 +35,7 @@ class BytecodeInterp implements IInterp
 
 	public var staticOptimization:Bool = true;
 
-	public var context:Dynamic;
+	public var context:Context;
 
 	/**
 	 * used by the interpreter when type is dynamic
@@ -1647,12 +1649,22 @@ class BytecodeInterp implements IInterp
 		var c:Dynamic = Type.resolveClass(cl);
 
 		c ??= ScriptedTypeUtil.resolveScript(cl);
-		c ??= variables.get(cl);
+		c ??= resolve(cl);
 
-		if (c is ScriptedClass)
-			return cast(c, ScriptedClass).createInstance(args);
-		if (c is ScriptedAbstract)
-			return cast(c, ScriptedAbstract).constructor(args);
+		if (c is ScriptedTypedef)
+		{
+			c = cast(c, ScriptedTypedef).resolve(this.execute);
+		}
+
+		if (c is ScriptedType)
+			switch (cast(c, ScriptedType).__rulescript_type)
+			{
+				case CLASS:
+					return cast(c, ScriptedClass).createInstance(args);
+				case ABSTRACT:
+					return cast(c, ScriptedAbstract).constructor(args);
+				default:
+			}
 
 		#if hl
 		return Reflect.isFunction(c) ? Tools.__hl_callMethod(c, args) : Tools.isClass(c) ? Tools.__hl_createInstance(c, args) : c;
@@ -1848,12 +1860,12 @@ class InterpAccess extends RuleScriptAccess
 		return interp.errorHandler = v;
 	}
 
-	override function get_context():Dynamic
+	override function get_context():Context
 	{
 		return interp.context;
 	}
 
-	override function set_context(v:Dynamic):Dynamic
+	override function set_context(v:Context):Context
 	{
 		return interp.context = v;
 	}

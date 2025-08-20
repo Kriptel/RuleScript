@@ -801,8 +801,6 @@ private class HScriptParser extends hscript.Parser
 							hasTypeParams = true;
 							break;
 						default:
-							trace(tk, allowTypes);
-
 							unexpected(tk);
 							break;
 					}
@@ -1258,6 +1256,8 @@ private class HScriptParser extends hscript.Parser
 				var params = parseParams();
 				ensureToken(TOp("="));
 				var t = parseType();
+				maybe(TSemicolon);
+
 				return DTypedef({
 					name: name,
 					meta: meta,

@@ -1,0 +1,10 @@
+package typedefs;
+
+typedef B = typedefs.A;
+
+class A
+{
+	function new(){
+		trace('Hello world');
+	}
+}

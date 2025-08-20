@@ -6,6 +6,7 @@ import hscript.Printer;
 import rulescript.types.Abstracts;
 import rulescript.types.Property;
 import rulescript.types.ScriptedTypeUtil;
+import rulescript.types.ScriptedTypedef;
 import rulescript.types.Typedefs;
 
 #if hl
@@ -49,9 +50,9 @@ class Tools
 	}
 
 	#if hscriptPos
-	public static function toExpr(e:ExprDef):Expr
+	public static function toExpr(e:ExprDef, ?parentExpr:Expr):Expr
 	{
-		var _e:Expr = switch (e)
+		var _e:Expr = parentExpr ?? switch (e)
 		{
 			case EFunction(_, expr):
 				expr;
@@ -72,7 +73,7 @@ class Tools
 		}
 	}
 	#else
-	inline public static function toExpr(e:Expr):Expr
+	inline public static function toExpr(e:Expr, ?parentExpr:Expr):Expr
 		return e;
 	#end
 

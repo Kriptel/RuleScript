@@ -2,6 +2,7 @@ package rulescript;
 
 import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
 import rulescript.types.ScriptedAbstract;
+import rulescript.types.ScriptedType;
 
 /**
  * The Context stores types to preserve repeated imports, 
@@ -23,14 +24,15 @@ class Context
 		{
 			final t:Dynamic = Tools.resolveType(path);
 
-			if (t is ScriptedClass)
-			{
-				@:privateAccess cast(t, ScriptedClass).interp.access.context = this;
-			}
-			else if (t is ScriptedAbstract)
-			{
-				@:privateAccess cast(t, ScriptedAbstract).__impl.interp.access.context = this;
-			}
+			if (t is ScriptedType)
+				switch (cast(t, ScriptedType).__rulescript_type)
+				{
+					case CLASS:
+						@:privateAccess cast(t, ScriptedClass).interp.access.context = this;
+					case ABSTRACT:
+						@:privateAccess cast(t, ScriptedAbstract).__impl.interp.access.context = this;
+					default:
+				}
 
 			return types[path] = t;
 		};

@@ -10,12 +10,13 @@ import rulescript.interps.neo.NeoCompiler;
 import rulescript.interps.neo.NeoTypes;
 import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
 import rulescript.types.ScriptedAbstract;
+import rulescript.types.ScriptedType;
 import rulescript.types.ScriptedTypeUtil;
+import rulescript.types.ScriptedTypedef;
 
 /**
  * TODO:
  * Do-while
- * For
  * ForGen
  * Function
  * Import
@@ -35,7 +36,7 @@ class NeoInterp implements IInterp
 	public var superInstance(default, set):Dynamic;
 
 	public var hasErrorHandler:Bool;
-	public var context:Dynamic;
+	public var context:Context;
 	public var errorHandler:Exception->Void;
 
 	public var lineInfo:Bool = true;
@@ -346,6 +347,22 @@ class NeoInterp implements IInterp
 				dyn = cnew(cl, args);
 
 				DYNAMIC;
+
+			case FOR:
+				final vID:Int = next();
+				final iterator:Iterator<Dynamic> = makeIterator(getValue(command()));
+
+				final curPos:Int = this.pos;
+
+				for (i in iterator)
+				{
+					this.pos = curPos;
+
+					dynamicBuffer[vID] = i;
+					command();
+				}
+
+				VOID;
 			case id:
 				error(EUnknownCommand(id));
 		}
@@ -355,7 +372,8 @@ class NeoInterp implements IInterp
 	{
 		return switch (op)
 		{
-			case OP_PLUS, OP_MINUS, OP_MULT, OP_DIVISION, OP_MODULO, OP_SHIFT_LEFT, OP_SHIFT_RIGHT, OP_UNSIGNED_SHIFT_RIGHT, OP_BIT_AND, OP_BIT_OR, OP_BIT_XOR:
+			case OP_PLUS, OP_MINUS, OP_MULT, OP_DIVISION, OP_MODULO, OP_SHIFT_LEFT, OP_SHIFT_RIGHT, OP_UNSIGNED_SHIFT_RIGHT, OP_BIT_AND, OP_BIT_OR,
+				OP_BIT_XOR, OP_EQUALS, OP_NOT_EQUALS, OP_LT, OP_LT_EQUAL, OP_GT, OP_GT_EQUAL:
 				final a:Dynamic = getValue(command());
 				final b:Dynamic = getValue(command());
 
@@ -372,6 +390,12 @@ class NeoInterp implements IInterp
 					case OP_BIT_AND: a & b;
 					case OP_BIT_OR: a | b;
 					case OP_BIT_XOR: a ^ b;
+					case OP_EQUALS: a == b;
+					case OP_NOT_EQUALS: a != b;
+					case OP_LT: a < b;
+					case OP_LT_EQUAL: a <= b;
+					case OP_GT: a > b;
+					case OP_GT_EQUAL: a >= b;
 					default: error(EUnknownCommand(op));
 				});
 
@@ -429,8 +453,14 @@ class NeoInterp implements IInterp
 					BOOL_FALSE;
 				else
 					BOOL_TRUE;
+
 			case OP_DYNAMIC:
 				NULL;
+
+			case LINE:
+				curLine = next();
+				command();
+
 			default:
 				error(EUnknownCommand(op));
 		}
@@ -466,10 +496,20 @@ class NeoInterp implements IInterp
 		c ??= ScriptedTypeUtil.resolveScript(cl);
 		c ??= resolve(cl);
 
-		if (c is ScriptedClass)
-			return cast(c, ScriptedClass).createInstance(args);
-		if (c is ScriptedAbstract)
-			return cast(c, ScriptedAbstract).constructor(args);
+		if (c is ScriptedTypedef)
+		{
+			c = cast(c, ScriptedTypedef).resolve(this.execute);
+		}
+
+		if (c is ScriptedType)
+			switch (cast(c, ScriptedType).__rulescript_type)
+			{
+				case CLASS:
+					return cast(c, ScriptedClass).createInstance(args);
+				case ABSTRACT:
+					return cast(c, ScriptedAbstract).constructor(args);
+				default:
+			}
 
 		#if hl
 		return Reflect.isFunction(c) ? Tools.__hl_callMethod(c, args) : Tools.isClass(c) ? Tools.__hl_createInstance(c, args) : c;

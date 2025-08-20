@@ -19,4 +19,5 @@ enum abstract TypeID(Int)
 	var OTHER = 0;
 	var CLASS = 1;
 	var ABSTRACT = 2;
+	var TYPEDEF = 3;
 }

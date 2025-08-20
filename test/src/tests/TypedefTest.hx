@@ -9,5 +9,7 @@ class TypedefTest extends Test
 	{
 		Typedefs.register('hello.world.HxParser', HxParser);
 		runScript('hello.world.HxParser', HxParser);
+
+		runScript('new typedefs.A.B()');
 	}
 }

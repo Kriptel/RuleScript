@@ -56,5 +56,23 @@ class NeoTest extends Test
 		var a = new example.Test(123);
 		a.test;
 		', 123);
+
+		runScript('
+		var a = 0;
+		
+		for(i in [1,2,3,4,5,6,7,8,9,10])
+			a += i;
+
+		a;
+		', {
+				var a = 0;
+
+				for (i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+					a += i;
+
+				a;
+			});
+
+		runScript('"A" != "B"', "A" != "B");
 	}
 }

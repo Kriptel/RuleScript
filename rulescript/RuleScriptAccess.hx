@@ -153,12 +153,12 @@ class RuleScriptAccess
 		return null;
 	}
 
-	function get_context():Dynamic
+	function get_context():Context
 	{
 		return null;
 	}
 
-	function set_context(v:Dynamic):Dynamic
+	function set_context(v:Context):Context
 	{
 		return null;
 	}

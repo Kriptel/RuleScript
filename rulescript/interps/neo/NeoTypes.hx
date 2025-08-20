@@ -89,6 +89,13 @@ enum abstract NeoByte(Int) from Int to Int
 	var OP_SET_ARRAY;
 
 	var OP_NOT;
+	var OP_EQUALS;
+	var OP_NOT_EQUALS;
+
+	var OP_LT;
+	var OP_LT_EQUAL;
+	var OP_GT;
+	var OP_GT_EQUAL;
 
 	var OP_DYNAMIC;
 }

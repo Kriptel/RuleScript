@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Scripted typedef.
 - Neo interpreter.
 - Regular expressions.
 - Module fields.
@@ -16,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `untyped` expression.
 - `:forceOverride` metadata.
 - ScriptedAbstract.
-- ScriptedTypeUtil.
+- `ScriptedTypeUtil`.
 - Typedefs.
 - `final` variables.
 - Bytecode interpreter.
