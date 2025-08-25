@@ -50,8 +50,7 @@ class ScriptedTypeUtil
 
 		final typeName = path[0];
 
-		// Remove other types, include packages, imports and etc.
-		final newModule:Array<ModuleDecl> = [];
+		final newModule:Array<ModuleDecl> = []; // packages, imports and usings.
 
 		var typeDecl:Null<ModuleDecl> = null;
 

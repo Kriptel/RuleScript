@@ -144,7 +144,9 @@ class NeoInterp implements IInterp
 	}
 
 	inline function next():NeoByte
+	{
 		return bytes[pos++];
+	}
 
 	inline function skipCommand():NeoByte
 	{
@@ -361,6 +363,20 @@ class NeoInterp implements IInterp
 					dynamicBuffer[vID] = i;
 					command();
 				}
+
+				VOID;
+
+			case WHILE:
+				final curPos:Int = this.pos;
+
+				while (getValue(command()))
+				{
+					commandSkippable();
+
+					this.pos = curPos;
+				}
+
+				skipCommand();
 
 				VOID;
 			case id:

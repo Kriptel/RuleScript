@@ -351,6 +351,15 @@ using rulescript.Tools;
 					compile(e);
 				});
 
+			case EWhile(cond, e):
+				addCmd(WHILE);
+
+				compile(cond);
+
+				skippable(scope({
+					compile(e);
+				}));
+
 			// case EDoWhile(cond, e):
 			// case EForGen(it, e):
 			// case EFunction(args, e, name, ret):
@@ -361,7 +370,6 @@ using rulescript.Tools;
 			// case ETry(e, v, t, ecatch):
 			// case ETypeVarPath(path):
 			// case EUsing(name):
-			// case EWhile(cond, e):
 
 			default:
 				error(EUnsupportedExpr(expr));

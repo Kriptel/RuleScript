@@ -57,6 +57,17 @@ class NeoTest extends Test
 		a.test;
 		', 123);
 
+		runScript('"A" != "B"', "A" != "B");
+
+		runScript('"A" == "B"', "A" == "B");
+
+		runScript('0 == 1', 0 == 1);
+		runScript('0 != 1', 0 != 1);
+		runScript('0 > 1', 0 > 1);
+		runScript('0 >= 1', 0 >= 1);
+		runScript('0 <= 1', 0 <= 1);
+		runScript('0 < 1', 0 < 1);
+
 		runScript('
 		var a = 0;
 		
@@ -73,6 +84,20 @@ class NeoTest extends Test
 				a;
 			});
 
-		runScript('"A" != "B"', "A" != "B");
+		runScript('
+		var a = 1;
+		
+		while(a < 100)
+			a *= 2;
+
+		a;
+		', {
+				var a = 1;
+
+				while (a < 100)
+					a *= 2;
+
+				a;
+			});
 	}
 }
