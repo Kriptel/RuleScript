@@ -577,6 +577,8 @@ class Converter
 					regenVariables(oldVariables);
 
 					buffer[endId] = buffer.length;
+
+				#if rulescript_is_git_hscript
 				case EForGen(it, e):
 					var key:String, value:String;
 					var iterator:Expr;
@@ -636,6 +638,7 @@ class Converter
 					regenVariables(oldVariables);
 
 					buffer[endId] = buffer.length;
+				#end
 
 				case EIf(cond, e1, e2), ETernary(cond, e1, e2):
 					if (e2 == null)

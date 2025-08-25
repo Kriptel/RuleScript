@@ -504,6 +504,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			return Tools.resolveType(path);
 	}
 
+	#if rulescript_is_git_hscript
 	override function makeKeyValueIterator(v:Dynamic):KeyValueIterator<Dynamic, Dynamic>
 	{
 		#if hl
@@ -513,6 +514,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 		return super.makeKeyValueIterator(v);
 	}
+	#end
 
 	/**
 	 * hasField not works for properties

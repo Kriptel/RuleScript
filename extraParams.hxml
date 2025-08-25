@@ -23,3 +23,5 @@
 --macro addMetadata('@:build(rulescript.macro.ExprMacro.buildCheckerDefaults())', 'hscript.Checker')
 
 --macro addMetadata('@:build(rulescript.macro.ExprMacro.buildMacroDefaults())', 'hscript.Macro')
+
+--macro rulescript.macro.MacroTools.checkHScript()

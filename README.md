@@ -17,7 +17,6 @@
 - [Regular expressions.](#regular-expressions)
 - [Script Class](#rulescriptedclass)
 - [Abstracts in script](#abstracts-in-script)
-- [Key => value iterator](#key--value-iterator)
 - [`??` and `??=` operators](#and--operators)
 - [Rest](#rest)
 - [HxParser settings](#hxparser-settings)
@@ -202,17 +201,6 @@ import test.HelloWorldAbstract;
 trace(HelloWorldAbstract.rulescriptPrint()); // Hello World
 ```
 More templates can be found in [`test/src/Main.hx`](./test//src/Main.hx).
-
-### Key => value iterator
-```haxe
-var map = [
-	'RuleScript' => 'Hello World',
-];
-
-for(key => value in map){
-	trace('$key: $value'); // RuleScript: Hello World
-}
-```
 
 ### `??` and `??=` operators
 ```haxe
