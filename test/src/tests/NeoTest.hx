@@ -99,5 +99,26 @@ class NeoTest extends Test
 
 				a;
 			});
+
+		runScript('
+		var a = 1;
+		
+		do {
+			a *= 2;
+		}
+		while(a < 100);
+
+		a;
+		', {
+				var a = 1;
+
+				do
+				{
+					a *= 2;
+				}
+				while (a < 100);
+
+				a;
+			});
 	}
 }

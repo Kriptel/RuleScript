@@ -105,12 +105,16 @@ class RuleScript
 			#else
 			'Reflect' => Reflect, 'Std' => Std, 'Math' => Math,
 			#end
+			#if sys 'Sys' => Sys, #end
 			'Type' => Type,
 			'StringTools' => StringTools,
 			'Date' => Date,
 			'DateTools' => DateTools,
 			'Xml' => Xml,
-			#if sys 'Sys' => Sys #end
+			'Int' => Int,
+			'String' => String,
+			'Float' => Float,
+			'Bool' => Bool
 		]
 	];
 

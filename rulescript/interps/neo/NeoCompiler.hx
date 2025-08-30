@@ -360,7 +360,13 @@ using rulescript.Tools;
 					compile(e);
 				}));
 
-			// case EDoWhile(cond, e):
+			case EDoWhile(cond, e):
+				addCmd(DO_WHILE);
+
+				scope(compile(e));
+
+				compile(cond);
+
 			// case EForGen(it, e):
 			// case EFunction(args, e, name, ret):
 			// case EImport(name, star, alias, func):

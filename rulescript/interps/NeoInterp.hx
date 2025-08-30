@@ -379,6 +379,19 @@ class NeoInterp implements IInterp
 				skipCommand();
 
 				VOID;
+
+			case DO_WHILE:
+				final curPos:Int = this.pos;
+
+				do
+				{
+					this.pos = curPos;
+
+					command();
+				}
+				while (getValue(command()));
+
+				VOID;
 			case id:
 				error(EUnknownCommand(id));
 		}
