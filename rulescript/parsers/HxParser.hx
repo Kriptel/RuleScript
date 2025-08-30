@@ -29,7 +29,7 @@ class HxParser extends Parser
 {
 	public var parser:HScriptParser;
 
-	public var mode:HxParserMode = DEFAULT;
+	public var mode(get, set):HxParserMode;
 
 	public static var defaultPreprocesorValues:Map<String, Dynamic> = [
 		#if eval 'eval' => 1, #end
@@ -60,6 +60,8 @@ class HxParser extends Parser
 	public function new()
 	{
 		parser ??= new HScriptParser();
+		mode = DEFAULT;
+
 		for (key => value in defaultPreprocesorValues)
 			preprocesorValues.set(key, value);
 
@@ -138,13 +140,22 @@ class HxParser extends Parser
 	{
 		return parser.preprocesorValues = value;
 	}
-}
 
-@:deprecated("rulescript.parsers.HxParser.HScriptParserPlus was moved to rulescript.parsers.HxParser.HScriptParser")
-typedef HScriptParserPlus = HScriptParser;
+	function get_mode():HxParserMode
+	{
+		return parser.mode;
+	}
+
+	function set_mode(value:HxParserMode):HxParserMode
+	{
+		return parser.mode = value;
+	}
+}
 
 private class HScriptParser extends hscript.Parser
 {
+	public var mode:HxParserMode;
+
 	public var allowPackage:Bool = true;
 	public var allowImport:Bool = true;
 	public var allowUsing:Bool = true;
@@ -765,6 +776,17 @@ private class HScriptParser extends hscript.Parser
 					mk(EVar(ident, t, e, false, id == 'final'), p1, (e == null) ? tokenMax : pmax(e));
 				else
 					mk(EProp(ident, props.get, props.set, t, e), p1, (e == null) ? tokenMax : pmax(e));
+			case 'public' if (mode == DEFAULT):
+				final e:Expr = parseExpr();
+
+				switch (e.getExpr())
+				{
+					case EVar(n, t, e, false, isFinal):
+						mk(EVar(n, t, e, true, isFinal), p1, pmax(e));
+					case EProp(n, g, s, t, e, false):
+						mk(EProp(n, g, s, t, e, true), p1, pmax(e));
+					default: unexpected(TId(id));
+				}
 			case 'untyped':
 				mk(EUntyped(parseExpr()));
 			case 'cast':
