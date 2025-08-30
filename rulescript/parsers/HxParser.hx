@@ -152,7 +152,10 @@ class HxParser extends Parser
 	}
 }
 
-private class HScriptParser extends hscript.Parser
+@:deprecated("rulescript.parsers.HxParser.HScriptParserPlus was moved to rulescript.parsers.HxParser.HScriptParser")
+typedef HScriptParserPlus = HScriptParser;
+
+class HScriptParser extends hscript.Parser
 {
 	public var mode:HxParserMode;
 
