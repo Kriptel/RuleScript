@@ -91,6 +91,11 @@ class RuleScriptAccess
 		return null;
 	}
 
+	public function posInfos():haxe.PosInfos
+	{
+		return null;
+	}
+
 	// Backend
 	var scriptName(get, set):String;
 	var scriptPackage(get, set):String;

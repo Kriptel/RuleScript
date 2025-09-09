@@ -8,6 +8,7 @@ import rulescript.interps.bytecode.Command;
 import rulescript.interps.bytecode.Converter;
 import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
 import rulescript.scriptedClass.RuleScriptedClass;
+import rulescript.types.IRuleScriptCustomAccessor;
 import rulescript.types.Property;
 import rulescript.types.ScriptedAbstract;
 import rulescript.types.ScriptedType;
@@ -1585,6 +1586,9 @@ class BytecodeInterp implements IInterp
 				return getScriptProp(cl.getVariable(f));
 		}
 
+		if (o is IRuleScriptCustomAccessor)
+			return cast(o, IRuleScriptCustomAccessor).getField(f);
+
 		return getScriptProp(Reflect.getProperty(o, f));
 	}
 
@@ -1780,6 +1784,13 @@ class InterpAccess extends RuleScriptAccess
 	override function removeVariable(name:String):Bool
 	{
 		return interp.variables.remove(name);
+	}
+
+	override function posInfos():haxe.PosInfos {
+		return cast {
+			fileName: interp.scriptName ?? "rulescript",
+			lineNumber: interp.lineInfo ? interp.curLine : 0 // just in case -orbl
+		};
 	}
 
 	override function callFunction(name:String, args:Array<Dynamic>):Dynamic
