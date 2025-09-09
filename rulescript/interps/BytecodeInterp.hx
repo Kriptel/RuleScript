@@ -8,7 +8,6 @@ import rulescript.interps.bytecode.Command;
 import rulescript.interps.bytecode.Converter;
 import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
 import rulescript.scriptedClass.RuleScriptedClass;
-import rulescript.types.IRuleScriptCustomAccessor;
 import rulescript.types.Property;
 import rulescript.types.ScriptedAbstract;
 import rulescript.types.ScriptedType;
@@ -1589,9 +1588,6 @@ class BytecodeInterp implements IInterp
 			if (cl.variableExists(f))
 				return getScriptProp(cl.getVariable(f));
 		}
-
-		if (o is IRuleScriptCustomAccessor)
-			return cast(o, IRuleScriptCustomAccessor).getField(f);
 
 		return getScriptProp(Reflect.getProperty(o, f));
 	}
