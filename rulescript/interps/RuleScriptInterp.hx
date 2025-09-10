@@ -846,6 +846,10 @@ class RuleScriptInterpAccess extends RuleScriptAccess
 		return interp.variables[name];
 	}
 
+	override function posInfos():haxe.PosInfos {
+		return interp.posInfos();
+	}
+
 	override function setVariable(name:String, value:Dynamic):Dynamic
 	{
 		return interp.variables[name] = value;

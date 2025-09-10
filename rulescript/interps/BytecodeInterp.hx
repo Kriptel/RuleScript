@@ -57,6 +57,13 @@ class BytecodeInterp implements IInterp
 		scriptPackage = '';
 		converter = new Converter(this);
 	}
+	
+	public function posInfos():haxe.PosInfos {
+		return cast {
+			fileName: scriptName ?? "rulescript",
+			lineNumber: lineInfo ? curLine : 0 // just in case -orbl
+		};
+	}
 
 	private function initOps()
 	{
@@ -163,10 +170,7 @@ class BytecodeInterp implements IInterp
 		variables.clear();
 		variables.set('trace', Reflect.makeVarArgs(function(args:Array<Dynamic>)
 		{
-			haxe.Log.trace(args.join(', '), cast {
-				fileName: scriptName ?? "rulescript",
-				lineNumber: lineInfo ? curLine : 0
-			});
+			haxe.Log.trace(args.join(', '), cast posInfos());
 
 			return;
 		}));
@@ -1780,6 +1784,10 @@ class InterpAccess extends RuleScriptAccess
 	override function removeVariable(name:String):Bool
 	{
 		return interp.variables.remove(name);
+	}
+
+	override function posInfos():haxe.PosInfos {
+		return interp.posInfos();
 	}
 
 	override function callFunction(name:String, args:Array<Dynamic>):Dynamic
