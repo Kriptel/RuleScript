@@ -123,6 +123,12 @@ class HxParser extends Parser
 
 		if (parameters.allowTypePath != null)
 			parser.allowTypePath = parameters.allowTypePath;
+
+		if(parameters.allowPublicVariables != null)
+			parser.allowPublicVariables = parameters.allowPublicVariables;
+		
+		if(parameters.allowStaticVariables != null)
+			parser.allowStaticVariables = parameters.allowStaticVariables;
 	}
 
 	override public function parse(code:String):Expr
