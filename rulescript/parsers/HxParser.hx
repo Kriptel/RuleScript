@@ -87,14 +87,12 @@ class HxParser extends Parser
 	}
 
 	@:deprecated
-	public function setParams(?allowJSON:Bool, ?allowMetadata:Bool, ?allowTypes:Bool, ?allowStringInterpolation:Bool, ?allowTypePath:Bool, ?allowPublicVariables:Bool, ?allowStaticVariables:Bool)
+	public function setParams(?allowJSON:Bool, ?allowMetadata:Bool, ?allowTypes:Bool, ?allowStringInterpolation:Bool, ?allowTypePath:Bool)
 	{
 		parser.allowJSON = allowJSON;
 		parser.allowMetadata = allowMetadata;
 		parser.allowTypes = allowTypes;
 		parser.allowStringInterpolation = allowStringInterpolation;
-		parser.allowPublicVariables = allowPublicVariables;
-		parser.allowStaticVariables = allowStaticVariables;
 		parser.allowTypePath = allowTypePath;
 	}
 
