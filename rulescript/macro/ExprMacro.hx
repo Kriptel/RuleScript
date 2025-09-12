@@ -14,9 +14,7 @@ class ExprMacro
 
 		var pos = Context.currentPos();
 
-		for (field in fields)
-			if (field.name == 'EVar' || field.name == 'ENew')
-				fields.remove(field);
+		fields = fields.filter(field -> !([ "EVar", "EFunction", "ENew" ]).contains(field.name));
 
 		var newFields:Map<String, Expr> = [
 			'EPackage' => macro function(path:String) {},
@@ -25,13 +23,14 @@ class ExprMacro
 			'EUsing' => macro function(name:String) {},
 
 			'ENew' => macro function(cl:String, params:Array<Expr>, ?typeParams:Array<CType>) {},
-			'EVar' => macro function(n:String, ?t:CType, ?e:Expr, ?global:Bool, ?isFinal:Bool) {},
-			'EProp' => macro function(n:String, g:String, s:String, ?t:CType, ?e:Expr, ?global:Bool) {},
+			'EVar' => macro function(n:String, ?t:CType, ?e:Expr, ?global:Bool, ?isFinal:Bool, ?_public:Bool, ?_static:Bool) {},
+			'EProp' => macro function(n:String, g:String, s:String, ?t:CType, ?e:Expr, ?global:Bool, ?_public:Bool, ?_static:Bool) {},
 			'ETypeVarPath' => macro function(path:Array<String>) {},
 			'EUntyped' => macro function(e:Expr) {},
 			'ECast' => macro function(e:Expr, ?t:CType) {},
-			'EMapDecl' => macro function(exprs:Array<Expr>) {}
+			'EMapDecl' => macro function(exprs:Array<Expr>) {},
 
+			'EFunction' => macro function(args:Array<Argument>, e:Expr, ?name:String, ?ret:CType, ?_public:Bool, ?_static:Bool) {}
 		];
 
 		for (key => value in newFields)

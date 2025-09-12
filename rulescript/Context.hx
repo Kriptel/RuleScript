@@ -12,6 +12,9 @@ import rulescript.types.ScriptedType;
  */
 class Context
 {
+	public var publicVariables:Map<String, Dynamic> = []; 
+	public var staticVariables:Map<String, Dynamic> = [];
+	
 	public var types:Map<String, Dynamic> = [];
 
 	public function new() {}

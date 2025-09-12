@@ -55,6 +55,11 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		imports = [];
 		usings = [];
 		typePaths = [];
+
+		if(context!=null) {
+			context.publicVariables = []; // yuhuh -orbl
+			context.staticVariables = [];
+		}
 	}
 
 	override public function posInfos():haxe.PosInfos
@@ -84,6 +89,12 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		if (id == 'super' && superInstance != null)
 			return superInstance;
 
+		if (context != null) {
+			// PUBLIC & STATIC VARIABLES
+			if (context.publicVariables.exists(id)) return context.publicVariables.get(id);
+			if (context.staticVariables.exists(id)) return context.staticVariables.get(id);
+		}
+		
 		var l:Dynamic = locals.get(id);
 		if (l != null)
 			return getScriptProp(l.r);
@@ -132,7 +143,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	override function setVar(name:String, v:Dynamic)
 	{
-		if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
+		if (context.staticVariables.exists(name)) context.staticVariables.set(name, v);
+		else if (context.publicVariables.exists(name)) context.publicVariables.set(name, v);
+		else if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
 			Reflect.setProperty(superInstance, name, v);
 		else
 		{
@@ -213,7 +226,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case ETypeVarPath(path):
 				var id:String = path[0];
 
-				if (!locals.exists(id) && !variables.exists(id) && !superFields.contains(id) && !superFields.contains('get_$id'))
+				if (!locals.exists(id) && !variables.exists(id) && !superFields.contains(id) && !superFields.contains('get_$id') && !context.staticVariables.exists(id) && !context.publicVariables.exists(id))
 				{
 					final typePath:String = path.join('.');
 
@@ -247,32 +260,49 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				return obj;
 			case EMeta(name, args, e) if (onMeta != null):
 				return onMeta(name, args, e);
-			case EVar(n, _, e, global, _):
-				if (global)
-					variables.set(n, (e == null) ? null : this.expr(e));
-				else
-				{
+			case EVar(n, _, e, global, _, _public, _static):
+				if (global) {
+                    if(_static) {
+						if(!context.staticVariables.exists(n)) context.staticVariables.set(n, (e != null ? this.expr(e) : null));
+						return null;
+					}
+					((_public) ? context.publicVariables : variables).set(n, (e != null ? this.expr(e) : null));
+                }
+				else {
 					declared.push({n: n, old: locals.get(n)});
 					locals.set(n, {r: (e == null) ? null : this.expr(e)});
+                    if(_static) {
+						if(!context.staticVariables.exists(n))
+							context.staticVariables.set(n, locals[n].r);
+						return null;
+					} else if(_public)
+						context.publicVariables.set(n, locals[n].r);
 				}
 				return null;
-			case EProp(n, g, s, type, e, global):
+			case EProp(n, g, s, type, e, global, _public, _static):
 				var prop = createScriptProperty(n, g, s, type);
-				if (global)
-					variables.set(n, prop);
-				else
-				{
+				if (global) {
+					if(_static) {
+						if(!context.staticVariables.exists(n)) context.staticVariables.set(n, prop);
+						return null;
+					}
+					(_public ? context.publicVariables : variables).set(n, prop);
+				}
+				else {
 					declared.push({n: n, old: locals.get(n)});
 					locals.set(n, {r: prop});
+
+					if(_static) {
+						if(!context.staticVariables.exists(n)) context.staticVariables.set(n, prop);	
+						return null;
+					}
+					if(_public == true)
+						context.publicVariables.set(n, prop);
 				}
 				if (e != null)
 					prop._lazyValue = () -> this.expr(e);
 				return null;
-			case EIdent(id):
-				var l = locals.get(id);
-				if (l != null)
-					return getScriptProp(l.r);
-				return resolve(id);
+			case EIdent(id): return resolve(id);//wuh
 			case ECall(e, params):
 				var args = new Array();
 				for (p in params)
@@ -334,7 +364,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					default:
 						return this.expr(e);
 				}
-			case EFunction(params, fexpr, name, _):
+
+			case EFunction(params, fexpr, name, _, _public, _static):
 				if (name == 'new')
 					__constructor = expr;
 
@@ -437,8 +468,12 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				{
 					if (depth == 0)
 					{
-						// global function
-						variables.set(name, f);
+						if(_static || _public)
+							(_static ? context.staticVariables : context.publicVariables).set(name, f);
+						else {
+							// global function
+							variables.set(name, f);
+						}
 					}
 					else
 					{

@@ -17,6 +17,8 @@ typedef HxParserParams =
 	var ?allowUsing:Bool;
 	var ?allowStringInterpolation:Bool;
 	var ?allowTypePath:Bool;
+	var ?allowPublicVariables:Bool;
+	var ?allowStaticVariables:Bool;
 }
 
 enum HxParserMode
@@ -78,17 +80,21 @@ class HxParser extends Parser
 			allowImport: true,
 			allowUsing: true,
 			allowStringInterpolation: true,
+			allowPublicVariables: true,
+			allowStaticVariables: true,
 			allowTypePath: true
 		});
 	}
 
 	@:deprecated
-	public function setParams(?allowJSON:Bool, ?allowMetadata:Bool, ?allowTypes:Bool, ?allowStringInterpolation:Bool, ?allowTypePath:Bool)
+	public function setParams(?allowJSON:Bool, ?allowMetadata:Bool, ?allowTypes:Bool, ?allowStringInterpolation:Bool, ?allowTypePath:Bool, ?allowPublicVariables:Bool, ?allowStaticVariables:Bool)
 	{
 		parser.allowJSON = allowJSON;
 		parser.allowMetadata = allowMetadata;
 		parser.allowTypes = allowTypes;
 		parser.allowStringInterpolation = allowStringInterpolation;
+		parser.allowPublicVariables = allowPublicVariables;
+		parser.allowStaticVariables = allowStaticVariables;
 		parser.allowTypePath = allowTypePath;
 	}
 
@@ -159,6 +165,9 @@ class HScriptParser extends hscript.Parser
 {
 	public var mode:HxParserMode;
 
+	public var allowPublicVariables:Bool = true;
+	public var allowStaticVariables:Bool = true;
+
 	public var allowPackage:Bool = true;
 	public var allowImport:Bool = true;
 	public var allowUsing:Bool = true;
@@ -172,6 +181,9 @@ class HScriptParser extends hscript.Parser
 	static inline final tokenMax:Int = 0;
 	#end
 
+	private var __nextStatic:Bool = false; 
+	private var __nextPub:Bool = false;
+	
 	public function new()
 	{
 		super();
@@ -775,21 +787,14 @@ class HScriptParser extends hscript.Parser
 				else
 					push(tk);
 
-				if (props == null)
-					mk(EVar(ident, t, e, false, id == 'final'), p1, (e == null) ? tokenMax : pmax(e));
-				else
-					mk(EProp(ident, props.get, props.set, t, e), p1, (e == null) ? tokenMax : pmax(e));
-			case 'public' if (mode == DEFAULT):
-				final e:Expr = parseExpr();
+				mk(props == null ? EVar(ident, t, e, false, id == 'final', __nextPub, __nextStatic) : EProp(ident, props.get, props.set, t, e, null, __nextPub, __nextStatic), p1, (e == null) ? tokenMax : pmax(e));
 
-				switch (e.getExpr())
-				{
-					case EVar(n, t, e, false, isFinal):
-						mk(EVar(n, t, e, true, isFinal), p1, pmax(e));
-					case EProp(n, g, s, t, e, false):
-						mk(EProp(n, g, s, t, e, true), p1, pmax(e));
-					default: unexpected(TId(id));
-				}
+			case "function":
+				var name:String = null;
+				final tk = token();
+				switch tk { case TId(id): name = id; default: push(tk); }
+				final inf= parseFunctionDecl();
+				mk(EFunction(inf.args, inf.body, name, inf.ret, __nextPub, __nextStatic), p1, pmax(inf.body));
 			case 'untyped':
 				mk(EUntyped(parseExpr()));
 			case 'cast':
@@ -857,9 +862,31 @@ class HScriptParser extends hscript.Parser
 
 				var args = parseExprList(TPClose);
 				mk(ENew(a.join("."), args, typeParams), p1);
+			case "static" if (mode == DEFAULT && allowStaticVariables):
+				parseStatPubStruc(id);
+			case "public" if (mode == DEFAULT && allowPublicVariables):
+				parseStatPubStruc(id);
 			default:
 				super.parseStructure(id);
 		}
+	}
+
+	// i'm lazy okay, leave me alone :sob:
+	// there is defiantly a easier and better way to do this, butttt, ehh -orbl
+	function parseStatPubStruc(id:String):Expr {
+			final __isstatic:Bool  = id == "static", __ispublic:Bool  = id == "public";
+			if (__isstatic) __nextStatic = true; if (__ispublic) __nextPub = true;
+			var result:Expr;
+			final __nextToken:Token = token();
+			switch (__nextToken) {
+				case TId("function"), TId("public"), TId("static"), TId("final"), TId("override"), TId("var"):
+					result = parseStructure(switch(__nextToken) { case TId(n): n; default: ""; });
+				default:
+					unexpected(__nextToken);
+					result = null;
+			}
+			if (__isstatic) __nextStatic = false; if (__ispublic) __nextPub = false;
+			return result;
 	}
 
 	function parseStringInterpolation():Expr

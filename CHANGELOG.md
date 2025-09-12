@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Shared variables between interps. (see [#28](https://github.com/Kriptel/RuleScript/pull/28))
 - Scripted typedef.
 - Neo interpreter.
 - Regular expressions.
