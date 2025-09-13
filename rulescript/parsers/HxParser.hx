@@ -179,8 +179,7 @@ class HScriptParser extends hscript.Parser
 	static inline final tokenMax:Int = 0;
 	#end
 
-	private var __nextStatic:Bool = false; 
-	private var __nextPub:Bool = false;
+	private var __nextShared:Bool = false;
 	
 	public function new()
 	{
@@ -785,11 +784,9 @@ class HScriptParser extends hscript.Parser
 				else
 					push(tk);
 				var expr = (props == null) ? EVar(ident, t, e, false, id == "final") : EProp(ident, props.get, props.set, t, e, null);
-				if (__nextPub || __nextStatic) {
+				if (__nextShared) {
 					mk(EMeta(":contextValue", [
-						Tools.makeBoolExpr(false),
-						Tools.makeBoolExpr(__nextPub),
-						Tools.makeBoolExpr(__nextStatic)
+						Tools.makeBoolExpr(__nextShared)
 					], expr.toExpr()), p1, e == null ? tokenMax : pmax(e));
 				} else {
 					mk(expr, p1, e == null ? tokenMax : pmax(e));
@@ -801,11 +798,9 @@ class HScriptParser extends hscript.Parser
 				switch tk { case TId(id): name = id; default: push(tk); }
 				final inf = parseFunctionDecl();
 
-				if (__nextStatic || __nextPub) {
+				if (__nextShared) {
 					final __exprDef = EMeta(":contextValue", [
-						Tools.makeBoolExpr(false),
-						Tools.makeBoolExpr(__nextPub),
-						Tools.makeBoolExpr(__nextStatic)
+						Tools.makeBoolExpr(__nextShared)
 					], mk(EFunction(inf.args, inf.body, name, inf.ret)));
 
 					{
@@ -885,31 +880,29 @@ class HScriptParser extends hscript.Parser
 
 				var args = parseExprList(TPClose);
 				mk(ENew(a.join("."), args, typeParams), p1);
-			case "static" if (mode == DEFAULT && allowSharedVariables):
-				this.parseContextStructure(id);
-			case "public" if (mode == DEFAULT && allowSharedVariables):
-				this.parseContextStructure(id);
+			case "static", "public"  if (mode == DEFAULT && allowSharedVariables):
+				// i'm lazy okay, leave me alone :sob:
+				// there is defiantly a easier and better way to do this, butttt, ehh -orbl
+				var result:Expr;
+				final __isShared:Bool = (id == "static" || id == "public");
+				if (__isShared) __nextShared = true;
+				final __nextToken:Token = token();
+				switch __nextToken {
+					case TId("function"), TId("public"), TId("static"), TId("final"), TId("override"), TId("var"):
+						result = parseStructure(switch __nextToken {
+							case TId(n): n;
+							default: "";
+						});
+					default:
+						unexpected(__nextToken);
+						result = null;
+				}
+
+				if (__isShared) __nextShared = false;
+				result;
 			default:
 				super.parseStructure(id);
 		}
-	}
-
-	// i'm lazy okay, leave me alone :sob:
-	// there is defiantly a easier and better way to do this, butttt, ehh -orbl
-	function parseContextStructure(id:String):Expr {
-			final __isStatic:Bool  = id == "static", __isPublic:Bool  = id == "public";
-			if (__isStatic) __nextStatic = true; if (__isPublic) __nextPub = true;
-			var result:Expr;
-			final __nextToken:Token = token();
-			switch (__nextToken) {
-				case TId("function"), TId("public"), TId("static"), TId("final"), TId("override"), TId("var"):
-					result = parseStructure(switch(__nextToken) { case TId(n): n; default: ""; });
-				default:
-					unexpected(__nextToken);
-					result = null;
-			}
-			if (__isStatic) __nextStatic = false; if (__isPublic) __nextPub = false;
-			return result;
 	}
 
 	function parseStringInterpolation():Expr

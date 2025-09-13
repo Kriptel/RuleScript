@@ -270,24 +270,21 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 						if (n == null)
 							error(ECustom('Unable to determine the method name for @:contextValue'));
-						if (args.length > 3)
-							error(ECustom('@:contextValue requires three boolean arguments: (isGlobal, isPublic, and isStatic)'));
+						if (args.length > 1)
+							error(ECustom('@:contextValue requires one boolean arguments: isShared'));
 
-						// what does `global` even do???
-						final isGlobal:Bool = (args.length > 0) ? Tools.exprToString(args[0]) == "true" : false, 
-						isPublic:Bool = (args.length > 1) ? Tools.exprToString(args[1]) == "true" : false,
-						isStatic:Bool = (args.length > 2) ? Tools.exprToString(args[2]) == "true" : false;
+						final isShared:Bool = (args.length > 0) ? Tools.exprToString(args[0]) == "true" : false;
 
 						final __expr:Dynamic = this.expr(e);
 						if (ffun) {
-							// public & static functions
+							// shared functions
 							if (depth == 0) {
-								if (isStatic || isPublic)
+								if (isShared)
 									context.sharedVariables.set(n, this.exprReturn(e));
 							}
 						} else {
 							// shared variables
-							if (isStatic || isPublic) {
+							if (isShared) {
 								if (context != null && !context.sharedVariables.exists(n)) {
 									context.sharedVariables.set(n, locals[n].r);
 								}
