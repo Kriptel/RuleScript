@@ -17,8 +17,7 @@ typedef HxParserParams =
 	var ?allowUsing:Bool;
 	var ?allowStringInterpolation:Bool;
 	var ?allowTypePath:Bool;
-	var ?allowPublicVariables:Bool;
-	var ?allowStaticVariables:Bool;
+	var ?allowSharedVariables:Bool;
 }
 
 enum HxParserMode
@@ -80,8 +79,7 @@ class HxParser extends Parser
 			allowImport: true,
 			allowUsing: true,
 			allowStringInterpolation: true,
-			allowPublicVariables: true,
-			allowStaticVariables: true,
+			allowSharedVariables: true,
 			allowTypePath: true
 		});
 	}
@@ -122,11 +120,8 @@ class HxParser extends Parser
 		if (parameters.allowTypePath != null)
 			parser.allowTypePath = parameters.allowTypePath;
 
-		if(parameters.allowPublicVariables != null)
-			parser.allowPublicVariables = parameters.allowPublicVariables;
-		
-		if(parameters.allowStaticVariables != null)
-			parser.allowStaticVariables = parameters.allowStaticVariables;
+		if(parameters.allowSharedVariables != null)
+			parser.allowSharedVariables = parameters.allowSharedVariables;
 	}
 
 	override public function parse(code:String):Expr
@@ -169,8 +164,7 @@ class HScriptParser extends hscript.Parser
 {
 	public var mode:HxParserMode;
 
-	public var allowPublicVariables:Bool = true;
-	public var allowStaticVariables:Bool = true;
+	public var allowSharedVariables:Bool = true;
 
 	public var allowPackage:Bool = true;
 	public var allowImport:Bool = true;
@@ -891,9 +885,9 @@ class HScriptParser extends hscript.Parser
 
 				var args = parseExprList(TPClose);
 				mk(ENew(a.join("."), args, typeParams), p1);
-			case "static" if (mode == DEFAULT && allowStaticVariables):
+			case "static" if (mode == DEFAULT && allowSharedVariables):
 				this.parseContextStructure(id);
-			case "public" if (mode == DEFAULT && allowPublicVariables):
+			case "public" if (mode == DEFAULT && allowSharedVariables):
 				this.parseContextStructure(id);
 			default:
 				super.parseStructure(id);

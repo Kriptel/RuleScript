@@ -57,8 +57,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		typePaths = [];
 
 		if(context!=null) {
-			context.publicVariables = []; // yuhuh -orbl
-			context.staticVariables = [];
+			context.sharedVariables = []; // yuhuh -orbl
 		}
 	}
 
@@ -90,9 +89,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			return superInstance;
 
 		if (context != null) {
-			// PUBLIC & STATIC VARIABLES
-			if (context.publicVariables.exists(id)) return context.publicVariables.get(id);
-			if (context.staticVariables.exists(id)) return context.staticVariables.get(id);
+			// SHARED VARIABLES
+			if (context.sharedVariables.exists(id)) return context.sharedVariables.get(id);
 		}
 		
 		var l:Dynamic = locals.get(id);
@@ -143,8 +141,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	override function setVar(name:String, v:Dynamic)
 	{
-		if (context.staticVariables.exists(name)) context.staticVariables.set(name, v);
-		else if (context.publicVariables.exists(name)) context.publicVariables.set(name, v);
+		if (context.sharedVariables.exists(name)) context.sharedVariables.set(name, v);
 		else if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
 			Reflect.setProperty(superInstance, name, v);
 		else
@@ -226,7 +223,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case ETypeVarPath(path):
 				var id:String = path[0];
 
-				if (!locals.exists(id) && !variables.exists(id) && !superFields.contains(id) && !superFields.contains('get_$id') && !context.staticVariables.exists(id) && !context.publicVariables.exists(id))
+				if (!locals.exists(id) && !variables.exists(id) && !superFields.contains(id) && !superFields.contains('get_$id') && !context.sharedVariables.exists(id))
 				{
 					final typePath:String = path.join('.');
 
@@ -286,17 +283,13 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 							// public & static functions
 							if (depth == 0) {
 								if (isStatic || isPublic)
-									(isStatic ? context.staticVariables : context.publicVariables).set(n, this.exprReturn(e));
+									context.sharedVariables.set(n, this.exprReturn(e));
 							}
 						} else {
-							// public & static variable
-							if (isStatic) {
-								if (context != null && !context.staticVariables.exists(n)) {
-									context.staticVariables.set(n, locals[n].r);
-								}
-							} else if (isPublic) {
-								if (context != null && !context.publicVariables.exists(n)) {
-									context.publicVariables.set(n, locals[n].r);
+							// shared variables
+							if (isStatic || isPublic) {
+								if (context != null && !context.sharedVariables.exists(n)) {
+									context.sharedVariables.set(n, locals[n].r);
 								}
 							}
 						}
@@ -308,7 +301,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 			case EVar(n, _, e, global, _):
 				if (global) {
-					if(!context.staticVariables.exists(n) && !context.publicVariables.exists(n)) 
+					if(!context.sharedVariables.exists(n)) 
 						variables.set(n, (e == null) ? null : this.expr(e));
                 }
 				else {
