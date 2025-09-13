@@ -261,7 +261,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case EMeta(n, args, e):
 				// n:String, args:Array<Expr>, e:Expr
 				return switch (n) {
-					case 'rs_accessModifier':
+					case ':contextValue':
 						var ffun:Bool = false;
 						
 						final n:Null<String> = switch (e.e) {
@@ -272,9 +272,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						};
 
 						if (n == null)
-							error(ECustom('Unable to determine the method name for @rs_accessModifier'));
+							error(ECustom('Unable to determine the method name for @:contextValue'));
 						if (args.length > 3)
-							error(ECustom('@rs_accessModifier requires three boolean arguments: (isGlobal, isPublic, and isStatic)'));
+							error(ECustom('@:contextValue requires three boolean arguments: (isGlobal, isPublic, and isStatic)'));
 
 						// what does `global` even do???
 						final isGlobal:Bool = (args.length > 0) ? Tools.exprToString(args[0]) == "true" : false, 

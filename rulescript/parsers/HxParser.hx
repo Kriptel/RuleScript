@@ -792,7 +792,7 @@ class HScriptParser extends hscript.Parser
 					push(tk);
 				var expr = (props == null) ? EVar(ident, t, e, false, id == "final") : EProp(ident, props.get, props.set, t, e, null);
 				if (__nextPub || __nextStatic) {
-					mk(EMeta("rs_accessModifier", [
+					mk(EMeta(":contextValue", [
 						Tools.makeBoolExpr(false),
 						Tools.makeBoolExpr(__nextPub),
 						Tools.makeBoolExpr(__nextStatic)
@@ -808,7 +808,7 @@ class HScriptParser extends hscript.Parser
 				final inf = parseFunctionDecl();
 
 				if (__nextStatic || __nextPub) {
-					final __exprDef = EMeta("rs_accessModifier", [
+					final __exprDef = EMeta(":contextValue", [
 						Tools.makeBoolExpr(false),
 						Tools.makeBoolExpr(__nextPub),
 						Tools.makeBoolExpr(__nextStatic)
