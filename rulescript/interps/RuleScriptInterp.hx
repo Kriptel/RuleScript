@@ -55,10 +55,6 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		imports = [];
 		usings = [];
 		typePaths = [];
-
-		if(context!=null) {
-			context.sharedVariables = []; // yuhuh -orbl
-		}
 	}
 
 	override public function posInfos():haxe.PosInfos
