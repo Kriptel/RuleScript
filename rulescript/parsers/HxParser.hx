@@ -867,9 +867,9 @@ class HScriptParser extends hscript.Parser
 				var args = parseExprList(TPClose);
 				mk(ENew(a.join("."), args, typeParams), p1);
 			case "static" if (mode == DEFAULT && allowStaticVariables):
-				parseStatPubStruc(id);
+				this.parseContextStructure(id);
 			case "public" if (mode == DEFAULT && allowPublicVariables):
-				parseStatPubStruc(id);
+				this.parseContextStructure(id);
 			default:
 				super.parseStructure(id);
 		}
@@ -877,9 +877,9 @@ class HScriptParser extends hscript.Parser
 
 	// i'm lazy okay, leave me alone :sob:
 	// there is defiantly a easier and better way to do this, butttt, ehh -orbl
-	function parseStatPubStruc(id:String):Expr {
-			final __isstatic:Bool  = id == "static", __ispublic:Bool  = id == "public";
-			if (__isstatic) __nextStatic = true; if (__ispublic) __nextPub = true;
+	function parseContextStructure(id:String):Expr {
+			final __isStatic:Bool  = id == "static", __isPublic:Bool  = id == "public";
+			if (__isStatic) __nextStatic = true; if (__isPublic) __nextPub = true;
 			var result:Expr;
 			final __nextToken:Token = token();
 			switch (__nextToken) {
@@ -889,7 +889,7 @@ class HScriptParser extends hscript.Parser
 					unexpected(__nextToken);
 					result = null;
 			}
-			if (__isstatic) __nextStatic = false; if (__ispublic) __nextPub = false;
+			if (__isStatic) __nextStatic = false; if (__isPublic) __nextPub = false;
 			return result;
 	}
 
