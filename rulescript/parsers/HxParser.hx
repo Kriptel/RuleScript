@@ -790,15 +790,40 @@ class HScriptParser extends hscript.Parser
 					e = parseExpr();
 				else
 					push(tk);
-
-				mk(props == null ? EVar(ident, t, e, false, id == 'final', __nextPub, __nextStatic) : EProp(ident, props.get, props.set, t, e, null, __nextPub, __nextStatic), p1, (e == null) ? tokenMax : pmax(e));
-
+				var expr = (props == null) ? EVar(ident, t, e, false, id == "final") : EProp(ident, props.get, props.set, t, e, null);
+				if (__nextPub || __nextStatic) {
+					mk(EMeta("rs_accessModifier", [
+						Tools.makeBoolExpr(false),
+						Tools.makeBoolExpr(__nextPub),
+						Tools.makeBoolExpr(__nextStatic)
+					], expr.toExpr()), p1, e == null ? tokenMax : pmax(e));
+				} else {
+					mk(expr, p1, e == null ? tokenMax : pmax(e));
+				}
+		
 			case "function":
 				var name:String = null;
 				final tk = token();
 				switch tk { case TId(id): name = id; default: push(tk); }
-				final inf= parseFunctionDecl();
-				mk(EFunction(inf.args, inf.body, name, inf.ret, __nextPub, __nextStatic), p1, pmax(inf.body));
+				final inf = parseFunctionDecl();
+
+				if (__nextStatic || __nextPub) {
+					final __exprDef = EMeta("rs_accessModifier", [
+						Tools.makeBoolExpr(false),
+						Tools.makeBoolExpr(__nextPub),
+						Tools.makeBoolExpr(__nextStatic)
+					], mk(EFunction(inf.args, inf.body, name, inf.ret)));
+
+					{
+						e: __exprDef.toExpr().e,
+						pmin: p1,
+						pmax: pmax(inf.body),
+						origin: "rulescript",
+						line: 0
+					};
+				} else {
+					mk(EFunction(inf.args, inf.body, name, inf.ret), p1, pmax(inf.body));
+				}
 			case 'untyped':
 				mk(EUntyped(parseExpr()));
 			case 'cast':

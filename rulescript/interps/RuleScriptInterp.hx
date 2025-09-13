@@ -258,46 +258,73 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					obj = get(obj, path[currentField]);
 
 				return obj;
-			case EMeta(name, args, e) if (onMeta != null):
-				return onMeta(name, args, e);
-			case EVar(n, _, e, global, _, _public, _static):
+			case EMeta(n, args, e):
+				// n:String, args:Array<Expr>, e:Expr
+				return switch (n) {
+					case 'rs_accessModifier':
+						var ffun:Bool = false;
+						
+						final n:Null<String> = switch (e.e) {
+							case EFunction(_, _, n): ffun = true; n;
+							case EProp(n, _, _, _, _, _): n;
+							case EVar(n, _, _, _, _): n;
+							default: null;
+						};
+
+						if (n == null)
+							error(ECustom('Unable to determine the method name for @rs_accessModifier'));
+						if (args.length > 3)
+							error(ECustom('@rs_accessModifier requires three boolean arguments: (isGlobal, isPublic, and isStatic)'));
+
+						// what does `global` even do???
+						final isGlobal:Bool = (args.length > 0) ? Tools.exprToString(args[0]) == "true" : false, 
+						isPublic:Bool = (args.length > 1) ? Tools.exprToString(args[1]) == "true" : false,
+						isStatic:Bool = (args.length > 2) ? Tools.exprToString(args[2]) == "true" : false;
+
+						final __expr:Dynamic = this.expr(e);
+						if (ffun) {
+							// public & static functions
+							if (depth == 0) {
+								if (isStatic || isPublic)
+									(isStatic ? context.staticVariables : context.publicVariables).set(n, this.exprReturn(e));
+							}
+						} else {
+							// public & static variable
+							if (isStatic) {
+								if (context != null && !context.staticVariables.exists(n)) {
+									context.staticVariables.set(n, locals[n].r);
+								}
+							} else if (isPublic) {
+								if (context != null && !context.publicVariables.exists(n)) {
+									context.publicVariables.set(n, locals[n].r);
+								}
+							}
+						}
+						__expr;
+					default:
+						(onMeta != null) ? onMeta(n, args, e) : this.expr(e);
+				}
+	
+
+			case EVar(n, _, e, global, _):
 				if (global) {
-                    if(_static) {
-						if(!context.staticVariables.exists(n)) context.staticVariables.set(n, (e != null ? this.expr(e) : null));
-						return null;
-					}
-					((_public) ? context.publicVariables : variables).set(n, (e != null ? this.expr(e) : null));
+					if(!context.staticVariables.exists(n) && !context.publicVariables.exists(n)) 
+						variables.set(n, (e == null) ? null : this.expr(e));
                 }
 				else {
 					declared.push({n: n, old: locals.get(n)});
 					locals.set(n, {r: (e == null) ? null : this.expr(e)});
-                    if(_static) {
-						if(!context.staticVariables.exists(n))
-							context.staticVariables.set(n, locals[n].r);
-						return null;
-					} else if(_public)
-						context.publicVariables.set(n, locals[n].r);
 				}
 				return null;
-			case EProp(n, g, s, type, e, global, _public, _static):
+
+			case EProp(n, g, s, type, e, global):
 				var prop = createScriptProperty(n, g, s, type);
-				if (global) {
-					if(_static) {
-						if(!context.staticVariables.exists(n)) context.staticVariables.set(n, prop);
-						return null;
-					}
-					(_public ? context.publicVariables : variables).set(n, prop);
-				}
-				else {
+				if (global)
+					variables.set(n, prop);
+				else
+				{
 					declared.push({n: n, old: locals.get(n)});
 					locals.set(n, {r: prop});
-
-					if(_static) {
-						if(!context.staticVariables.exists(n)) context.staticVariables.set(n, prop);	
-						return null;
-					}
-					if(_public == true)
-						context.publicVariables.set(n, prop);
 				}
 				if (e != null)
 					prop._lazyValue = () -> this.expr(e);
@@ -365,7 +392,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						return this.expr(e);
 				}
 
-			case EFunction(params, fexpr, name, _, _public, _static):
+		case EFunction(params, fexpr, name, _):
 				if (name == 'new')
 					__constructor = expr;
 
@@ -468,12 +495,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				{
 					if (depth == 0)
 					{
-						if(_static || _public)
-							(_static ? context.staticVariables : context.publicVariables).set(name, f);
-						else {
-							// global function
-							variables.set(name, f);
-						}
+						// global function
+						variables.set(name, f);
 					}
 					else
 					{
