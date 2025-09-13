@@ -122,10 +122,10 @@ class HxParser extends Parser
 		if (parameters.allowTypePath != null)
 			parser.allowTypePath = parameters.allowTypePath;
 
-		if(parameters.allowStaticVariables != null)
+		if (parameters.allowStaticVariables != null)
 			parser.allowStaticVariables = parameters.allowStaticVariables;
 
-		if(parameters.allowPublicVariables != null)
+		if (parameters.allowPublicVariables != null)
 			parser.allowPublicVariables = parameters.allowPublicVariables;
 	}
 
@@ -874,22 +874,22 @@ class HScriptParser extends hscript.Parser
 				var args = parseExprList(TPClose);
 				mk(ENew(a.join("."), args, typeParams), p1);
 
-			case "public" if (mode == DEFAULT && allowPublicVariables):
-				parseContext(id, p1, false, true);
-
-			case "static" if (mode == DEFAULT && allowStaticVariables):
-				parseContext(id, p1, true, false);
+			case 'public' if (mode == DEFAULT && allowPublicVariables):
+				parseContext(id, false);
+			case 'static' if (mode == DEFAULT && allowStaticVariables):
+				parseContext(id, true);
 			default:
 				super.parseStructure(id);
 		}
 	}
 
-	// my brain 🥴
-	function parseContext(id, p1, isStatic:Bool, isPublic:Bool) {
+	function parseContext(id:String, isStatic:Bool) // public if not static
+	{
 		final e:Expr = parseExpr();
-		switch (e.getExpr()) {
+		switch (e.getExpr())
+		{
 			case EVar(n, _), EProp(n, _), EFunction(_, _, n) if (n != null):
-				return mk(EMeta(':contextValue', [Tools.makeBoolExpr(isPublic), Tools.makeBoolExpr(isStatic)], e), p1, tokenMax);
+				return mk(EMeta(':contextValue', [Tools.toExpr(EIdent(isStatic ? 'static' : 'public'))], e), tokenMin, tokenMax);
 			default:
 				return unexpected(TId(id));
 		}

@@ -91,14 +91,19 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 		if (v == null && !variables.exists(id))
 		{
-			v = Reflect.getProperty(superInstance, id) ;//?? error(EUnknownVariable(id)); 
+			v = Reflect.getProperty(superInstance, id);
 
 			// SHARED VARIABLES
-			if (v == null && context != null){
-				if(context.staticVariables.exists(id)) v = context.staticVariables.get(id);
-				if(context.publicVariables.exists(id)) v = context.publicVariables.get(id);
+			if (v == null && context != null)
+			{
+				if (context.staticVariables.exists(id))
+					v = context.staticVariables.get(id);
+				if (context.publicVariables.exists(id))
+					v = context.publicVariables.get(id);
 			}
-			v ?? error(EUnknownVariable(id)); // fixes - orbl
+
+			if (v == null)
+				error(EUnknownVariable(id)); // fixes - orbl
 		}
 
 		return v;
@@ -144,8 +149,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	{
 		if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
 			Reflect.setProperty(superInstance, name, v);
-		else if (context.staticVariables.exists(name)) context.staticVariables.set(name, v);
-		else if (context.publicVariables.exists(name)) context.publicVariables.set(name, v);
+		else if (context.staticVariables.exists(name))
+			context.staticVariables.set(name, v);
+		else if (context.publicVariables.exists(name))
+			context.publicVariables.set(name, v);
 		else
 		{
 			var lastValue = variables.get(name);
@@ -273,13 +280,11 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 							default: null;
 						};
 
-						final isPublic:Bool = (args.length > 0) ? Tools.exprToString(args[0]) == "true" : false,
-						isStatic:Bool = (args.length > 1) ? Tools.exprToString(args[1]) == "true" : false;
+						final isStatic:Bool = args.length > 0 && args[0].getExpr().match(EIdent('static'));
 
 						if (isFunction && depth == 0)
 						{
-							if (isStatic || isPublic)
-								return (isStatic ? context.staticVariables : context.publicVariables)[n] = this.expr(e);
+							return (isStatic ? context.staticVariables : context.publicVariables)[n] = this.expr(e);
 						}
 						else
 						{

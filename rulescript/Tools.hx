@@ -14,19 +14,6 @@ import rulescript.types.Typedefs;
 #end
 class Tools
 {
-	public static function makeBoolExpr(v:Bool):Expr {
-		#if hscriptPos
-		return {
-			e: EIdent(v ? "true" : "false"),
-			pmin: 0, pmax: 0,
-			origin: "rulescript",
-			line: 0
-		};
-		#else
-		return EIdent(v);
-		#end
-	}
-	
 	static var _printer:Printer = new Printer();
 
 	inline public static function exprToString(expr:Expr):String
