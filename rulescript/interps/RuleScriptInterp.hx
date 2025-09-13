@@ -84,18 +84,20 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		if (id == 'super' && superInstance != null)
 			return superInstance;
 
-		if (context != null) {
-			// SHARED VARIABLES
-			if (context.sharedVariables.exists(id)) return context.sharedVariables.get(id);
-		}
-		
 		var l:Dynamic = locals.get(id);
 		if (l != null)
 			return getScriptProp(l.r);
 		var v:Dynamic = getScriptProp(variables.get(id));
 
 		if (v == null && !variables.exists(id))
+		{
 			v = Reflect.getProperty(superInstance, id) ?? error(EUnknownVariable(id));
+
+			// SHARED VARIABLES
+			if (v == null && context != null && context.sharedVariables.exists(id))
+				v = context.sharedVariables.get(id);
+		}
+
 		return v;
 	}
 
@@ -137,9 +139,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	override function setVar(name:String, v:Dynamic)
 	{
-		if (context.sharedVariables.exists(name)) context.sharedVariables.set(name, v);
-		else if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
+		if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
 			Reflect.setProperty(superInstance, name, v);
+		else if (context.sharedVariables.exists(name))
+			context.sharedVariables.set(name, v);
 		else
 		{
 			var lastValue = variables.get(name);
@@ -219,7 +222,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case ETypeVarPath(path):
 				var id:String = path[0];
 
-				if (!locals.exists(id) && !variables.exists(id) && !superFields.contains(id) && !superFields.contains('get_$id') && !context.sharedVariables.exists(id))
+				if (!locals.exists(id) && !variables.exists(id) && !superFields.contains(id) && !superFields.contains('get_$id')
+					&& !context.sharedVariables.exists(id))
 				{
 					final typePath:String = path.join('.');
 
@@ -252,52 +256,44 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 				return obj;
 			case EMeta(n, args, e):
-				// n:String, args:Array<Expr>, e:Expr
-				return switch (n) {
-					case ':contextValue':
-						var ffun:Bool = false;
-						
-						final n:Null<String> = switch (e.e) {
-							case EFunction(_, _, n): ffun = true; n;
-							case EProp(n, _, _, _, _, _): n;
-							case EVar(n, _, _, _, _): n;
+				return switch (n)
+				{
+					case ':contextValue' if (context != null):
+						var isFunction:Bool = false;
+
+						final n:Null<String> = switch (Tools.getExpr(e))
+						{
+							case EFunction(_, _, n):
+								isFunction = true;
+								n;
+							case EProp(n, _), EVar(n, _): n;
 							default: null;
 						};
 
-						if (n == null)
-							error(ECustom('Unable to determine the method name for @:contextValue'));
-						if (args.length > 1)
-							error(ECustom('@:contextValue requires one boolean arguments: isShared'));
-
-						final isShared:Bool = (args.length > 0) ? Tools.exprToString(args[0]) == "true" : false;
-
-						final __expr:Dynamic = this.expr(e);
-						if (ffun) {
-							// shared functions
-							if (depth == 0) {
-								if (isShared)
-									context.sharedVariables.set(n, this.exprReturn(e));
-							}
-						} else {
-							// shared variables
-							if (isShared) {
-								if (context != null && !context.sharedVariables.exists(n)) {
-									context.sharedVariables.set(n, locals[n].r);
-								}
-							}
+						if (isFunction && depth == 0)
+						{
+							return context.sharedVariables[n] = this.expr(e);
 						}
-						__expr;
+						else
+						{
+							this.expr(e);
+
+							context.sharedVariables.set(n, resolve(n));
+						}
+
+						null;
 					default:
 						(onMeta != null) ? onMeta(n, args, e) : this.expr(e);
 				}
-	
 
 			case EVar(n, _, e, global, _):
-				if (global) {
-					if(!context.sharedVariables.exists(n)) 
+				if (global)
+				{
+					if (!context.sharedVariables.exists(n))
 						variables.set(n, (e == null) ? null : this.expr(e));
-                }
-				else {
+				}
+				else
+				{
 					declared.push({n: n, old: locals.get(n)});
 					locals.set(n, {r: (e == null) ? null : this.expr(e)});
 				}
@@ -315,7 +311,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				if (e != null)
 					prop._lazyValue = () -> this.expr(e);
 				return null;
-			case EIdent(id): return resolve(id);//wuh
+			case EIdent(id):
+				return resolve(id); // wuh
 			case ECall(e, params):
 				var args = new Array();
 				for (p in params)
@@ -378,7 +375,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						return this.expr(e);
 				}
 
-		case EFunction(params, fexpr, name, _):
+			case EFunction(params, fexpr, name, _):
 				if (name == 'new')
 					__constructor = expr;
 
@@ -890,7 +887,8 @@ class RuleScriptInterpAccess extends RuleScriptAccess
 		return interp.variables[name];
 	}
 
-	override function posInfos():haxe.PosInfos {
+	override function posInfos():haxe.PosInfos
+	{
 		return interp.posInfos();
 	}
 

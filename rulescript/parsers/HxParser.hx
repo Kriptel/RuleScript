@@ -120,7 +120,7 @@ class HxParser extends Parser
 		if (parameters.allowTypePath != null)
 			parser.allowTypePath = parameters.allowTypePath;
 
-		if(parameters.allowSharedVariables != null)
+		if (parameters.allowSharedVariables != null)
 			parser.allowSharedVariables = parameters.allowSharedVariables;
 	}
 
@@ -179,8 +179,6 @@ class HScriptParser extends hscript.Parser
 	static inline final tokenMax:Int = 0;
 	#end
 
-	private var __nextShared:Bool = false;
-	
 	public function new()
 	{
 		super();
@@ -783,36 +781,25 @@ class HScriptParser extends hscript.Parser
 					e = parseExpr();
 				else
 					push(tk);
-				var expr = (props == null) ? EVar(ident, t, e, false, id == "final") : EProp(ident, props.get, props.set, t, e, null);
-				if (__nextShared) {
-					mk(EMeta(":contextValue", [
-						Tools.makeBoolExpr(__nextShared)
-					], expr.toExpr()), p1, e == null ? tokenMax : pmax(e));
-				} else {
-					mk(expr, p1, e == null ? tokenMax : pmax(e));
-				}
-		
+
+				final expr = if (props == null)
+					EVar(ident, t, e, false, id == 'final')
+				else
+					EProp(ident, props.get, props.set, t, e);
+
+				mk(expr, p1, (e == null) ? tokenMax : pmax(e));
+
 			case "function":
 				var name:String = null;
 				final tk = token();
-				switch tk { case TId(id): name = id; default: push(tk); }
+				switch tk
+				{
+					case TId(id): name = id;
+					default: push(tk);
+				}
 				final inf = parseFunctionDecl();
 
-				if (__nextShared) {
-					final __exprDef = EMeta(":contextValue", [
-						Tools.makeBoolExpr(__nextShared)
-					], mk(EFunction(inf.args, inf.body, name, inf.ret)));
-
-					{
-						e: __exprDef.toExpr().e,
-						pmin: p1,
-						pmax: pmax(inf.body),
-						origin: "rulescript",
-						line: 0
-					};
-				} else {
-					mk(EFunction(inf.args, inf.body, name, inf.ret), p1, pmax(inf.body));
-				}
+				mk(EFunction(inf.args, inf.body, name, inf.ret), p1, pmax(inf.body));
 			case 'untyped':
 				mk(EUntyped(parseExpr()));
 			case 'cast':
@@ -880,26 +867,17 @@ class HScriptParser extends hscript.Parser
 
 				var args = parseExprList(TPClose);
 				mk(ENew(a.join("."), args, typeParams), p1);
-			case "static", "public"  if (mode == DEFAULT && allowSharedVariables):
-				// i'm lazy okay, leave me alone :sob:
-				// there is defiantly a easier and better way to do this, butttt, ehh -orbl
-				var result:Expr;
-				final __isShared:Bool = (id == "static" || id == "public");
-				if (__isShared) __nextShared = true;
-				final __nextToken:Token = token();
-				switch __nextToken {
-					case TId("function"), TId("public"), TId("static"), TId("final"), TId("override"), TId("var"):
-						result = parseStructure(switch __nextToken {
-							case TId(n): n;
-							default: "";
-						});
-					default:
-						unexpected(__nextToken);
-						result = null;
-				}
 
-				if (__isShared) __nextShared = false;
-				result;
+			case "static", "public" if (mode == DEFAULT && allowSharedVariables):
+				final e:Expr = parseExpr();
+
+				switch (e.getExpr())
+				{
+					case EVar(n, _), EProp(n, _), EFunction(_, _, n) if (n != null):
+						mk(EMeta(':contextValue', null, e), p1, tokenMax);
+					default:
+						unexpected(TId(id));
+				}
 			default:
 				super.parseStructure(id);
 		}

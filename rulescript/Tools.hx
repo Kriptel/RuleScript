@@ -119,19 +119,6 @@ class Tools
 		#end
 	}
 
-	public static function makeBoolExpr(v:Bool):Expr {
-		#if hscriptPos
-		return {
-			e: EIdent(v ? "true" : "false"),
-			pmin: 0, pmax: 0,
-			origin: "rulescript",
-			line: 0
-		};
-		#else
-		return EIdent(v);
-		#end
-	}
-
 	public static function moduleDeclsToExpr(moduleDecls:Array<ModuleDecl>, ?parameters:{?isScriptedClass:Bool, ?fieldFilter:FieldDecl->Bool}):Expr
 	{
 		final fields:Array<Expr> = [];

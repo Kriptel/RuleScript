@@ -14,7 +14,7 @@ class ExprMacro
 
 		var pos = Context.currentPos();
 
-		fields = fields.filter(field -> !([ "EVar", "ENew" ]).contains(field.name));
+		fields = fields.filter(field -> !(["EVar", "ENew"]).contains(field.name));
 
 		var newFields:Map<String, Expr> = [
 			'EPackage' => macro function(path:String) {},
@@ -28,7 +28,7 @@ class ExprMacro
 			'ETypeVarPath' => macro function(path:Array<String>) {},
 			'EUntyped' => macro function(e:Expr) {},
 			'ECast' => macro function(e:Expr, ?t:CType) {},
-			'EMapDecl' => macro function(exprs:Array<Expr>) {},
+			'EMapDecl' => macro function(exprs:Array<Expr>) {}
 		];
 
 		for (key => value in newFields)
