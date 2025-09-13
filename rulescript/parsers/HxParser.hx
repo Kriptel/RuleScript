@@ -17,7 +17,8 @@ typedef HxParserParams =
 	var ?allowUsing:Bool;
 	var ?allowStringInterpolation:Bool;
 	var ?allowTypePath:Bool;
-	var ?allowSharedVariables:Bool;
+	var ?allowStaticVariables:Bool;
+	var ?allowPublicVariables:Bool;
 }
 
 enum HxParserMode
@@ -79,7 +80,8 @@ class HxParser extends Parser
 			allowImport: true,
 			allowUsing: true,
 			allowStringInterpolation: true,
-			allowSharedVariables: true,
+			allowPublicVariables: true,
+			allowStaticVariables: true,
 			allowTypePath: true
 		});
 	}
@@ -120,8 +122,11 @@ class HxParser extends Parser
 		if (parameters.allowTypePath != null)
 			parser.allowTypePath = parameters.allowTypePath;
 
-		if (parameters.allowSharedVariables != null)
-			parser.allowSharedVariables = parameters.allowSharedVariables;
+		if(parameters.allowStaticVariables != null)
+			parser.allowStaticVariables = parameters.allowStaticVariables;
+
+		if(parameters.allowPublicVariables != null)
+			parser.allowPublicVariables = parameters.allowPublicVariables;
 	}
 
 	override public function parse(code:String):Expr
@@ -164,7 +169,8 @@ class HScriptParser extends hscript.Parser
 {
 	public var mode:HxParserMode;
 
-	public var allowSharedVariables:Bool = true;
+	public var allowPublicVariables:Bool = true;
+	public var allowStaticVariables:Bool = true;
 
 	public var allowPackage:Bool = true;
 	public var allowImport:Bool = true;
@@ -868,18 +874,24 @@ class HScriptParser extends hscript.Parser
 				var args = parseExprList(TPClose);
 				mk(ENew(a.join("."), args, typeParams), p1);
 
-			case "static", "public" if (mode == DEFAULT && allowSharedVariables):
-				final e:Expr = parseExpr();
+			case "public" if (mode == DEFAULT && allowPublicVariables):
+				parseContext(id, p1, false, true);
 
-				switch (e.getExpr())
-				{
-					case EVar(n, _), EProp(n, _), EFunction(_, _, n) if (n != null):
-						mk(EMeta(':contextValue', null, e), p1, tokenMax);
-					default:
-						unexpected(TId(id));
-				}
+			case "static" if (mode == DEFAULT && allowStaticVariables):
+				parseContext(id, p1, true, false);
 			default:
 				super.parseStructure(id);
+		}
+	}
+
+	// my brain 🥴
+	function parseContext(id, p1, isStatic:Bool, isPublic:Bool) {
+		final e:Expr = parseExpr();
+		switch (e.getExpr()) {
+			case EVar(n, _), EProp(n, _), EFunction(_, _, n) if (n != null):
+				return mk(EMeta(':contextValue', [Tools.makeBoolExpr(isPublic), Tools.makeBoolExpr(isStatic)], e), p1, tokenMax);
+			default:
+				return unexpected(TId(id));
 		}
 	}
 

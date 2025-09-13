@@ -12,11 +12,13 @@ import rulescript.types.ScriptedType;
  */
 class Context
 {
-	public var sharedVariables:Map<String, Dynamic> = []; 
+	public var publicVariables:Map<String, Dynamic> = []; 
+	public var staticVariables:Map<String, Dynamic> = []; 
 
 	public function resetVariables():Void
 	{
-		sharedVariables = [];// yuhuh -orbl
+		publicVariables = []; // yuhuh -orbl
+		staticVariables = [];
 	}
 	
 	public var types:Map<String, Dynamic> = [];
