@@ -286,7 +286,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						{
 							return (isStatic ? context.staticVariables : context.publicVariables)[n] = this.expr(e);
 						}
-						else
+						else if(depth == 0)
 						{
 							this.expr(e);
 
