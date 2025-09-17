@@ -149,9 +149,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	{
 		if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
 			Reflect.setProperty(superInstance, name, v);
-		else if (context.staticVariables.exists(name))
+		else if (context != null && context.staticVariables.exists(name))
 			context.staticVariables.set(name, v);
-		else if (context.publicVariables.exists(name))
+		else if (context != null && context.publicVariables.exists(name))
 			context.publicVariables.set(name, v);
 		else
 		{
@@ -232,8 +232,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case ETypeVarPath(path):
 				var id:String = path[0];
 
-				if (!locals.exists(id) && !variables.exists(id) && !superFields.contains(id) && !superFields.contains('get_$id')
-					&& !context.staticVariables.exists(id) && !context.publicVariables.exists(id))
+				if ((!locals.exists(id) && !variables.exists(id))
+					&& (!superFields.contains(id) && !superFields.contains('get_$id'))
+					&& (context != null && !context.staticVariables.exists(id) && !context.publicVariables.exists(id)))
 				{
 					final typePath:String = path.join('.');
 
@@ -286,12 +287,14 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						{
 							return (isStatic ? context.staticVariables : context.publicVariables)[n] = this.expr(e);
 						}
-						else if(depth == 0)
+						else if (depth == 0)
 						{
 							this.expr(e);
 
 							(isStatic ? context.staticVariables : context.publicVariables).set(n, resolve(n));
-						} else {
+						}
+						else
+						{
 							this.expr(e);
 						}
 
@@ -303,7 +306,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case EVar(n, _, e, global, _):
 				if (global)
 				{
-					if (!context.staticVariables.exists(n) && !context.publicVariables.exists(n))
+					if (context == null || (!context.staticVariables.exists(n) && !context.publicVariables.exists(n)))
 						variables.set(n, (e == null) ? null : this.expr(e));
 				}
 				else
