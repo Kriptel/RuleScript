@@ -90,7 +90,22 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		var v:Dynamic = getScriptProp(variables.get(id));
 
 		if (v == null && !variables.exists(id))
-			v = Reflect.getProperty(superInstance, id) ?? error(EUnknownVariable(id));
+		{
+			v = Reflect.getProperty(superInstance, id);
+
+			// SHARED VARIABLES
+			if (v == null && context != null)
+			{
+				if (context.staticVariables.exists(id))
+					v = context.staticVariables.get(id);
+				if (context.publicVariables.exists(id))
+					v = context.publicVariables.get(id);
+			}
+
+			if (v == null)
+				error(EUnknownVariable(id)); // fixes - orbl
+		}
+
 		return v;
 	}
 
@@ -134,6 +149,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	{
 		if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
 			Reflect.setProperty(superInstance, name, v);
+		else if (context != null && context.staticVariables.exists(name))
+			context.staticVariables.set(name, v);
+		else if (context != null && context.publicVariables.exists(name))
+			context.publicVariables.set(name, v);
 		else
 		{
 			var lastValue = variables.get(name);
@@ -213,7 +232,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case ETypeVarPath(path):
 				var id:String = path[0];
 
-				if (!locals.exists(id) && !variables.exists(id) && !superFields.contains(id) && !superFields.contains('get_$id'))
+				if ((!locals.exists(id) && !variables.exists(id))
+					&& (!superFields.contains(id) && !superFields.contains('get_$id'))
+					&& (context != null && !context.staticVariables.exists(id) && !context.publicVariables.exists(id)))
 				{
 					final typePath:String = path.join('.');
 
@@ -245,17 +266,56 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					obj = get(obj, path[currentField]);
 
 				return obj;
-			case EMeta(name, args, e) if (onMeta != null):
-				return onMeta(name, args, e);
+			case EMeta(n, args, e):
+				return switch (n)
+				{
+					case ':contextValue' if (context != null):
+						var isFunction:Bool = false;
+
+						final n:Null<String> = switch (Tools.getExpr(e))
+						{
+							case EFunction(_, _, n):
+								isFunction = true;
+								n;
+							case EProp(n, _), EVar(n, _): n;
+							default: null;
+						};
+
+						final isStatic:Bool = args.length > 0 && args[0].getExpr().match(EIdent('static'));
+
+						if (isFunction && depth == 0)
+						{
+							return (isStatic ? context.staticVariables : context.publicVariables)[n] = this.expr(e);
+						}
+						else if (depth == 0)
+						{
+							this.expr(e);
+
+							(isStatic ? context.staticVariables : context.publicVariables).set(n, resolve(n));
+						}
+						else
+						{
+							this.expr(e);
+						}
+
+						null;
+					default:
+						(onMeta != null) ? onMeta(n, args, e) : this.expr(e);
+				}
+
 			case EVar(n, _, e, global, _):
 				if (global)
-					variables.set(n, (e == null) ? null : this.expr(e));
+				{
+					if (context == null || (!context.staticVariables.exists(n) && !context.publicVariables.exists(n)))
+						variables.set(n, (e == null) ? null : this.expr(e));
+				}
 				else
 				{
 					declared.push({n: n, old: locals.get(n)});
 					locals.set(n, {r: (e == null) ? null : this.expr(e)});
 				}
 				return null;
+
 			case EProp(n, g, s, type, e, global):
 				var prop = createScriptProperty(n, g, s, type);
 				if (global)
@@ -269,10 +329,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					prop._lazyValue = () -> this.expr(e);
 				return null;
 			case EIdent(id):
-				var l = locals.get(id);
-				if (l != null)
-					return getScriptProp(l.r);
-				return resolve(id);
+				return resolve(id); // wuh
 			case ECall(e, params):
 				var args = new Array();
 				for (p in params)
@@ -334,6 +391,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					default:
 						return this.expr(e);
 				}
+
 			case EFunction(params, fexpr, name, _):
 				if (name == 'new')
 					__constructor = expr;
@@ -846,7 +904,8 @@ class RuleScriptInterpAccess extends RuleScriptAccess
 		return interp.variables[name];
 	}
 
-	override function posInfos():haxe.PosInfos {
+	override function posInfos():haxe.PosInfos
+	{
 		return interp.posInfos();
 	}
 
