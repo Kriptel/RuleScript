@@ -14,7 +14,7 @@ class ExprMacro
 
 		var pos = Context.currentPos();
 
-		fields = fields.filter(field -> !(["EVar", "ENew"]).contains(field.name));
+		fields = fields.filter(field -> !(["EVar", "ENew", "ECast"]).contains(field.name));
 
 		var newFields:Map<String, Expr> = [
 			'EPackage' => macro function(path:String) {},
