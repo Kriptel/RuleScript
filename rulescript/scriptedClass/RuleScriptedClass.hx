@@ -42,12 +42,12 @@ abstract Access(RuleScriptedClass)
 
 	inline function get_constructor():Array<Dynamic>->Dynamic
 	{
-		return abstract is ScriptedClass ? cast(this, ScriptedClass).constructor : throw 'Constructor is only allowed for ScriptedClass';
+		return abstract is ScriptedClass ? cast(this, ScriptedClass).initialize : throw 'Constructor is only allowed for ScriptedClass';
 	}
 
 	inline function set_constructor(value:Array<Dynamic>->Dynamic):Array<Dynamic>->Dynamic
 	{
-		return abstract is ScriptedClass ? cast(this, ScriptedClass).constructor = value : throw 'Constructor is only allowed for ScriptedClass';
+		return abstract is ScriptedClass ? cast(this, ScriptedClass).initialize = value : throw 'Constructor is only allowed for ScriptedClass';
 	}
 }
 
@@ -57,7 +57,23 @@ abstract Access(RuleScriptedClass)
 	public var impl:ClassDecl;
 	public var superClass:Null<Dynamic>;
 	public var nativeClass:Null<Dynamic>;
-	public var constructor:(args:Array<Dynamic>) -> Dynamic;
+
+	#if !js
+	@:deprecated('ScriptedClass.constructor was moved to ScriptedClass.createInstance')
+	public var constructor(get, set):(args:Array<Dynamic>) -> Dynamic;
+
+	inline function get_constructor():(args:Array<Dynamic>) -> Dynamic
+	{
+		return initialize;
+	}
+
+	inline function set_constructor(f:(args:Array<Dynamic>) -> Dynamic):(args:Array<Dynamic>) -> Dynamic
+	{
+		return initialize = f;
+	}
+	#end
+
+	public var initialize:(args:Array<Dynamic>) -> Dynamic;
 
 	public var interp:IInterp;
 
@@ -114,7 +130,7 @@ abstract Access(RuleScriptedClass)
 			}
 		}
 
-		constructor = if (nativeClass == null && (superClass == null || superClass is ScriptedClass))
+		initialize = if (nativeClass == null && (superClass == null || superClass is ScriptedClass))
 			ScriptedInstance.new.bind(this, _)
 		else if (nativeClass != null)
 		{
@@ -157,7 +173,7 @@ abstract Access(RuleScriptedClass)
 
 	public function createInstance(?args:Array<Dynamic>):Dynamic
 	{
-		return constructor(args ?? []);
+		return initialize(args ?? []);
 	}
 
 	public function getVariables():Map<String, Dynamic>

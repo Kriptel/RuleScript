@@ -1,7 +1,6 @@
 package tests;
 
 import rulescript.RuleScript;
-import sys.io.File;
 
 class Test
 {
@@ -18,14 +17,14 @@ class Test
 	function runScript(code:String, ?value:Dynamic):Dynamic
 	{
 		// Reset package, for reusing package keyword
-		Sys.println('\n[Test #$interpNum/${++callNum}]: "$code"');
+		Main.print('\n[Test #$interpNum/${++callNum}]: "$code"');
 
 		script.scriptPackage = '';
 
 		final result:Dynamic = script.execute(script.parser.parse(code));
 
 		if (result != null)
-			Sys.println('\t[Result]: ${Std.string(result)}');
+			Main.print('\t[Result]: ${Std.string(result)}');
 
 		if (value != null && (Reflect.isFunction(value) ? !value(value) : result != value))
 			throw 'the result($result) does not match the value';
@@ -35,6 +34,10 @@ class Test
 
 	inline function runFileScript(path:String, ?value:Dynamic)
 	{
-		runScript(File.getContent('scripts/' + path), value);
+		#if sys
+		runScript(sys.io.File.getContent('scripts/' + path), value);
+		#else
+		Main.print('Skipped script: sys not available');
+		#end
 	}
 }

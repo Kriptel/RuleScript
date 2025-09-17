@@ -57,8 +57,9 @@ class BytecodeInterp implements IInterp
 		scriptPackage = '';
 		converter = new Converter(this);
 	}
-	
-	public function posInfos():haxe.PosInfos {
+
+	public function posInfos():haxe.PosInfos
+	{
 		return cast {
 			fileName: scriptName ?? "rulescript",
 			lineNumber: lineInfo ? curLine : 0 // just in case -orbl
@@ -1666,7 +1667,7 @@ class BytecodeInterp implements IInterp
 				case CLASS:
 					return cast(c, ScriptedClass).createInstance(args);
 				case ABSTRACT:
-					return cast(c, ScriptedAbstract).constructor(args);
+					return cast(c, ScriptedAbstract).createInstance(args);
 				default:
 			}
 
@@ -1786,7 +1787,8 @@ class InterpAccess extends RuleScriptAccess
 		return interp.variables.remove(name);
 	}
 
-	override function posInfos():haxe.PosInfos {
+	override function posInfos():haxe.PosInfos
+	{
 		return interp.posInfos();
 	}
 

@@ -5,7 +5,6 @@ import example.TestAbstract;
 import rulescript.parsers.HxParser;
 import rulescript.scriptedClass.RuleScriptedClass.Access;
 import rulescript.types.ScriptedTypeUtil;
-import sys.io.File;
 
 class AbstractTest extends Test
 {
@@ -26,7 +25,9 @@ class AbstractTest extends Test
 
 		script.getParser(HxParser).mode = DEFAULT;
 
-		var module = script.getParser(HxParser).parseModule(File.getContent('scripts/abstracts/AbstractTest.rhx'));
+		#if sys
+		var module = script.getParser(HxParser).parseModule(sys.io.File.getContent('scripts/abstracts/AbstractTest.rhx'));
 		trace(module);
+		#end
 	}
 }

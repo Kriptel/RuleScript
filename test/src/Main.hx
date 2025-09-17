@@ -15,11 +15,14 @@ import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.scriptedClass.RuleScriptedClassUtil;
 import rulescript.types.ScriptedTypeUtil;
 import rulescript.types.Typedefs;
-import sys.FileSystem;
-import sys.io.File;
 import tests.*;
 
 using StringTools;
+
+#if sys
+import sys.FileSystem;
+import sys.io.File;
+#end
 
 class Main
 {
@@ -33,7 +36,7 @@ class Main
 		example.Test.LocalHelloClass.init();
 		HelloWorldAbstract.RULESCRIPT;
 
-		Sys.println('========\nCurrent target: ' + #if cpp 'cpp' #elseif hl 'hl' #elseif eval 'eval' #else 'other' #end
+		print('========\nCurrent target: ' + #if cpp 'cpp' #elseif hl 'hl' #elseif eval 'eval' #else 'other' #end
 			+ '\n========');
 
 		// RuleScript.createInterp = () ->
@@ -81,7 +84,7 @@ class Main
 
 		for (interp in interps)
 		{
-			Sys.println('\nCurrent Interp: ${interp.name}');
+			print('\nCurrent Interp: ${interp.name}');
 
 			Test.interpNum++;
 			Test.callNum = 0;
@@ -101,11 +104,12 @@ class Main
 		neoTest.test();
 		#end
 
-		Sys.println('\n\tTests:[${Test.interpNum}/${Test.callNum}],\n\tErrors: ${Test.errorsNum}');
+		print('\n\tTests:[${Test.interpNum}/${Test.callNum}],\n\tErrors: ${Test.errorsNum}');
 	}
 
 	public static function resolveModule(name:String):Array<ModuleDecl>
 	{
+		#if sys
 		var path:Array<String> = name.split('.');
 
 		var pack:Array<String> = [];
@@ -131,6 +135,9 @@ class Main
 		parser.mode = MODULE;
 
 		return parser.parseModule(File.getContent(filePath));
+		#else
+		return [];
+		#end
 	}
 
 	static function onError(e:haxe.Exception):Dynamic
@@ -138,5 +145,14 @@ class Main
 		errorsNum++;
 		trace('[ERROR] : ${e.details()}');
 		return e.details();
+	}
+
+	public static function print(v:Dynamic)
+	{
+		#if sys
+		Sys.println(v);
+		#else
+		trace(v);
+		#end
 	}
 }

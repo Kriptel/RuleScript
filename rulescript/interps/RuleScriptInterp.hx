@@ -701,7 +701,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				case CLASS:
 					return cast(c, ScriptedClass).createInstance(args);
 				case ABSTRACT:
-					return cast(c, ScriptedAbstract).constructor(args);
+					return cast(c, ScriptedAbstract).createInstance(args);
 				default:
 			}
 

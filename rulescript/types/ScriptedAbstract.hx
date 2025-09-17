@@ -74,7 +74,15 @@ class ScriptedAbstract implements ScriptedType
 		return ABSTRACT;
 	}
 
-	public function constructor(args:Array<Dynamic>):ScriptedAbstractInstance
+	#if !js
+	@:deprecated
+	inline public function constructor(args:Array<Dynamic>):ScriptedAbstractInstance
+	{
+		return createInstance(args);
+	}
+	#end
+
+	public function createInstance(args:Array<Dynamic>):ScriptedAbstractInstance
 	{
 		return new ScriptedAbstractInstance(this, args);
 	}

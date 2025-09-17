@@ -2,7 +2,6 @@ package tests;
 
 import example.TestEnum;
 import rulescript.parsers.HxParser;
-import sys.io.File;
 
 class EnumTest extends Test
 {
@@ -14,7 +13,9 @@ class EnumTest extends Test
 
 		runScript("a = example.TestEnum.RULESCRIPT(1.2)", () -> TestEnum.RULESCRIPT(1.2).equals(script.variables['a']));
 
-		var module = script.getParser(HxParser).parseModule(File.getContent('scripts/enumTest/EnumTest.rhx'));
+		#if sys
+		var module = script.getParser(HxParser).parseModule(sys.io.File.getContent('scripts/enumTest/EnumTest.rhx'));
 		trace(module);
+		#end
 	}
 }

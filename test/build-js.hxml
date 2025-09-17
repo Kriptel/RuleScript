@@ -1,0 +1,3 @@
+test/build.hxml
+
+-js export/js/main.js
