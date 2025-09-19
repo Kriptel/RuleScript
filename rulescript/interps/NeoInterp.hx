@@ -209,7 +209,13 @@ class NeoInterp implements IInterp
 				DYNAMIC;
 
 			case FIELD:
-				dyn = get(getValue(command()), stringBuffer[next()]);
+				final obj:Dynamic = getValue(command());
+				final f:String = stringBuffer[next()];
+
+				if (obj == null)
+					error(EInvalidAccess(f));
+
+				dyn = get(obj, f);
 
 				DYNAMIC;
 
@@ -232,6 +238,9 @@ class NeoInterp implements IInterp
 
 			case CALL:
 				final f:Dynamic = getValue(command());
+
+				if (f == null)
+					error(ENullAccess);
 
 				final args:Array<Dynamic> = [
 					for (_ in 0...next())
@@ -392,6 +401,22 @@ class NeoInterp implements IInterp
 				while (getValue(command()));
 
 				VOID;
+			case TRY:
+				final curPos:Int = this.pos;
+
+				try
+				{
+					var v = commandSkippable();
+					skipCommand();
+					v;
+				}
+				catch (e)
+				{
+					this.pos = curPos;
+					skipCommand();
+					dynamicBuffer[next()] = e;
+					commandSkippable();
+				}
 			case id:
 				error(EUnknownCommand(id));
 		}

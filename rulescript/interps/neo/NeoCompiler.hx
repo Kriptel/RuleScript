@@ -117,9 +117,7 @@ using rulescript.Tools;
 			case EVar(n, t, e, _, isFinal):
 				addCmd(VAR);
 
-				var id = linkDynamic(null);
-				addLink(id);
-				setLocal(n, id);
+				addLocal(n);
 
 				if (e == null)
 					addCmd(NULL)
@@ -343,9 +341,7 @@ using rulescript.Tools;
 				addCmd(FOR);
 
 				scope({
-					var id = linkDynamic(null);
-					addLink(id);
-					setLocal(v, id);
+					addLocal(v);
 
 					compile(it);
 					compile(e);
@@ -367,13 +363,22 @@ using rulescript.Tools;
 
 				compile(cond);
 
+			case ETry(e, v, _, ecatch):
+				addCmd(TRY);
+
+				skippable(scope(compile(e)));
+
+				skippable(scope({
+					addLocal(v);
+					compile(ecatch);
+				}));
+
 			// case EForGen(it, e):
 			// case EFunction(args, e, name, ret):
 			// case EImport(name, star, alias, func):
 			// case EMeta(name, args, e):
 			// case EProp(n, g, s, t, e, global):
 			// case ESwitch(e, cases, defaultExpr):
-			// case ETry(e, v, t, ecatch):
 			// case ETypeVarPath(path):
 			// case EUsing(name):
 
@@ -425,6 +430,15 @@ using rulescript.Tools;
 	inline function addDynamic(dyn:Dynamic):Int
 	{
 		return interp.bytes.push(linkDynamic(dyn));
+	}
+
+	inline function addLocal(name:String):Int
+	{
+		var id = linkDynamic(null);
+		addLink(id);
+		setLocal(name, id);
+
+		return id;
 	}
 
 	inline function linkFloat(fl:Float):Int

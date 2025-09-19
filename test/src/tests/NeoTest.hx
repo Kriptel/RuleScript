@@ -120,5 +120,31 @@ class NeoTest extends Test
 
 				a;
 			});
+
+		runScript('
+		var a:Dynamic = try
+		{
+			var b:Dynamic = {};
+			b.c();
+		}
+		catch (e:Dynamic)
+		{
+			"2";
+		}
+
+		a;
+		', {
+				var a:Dynamic = try
+				{
+					var b:Dynamic = {};
+					b.c();
+				}
+				catch (e:Dynamic)
+				{
+					"2";
+				}
+
+				a;
+			});
 	}
 }

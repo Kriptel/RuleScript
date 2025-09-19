@@ -108,6 +108,8 @@ enum NeoError
 	EInvalidOperator(op:String);
 	EInvalidIterator(v:Dynamic);
 	EInvalidMap(e:String);
+	EInvalidAccess(f:String);
+	ENullAccess;
 	EInvalidContinue;
 	EInvalidBreak;
 }
