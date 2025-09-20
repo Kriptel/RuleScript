@@ -25,6 +25,14 @@ class RuleScriptAccess
 	}
 
 	/**
+	* Resets the interpreters variables.
+	*/
+	public function resetVariables():Void
+	{
+		
+	}
+
+	/**
 	 * Returns `true` if variable with identifier `name` exists.
 	 * 
 	 * if `name` is null, the result is unspecified.
