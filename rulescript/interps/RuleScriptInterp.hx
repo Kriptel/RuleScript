@@ -893,6 +893,11 @@ class RuleScriptInterpAccess extends RuleScriptAccess
 	{
 		return interp.variables = newVariables;
 	}
+	
+	override function resetInterp():Void
+	{
+		interp.resetVariables();
+	}
 
 	override function variableExists(name:String):Bool
 	{

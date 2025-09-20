@@ -25,6 +25,14 @@ class RuleScriptAccess
 	}
 
 	/**
+	* Resets the interp.
+	*/
+	public function resetInterp():Void
+	{
+		
+	}
+
+	/**
 	 * Returns `true` if variable with identifier `name` exists.
 	 * 
 	 * if `name` is null, the result is unspecified.
