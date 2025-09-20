@@ -25,9 +25,9 @@ class RuleScriptAccess
 	}
 
 	/**
-	* Resets the interpreters variables.
+	* Resets the interp.
 	*/
-	public function resetVariables():Void
+	public function resetInterp():Void
 	{
 		
 	}

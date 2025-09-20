@@ -894,7 +894,7 @@ class RuleScriptInterpAccess extends RuleScriptAccess
 		return interp.variables = newVariables;
 	}
 	
-	override function resetVariables():Void
+	override function resetInterp():Void
 	{
 		interp.resetVariables();
 	}
