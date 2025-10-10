@@ -5,6 +5,7 @@ import hscript.Expr;
 import rulescript.interps.RuleScriptInterp;
 import rulescript.parsers.HxParser;
 import rulescript.parsers.Parser;
+import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.types.ScriptedTypeUtil;
 
 /**
@@ -91,6 +92,26 @@ class RuleScript
 	public static dynamic function createInterp():IInterp
 	{
 		return new RuleScriptInterp();
+	}
+
+	public static function resolveScriptedClass(typePath:String, ?context:Context):Access
+	{
+		final cl:Dynamic = context != null ? context.resolveType(typePath) : Tools.resolveType(typePath);
+
+		if (cl is RuleScriptedClass)
+		{
+			return cast new Access(cl);
+		}
+
+		return null;
+	}
+
+	public static function createScriptedInstance(typeOrPath:EitherType<String, ScriptedClass>, args:Array<Dynamic>, ?context:Context):Null<Access>
+	{
+		if (typeOrPath is String)
+			return resolveScriptedClass(typeOrPath, context).createInstance(args);
+
+		return cast(typeOrPath, ScriptedClass).createInstance(args);
 	}
 
 	/**

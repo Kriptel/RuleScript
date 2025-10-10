@@ -1,5 +1,6 @@
 package rulescript;
 
+#if !macro
 import haxe.Constraints.Function;
 import hscript.Expr;
 import hscript.Printer;
@@ -8,12 +9,25 @@ import rulescript.types.Property;
 import rulescript.types.ScriptedTypeUtil;
 import rulescript.types.ScriptedTypedef;
 import rulescript.types.Typedefs;
+#end
 
 #if hl
 @:build(rulescript.macro.CallMethodMacro.build())
 #end
 class Tools
 {
+	public static function parseTypePath(typePath:String):TypePath
+	{
+		return new TypePath(typePath);
+	}
+
+	inline public static function startsWithLowerCase(s:String):Bool
+		return s.charAt(0) == s.charAt(0).toLowerCase();
+
+	inline public static function startsWithUpperCase(s:String):Bool
+		return s.charAt(0) == s.charAt(0).toUpperCase();
+
+	#if !macro
 	static var _printer:Printer = new Printer();
 
 	inline public static function exprToString(expr:Expr):String
@@ -103,12 +117,6 @@ class Tools
 		#end
 	}
 
-	inline public static function startsWithLowerCase(s:String):Bool
-		return s.charAt(0) == s.charAt(0).toLowerCase();
-
-	inline public static function startsWithUpperCase(s:String):Bool
-		return s.charAt(0) == s.charAt(0).toUpperCase();
-
 	inline public static function isEmptyClass(cl:Class<Dynamic>):Bool
 	{
 		#if interp
@@ -119,7 +127,8 @@ class Tools
 		#end
 	}
 
-	public static function moduleDeclsToExpr(moduleDecls:Array<ModuleDecl>, ?parameters:{?isScriptedClass:Bool, ?fieldFilter:FieldDecl->Bool}):Expr
+	public static function moduleDeclsToExpr(moduleDecls:Array<ModuleDecl>,
+			?parameters:{?isScriptedClass:Bool, ?fieldFilter:FieldDecl->Bool, ?classImpl:ClassDecl}):Expr
 	{
 		final fields:Array<Expr> = [];
 
@@ -129,7 +138,8 @@ class Tools
 
 		function pushField(field:FieldDecl, ?hasExtend:Bool = false)
 		{
-			if (parameters?.fieldFilter(field) ?? true)
+			if ((parameters?.fieldFilter != null) ? parameters.fieldFilter(field) : true)
+			{
 				switch (field.kind)
 				{
 					case KFunction(f):
@@ -150,6 +160,23 @@ class Tools
 						if (v.expr != null)
 							values.push(toExpr(EBinop('=', toExpr(EIdent(field.name)), v.expr)));
 				}
+			}
+		}
+
+		inline function pushClassDecl(c:ClassDecl)
+		{
+			c.fields.sort((f1:FieldDecl, f2:FieldDecl) ->
+			{
+				return switch [f1.kind.match(KVar(_)), f2.kind.match(KVar(_))]
+				{
+					case [true, true], [false, false]: 0;
+					case [true, false]: -1;
+					case [false, true]: 1;
+				};
+			});
+
+			for (field in c.fields)
+				pushField(field, c.extend != null);
 		}
 
 		for (moduleDecl in moduleDecls)
@@ -162,23 +189,17 @@ class Tools
 				case DUsing(path):
 					pushExpr(EUsing(path));
 				case DClass(c):
-					c.fields.sort((f1:FieldDecl, f2:FieldDecl) ->
-					{
-						return switch [f1.kind.match(KVar(_)), f2.kind.match(KVar(_))]
-						{
-							case [true, true], [false, false]: 0;
-							case [true, false]: -1;
-							case [false, true]: 1;
-						};
-					});
-
-					for (field in c.fields)
-						pushField(field, c.extend != null);
+					pushClassDecl(c);
 				case DTypedef(c):
 				case DField(f):
 					pushField(f);
 				default:
 			}
+
+		if (parameters?.classImpl != null)
+		{
+			pushClassDecl(parameters.classImpl);
+		}
 
 		for (value in values)
 			fields.push(value);
@@ -196,9 +217,14 @@ class Tools
 		#end
 	}
 
-	public static function resolveType(path:String):Dynamic
+	public static function resolveType(path:String, ?context:Context):Dynamic
 	{
+		final lastContext = ScriptedTypeUtil._currentContext;
+		ScriptedTypeUtil._currentContext = context;
+
 		var t:Dynamic = ScriptedTypeUtil.resolveScript(path);
+
+		ScriptedTypeUtil._currentContext = lastContext;
 
 		if (t != null)
 			return t;
@@ -332,4 +358,85 @@ class Tools
 		return o;
 	}
 	#end
+	#end
+}
+
+@:forward
+abstract TypePath(_TypePath)
+{
+	public var typeName(get, never):String;
+
+	public function new(typePath:String)
+	{
+		final path:Array<String> = typePath.split('.');
+
+		final pack:Array<String> = [];
+
+		while (Tools.startsWithLowerCase(path[0]))
+			pack.push(path.shift());
+
+		var typeName:String = null;
+
+		if (path.length > 1)
+			typeName = path[1];
+
+		this = {
+			pack: pack,
+			name: path[0],
+			sub: typeName,
+			fullPath: typePath
+		}
+	}
+
+	/**
+	 * Returns the module path for a type, **excluding the type name**.
+	 * Example: For `a.B`, returns `a.B`; for `a.B.C`, returns `a.B`.
+	 * 
+	 * @return The module path as a String.
+	 */
+	inline public function modulePath():String
+	{
+		return if (this.pack.length > 0)
+			this.pack.join('.') + '.' + this.name;
+		else
+			this.name;
+	}
+
+	inline function get_typeName():String
+	{
+		return this.sub ?? this.name;
+	}
+
+	public static function create(pack:Array<String>, name:String, sub:String):TypePath
+	{
+		return new TypePath(createString(pack, name, sub));
+	}
+
+	public static function createString(pack:Array<String>, name:String, ?sub:String):String
+	{
+		var path:String = '';
+
+		if (pack.length > 0)
+		{
+			path = pack.join('.');
+
+			if (path != '')
+				path += '.';
+		}
+
+		path += name;
+
+		if (sub != null && name != sub)
+			path += '.' + sub;
+
+		return path;
+	}
+}
+
+private typedef _TypePath =
+{
+	var pack:Array<String>;
+	var name:String;
+	var ?sub:String;
+	var fullPath:String;
 }

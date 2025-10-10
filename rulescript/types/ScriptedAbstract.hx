@@ -5,6 +5,7 @@ import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.types.ScriptedType;
 import rulescript.types.decl.AbstractDecl;
 
+@:access(rulescript.scriptedClass.ScriptedClass)
 class ScriptedAbstract implements ScriptedType
 {
 	public var module:ScriptedModule;
@@ -12,41 +13,28 @@ class ScriptedAbstract implements ScriptedType
 
 	var pack:String;
 
-	public function new(module:ScriptedModule, ?typeName:String)
+	public function new(impl:AbstractDecl, module:ScriptedModule)
 	{
 		this.module = module;
 
-		for (decl in module.decl)
-		{
-			switch (decl)
-			{
-				case DPackage(path):
-					pack = path.join('.');
-				case DAbstract(c) if (typeName == null || c.name == typeName):
-					final moduleList:Array<ModuleDecl> = module.decl.copy();
-					moduleList.remove(decl);
-
-					moduleList.push(DClass({
-						name: c.name,
-						meta: c.meta,
-						params: c.params,
-						extend: null,
-						implement: [],
-						fields: c.fields,
-						isPrivate: c.isPrivate,
-						isExtern: c.isExtern
-					}));
-
-					final scriptedModule:ScriptedModule = {
-						path: module.path,
-						name: module.name,
-						decl: moduleList
-					}
-
-					this.__impl = new ScriptedClass(scriptedModule, typeName);
-				default:
-			}
+		var classImpl:ClassDecl = {
+			name: impl.name,
+			meta: impl.meta,
+			params: impl.params,
+			extend: null,
+			implement: [],
+			fields: impl.fields,
+			isPrivate: impl.isPrivate,
+			isExtern: impl.isExtern
 		}
+
+		this.__impl = new ScriptedClass(classImpl, module);
+	}
+
+	@:allow(rulescript.types.ScriptedModule)
+	function init()
+	{
+		__impl.init();
 	}
 
 	public function compatibleWith(t:Dynamic):Bool

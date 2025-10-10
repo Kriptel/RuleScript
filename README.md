@@ -166,7 +166,7 @@ Source :
 class ScriptedClassTest implements RuleScriptedClass extends SrcClass {}
 ```
 
-See [`Main.hx`](./test/src/Main.hx#l232), [`ScriptedClassTest.hx`](./test/src/test/ScriptedClassTest.hx), [`ScriptedClass`](./test/scripts/haxe/ScriptedClass.rhx).
+See [`Main.hx`](./test/src/Main.hx#l53), [`ScriptedClassTest.hx`](./test/src/example/ScriptedClassTest.hx), [`ScriptedClass`](./test/scripts/scriptedClass/ScriptedClass.rhx).
 
 ### Typedefs
 

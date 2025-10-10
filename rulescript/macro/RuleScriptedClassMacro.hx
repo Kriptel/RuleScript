@@ -144,7 +144,7 @@ class RuleScriptedClassMacro
 			},
 			'variableExists' => macro function(name:String):Bool
 			{
-				return __rulescript.variables.exists(name);
+				return __rulescript?.variables.exists(name);
 			},
 			'getVariable' => macro function(name:String):Dynamic
 			{

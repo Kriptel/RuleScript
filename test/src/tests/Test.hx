@@ -1,5 +1,6 @@
 package tests;
 
+import rulescript.Context;
 import rulescript.RuleScript;
 
 class Test
@@ -9,6 +10,7 @@ class Test
 	public static var errorsNum:Int = 0;
 
 	public var script:RuleScript;
+	public var context(get, never):Context;
 
 	public function new() {}
 
@@ -39,5 +41,10 @@ class Test
 		#else
 		Main.print('Skipped script: sys not available');
 		#end
+	}
+
+	inline function get_context():Context
+	{
+		return script.context;
 	}
 }

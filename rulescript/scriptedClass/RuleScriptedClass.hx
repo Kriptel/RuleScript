@@ -2,6 +2,8 @@ package rulescript.scriptedClass;
 
 import hscript.Expr.ClassDecl;
 import rulescript.RuleScript.IInterp;
+import rulescript.Tools.TypePath;
+import rulescript.types.ScriptedModule;
 import rulescript.types.ScriptedType;
 
 @:autoBuild(rulescript.macro.RuleScriptedClassMacro.build())
@@ -16,6 +18,11 @@ interface RuleScriptedClass extends ScriptedType
 @:forward
 abstract Access(RuleScriptedClass)
 {
+	inline public function self<T:RuleScriptedClass>(?t:T):T
+	{
+		return cast this;
+	}
+
 	public var constructor(get, set):(args:Array<Dynamic>) -> Dynamic;
 
 	public function new(cl:RuleScriptedClass)
@@ -51,12 +58,19 @@ abstract Access(RuleScriptedClass)
 	}
 }
 
+@:access(rulescript.RuleScriptAccess)
 @:noBuild class ScriptedClass implements RuleScriptedClass
 {
+	public var className:String;
 	public var module:ScriptedModule;
 	public var impl:ClassDecl;
+
 	public var superClass:Null<Dynamic>;
 	public var nativeClass:Null<Dynamic>;
+
+	var interp:IInterp;
+
+	public var initialize:(args:Array<Dynamic>) -> Dynamic;
 
 	#if !js
 	@:deprecated('ScriptedClass.constructor was moved to ScriptedClass.createInstance')
@@ -73,32 +87,29 @@ abstract Access(RuleScriptedClass)
 	}
 	#end
 
-	public var initialize:(args:Array<Dynamic>) -> Dynamic;
-
-	public var interp:IInterp;
-
-	var pack:String;
-
-	public function new(module:ScriptedModule, ?typeName:String)
+	public function new(impl:ClassDecl, module:ScriptedModule)
 	{
+		this.impl = impl;
 		this.module = module;
 
-		for (decl in module.decl)
-		{
-			switch (decl)
-			{
-				case DPackage(path):
-					pack = path.join('.');
-				case DClass(c) if (typeName == null || c.name == typeName):
-					this.impl = c;
-				default:
-			}
-		}
+		className = impl.name;
 
 		interp = RuleScript.createInterp();
+		@:privateAccess interp.access.context = module.context;
+		interp.access.setVariable(className, this);
+	}
 
-		interp.access.execute(Tools.moduleDeclsToExpr(module.decl, {
-			fieldFilter: f -> f.access.contains(AStatic)
+	@:allow(rulescript.types.ScriptedModule)
+	function init()
+	{
+		for (name => type in module.types)
+		{
+			interp.access.setVariable(name, type);
+		}
+
+		interp.access.execute(Tools.moduleDeclsToExpr(module.sharedDecls, {
+			fieldFilter: f -> f.access.contains(AStatic),
+			classImpl: impl
 		}));
 
 		if (impl.extend != null)
@@ -107,7 +118,7 @@ abstract Access(RuleScriptedClass)
 
 			@:privateAccess {
 				// Check module
-				superClass ??= interp.access.__resolveType('${((pack.length > 0) ? pack + '.' : '')}${module.name}.$type');
+				superClass ??= module.types[type];
 				// Check type
 				superClass ??= interp.access.__resolveType(type);
 				// Check imported types
@@ -161,19 +172,9 @@ abstract Access(RuleScriptedClass)
 					#end
 		}
 		else
-			throw '$superClass cannot be constructed';
-	}
+			(_) -> throw toString() + ' cannot be constructed';
 
-	@:noCompletion public var __rulescript_type(get, never):TypeID;
-
-	private function get___rulescript_type():TypeID
-	{
-		return CLASS;
-	}
-
-	public function createInstance(?args:Array<Dynamic>):Dynamic
-	{
-		return initialize(args ?? []);
+		interp.access.scriptName = toString();
 	}
 
 	public function getVariables():Map<String, Dynamic>
@@ -194,6 +195,18 @@ abstract Access(RuleScriptedClass)
 	public function setVariable(name:String, value:Dynamic):Dynamic
 	{
 		return interp.access.setVariable(name, value);
+	}
+
+	@:noCompletion public var __rulescript_type(get, never):TypeID;
+
+	private function get___rulescript_type():TypeID
+	{
+		return CLASS;
+	}
+
+	public function createInstance(args:Array<Dynamic>)
+	{
+		return initialize(args ?? []);
 	}
 
 	@:access(rulescript.RuleScriptAccess)
@@ -203,29 +216,27 @@ abstract Access(RuleScriptedClass)
 			getVariable('toString')();
 		else
 		{
-			(interp.access.scriptPackage != '' ? interp.access.scriptPackage + '.' : '')
-				+ (module.name != impl.name ? module.name + '.' + impl.name : impl.name);
+			TypePath.createString(interp.access.scriptPackage.split('.'), module.name, impl.name);
 		}
 	}
 }
 
 @:access(rulescript.RuleScriptAccess)
+@:access(rulescript.types.ScriptedClass)
 @:noBuild class ScriptedInstance implements RuleScriptedClass
 {
 	var cl:ScriptedClass;
 
 	public var interp:IInterp;
 
-	var _superInstance:ScriptedInstance;
-
 	public var variables(get, set):Map<String, Dynamic>;
 
-	@:access(rulescript.scriptedClass.ScriptedClass)
 	public function new(cl:ScriptedClass, args:Array<Dynamic>)
 	{
 		this.cl = cl;
 
 		interp = RuleScript.createInterp();
+		interp.access.scriptName = cl.toString();
 
 		var list = [];
 
@@ -234,23 +245,19 @@ abstract Access(RuleScriptedClass)
 		while (currentClass != null)
 		{
 			list.insert(0, currentClass);
+			setVariable(currentClass.className, currentClass);
 			currentClass = currentClass.superClass;
 		}
 
 		for (cl in list)
 		{
 			interp.access.execute(Tools.toExpr(EBlock([
-				Tools.moduleDeclsToExpr(cl.module.decl, {
+				Tools.moduleDeclsToExpr(cl.module.sharedDecls, {
 					isScriptedClass: true,
-					fieldFilter: f -> !f.access.contains(AStatic)
+					fieldFilter: f -> !f.access.contains(AStatic),
+					classImpl: cl.impl
 				})
 			])));
-
-			for (field in cl.impl.fields)
-			{
-				if (!field.access.contains(AStatic))
-					setVariable(field.name, interp.access.getVariable(field.name));
-			}
 		}
 
 		interp.access.superInstance = this;
@@ -259,7 +266,7 @@ abstract Access(RuleScriptedClass)
 			if (variableExists('new'))
 				Reflect.callMethod(this, getVariable('new'), args);
 			else
-				throw '${cl.pack + '.' + cl.impl.name} does not have a constructor';
+				throw '${cl.toString()} does not have a constructor';
 	}
 
 	@:noCompletion public var __rulescript_type(get, never):TypeID;
@@ -276,17 +283,17 @@ abstract Access(RuleScriptedClass)
 
 	public function variableExists(name:String):Bool
 	{
-		return interp.access.variableExists(name);
+		return interp.access.variableExists(name) || cl.variableExists(name);
 	}
 
 	public function getVariable(name:String):Dynamic
 	{
-		return interp.access.getVariable(name);
+		return interp.access.getVariable(name) ?? cl.getVariable(name);
 	}
 
 	public function setVariable(name:String, value:Dynamic):Dynamic
 	{
-		return interp.access.setVariable(name, value);
+		return cl.variableExists(name) ? cl.setVariable(name, value) : interp.access.setVariable(name, value);
 	}
 
 	public function toString():String

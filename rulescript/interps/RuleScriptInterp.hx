@@ -91,7 +91,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 		if (v == null && !variables.exists(id))
 		{
-			v = Reflect.getProperty(superInstance, id);
+			v = get(superInstance, id);
 
 			// SHARED VARIABLES
 			if (v == null && context != null)
@@ -893,7 +893,7 @@ class RuleScriptInterpAccess extends RuleScriptAccess
 	{
 		return interp.variables = newVariables;
 	}
-	
+
 	override function resetInterp():Void
 	{
 		interp.resetVariables();

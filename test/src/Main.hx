@@ -1,20 +1,11 @@
 package;
 
 import example.HelloWorldAbstract;
-import example.ScriptedClassTest;
-import example.TestAbstract;
-import hscript.Expr.ClassDecl;
 import hscript.Expr.ModuleDecl;
 import rulescript.Context;
 import rulescript.RuleScript;
-import rulescript.interps.BytecodeInterp;
-import rulescript.interps.NeoInterp;
-import rulescript.interps.RuleScriptInterp;
 import rulescript.parsers.HxParser;
-import rulescript.scriptedClass.RuleScriptedClass;
-import rulescript.scriptedClass.RuleScriptedClassUtil;
 import rulescript.types.ScriptedTypeUtil;
-import rulescript.types.Typedefs;
 import tests.*;
 
 using StringTools;
@@ -26,10 +17,10 @@ import sys.io.File;
 
 class Main
 {
-	static var script:RuleScript;
+	public static var script:RuleScript;
 
-	static var callNum:Int = 0;
-	static var errorsNum:Int = 0;
+	public static var callNum:Int = 0;
+	public static var errorsNum:Int = 0;
 
 	static function main():Void
 	{
@@ -53,58 +44,10 @@ class Main
 		script.getParser(HxParser).allowAll();
 
 		#if !neoInterp_test
-		final tests:Array<Test> = [
-			new InterpTest(),
-			new MathTest(),
-			new ImportTest(),
-			new UsingTest(),
-			new StringInterpolationTest(),
-			new RegexTest(),
-			new AbstractTest(),
-			new TypedefTest(),
-			new TypePathTest(),
-			new ModuleTest(),
-			new ScriptClassesTest(),
-			new FileScriptTest(),
-			new EnumTest(),
-			new CastTest(),
-			new ContextTest()
-		];
-
-		for (test in tests)
-		{
-			test.script = script;
-		}
-
-		final interps:Array<{name:String, interp:IInterp}> = [
-			{name: 'RuleScriptInterp', interp: new RuleScriptInterp()},
-			{name: "BytecodeInterp", interp: new BytecodeInterp()}
-			// ,{name: "NeoInterp", interp: new NeoInterp()}
-		];
-
-		for (interp in interps)
-		{
-			print('\nCurrent Interp: ${interp.name}');
-
-			Test.interpNum++;
-			Test.callNum = 0;
-			script.interp = interp.interp;
-
-			for (test in tests)
-			{
-				test.test();
-			}
-		}
-		#else
-		script.interp = new NeoInterp();
-
-		final neoTest = new NeoTest();
-		neoTest.script = script;
-
-		neoTest.test();
+		MainBasicTest.test();
+		#elseif neoInterp_test
+		MainNeoInterp.test();
 		#end
-
-		print('\n\tTests:[${Test.interpNum}/${Test.callNum}],\n\tErrors: ${Test.errorsNum}');
 	}
 
 	public static function resolveModule(name:String):Array<ModuleDecl>
