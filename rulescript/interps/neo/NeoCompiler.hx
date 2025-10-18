@@ -173,6 +173,18 @@ using rulescript.Tools;
 						}
 
 						compile(e2);
+					case '&&', '||':
+						addCmd(OP);
+
+						addCmd(switch (op)
+						{
+							case '&&': OP_AND;
+							case '||': OP_OR;
+							default: error(EInvalidOperator(op));
+						});
+
+						compile(e1);
+						skippable(compile(e2));
 
 					case '+', '-', '*', '/', '%', '<<', '>>', '>>>', '&', '|', '^', '==', '!=', '<', '<=', '>', '>=':
 						addCmd(OP);
@@ -203,6 +215,8 @@ using rulescript.Tools;
 						compile(e2);
 					case '%=', '*=', '/=', '+=', '-=', '<<=', '>>=', '>>>=', '&=', '|=', '^=':
 						compile(EBinop('=', e1, EBinop(op.substr(0, -1), e1, e2).toExpr()).toExpr());
+					default:
+						error(EInvalidOperator(op));
 				}
 
 			case EUnop(op, prefix, e):
@@ -414,8 +428,13 @@ using rulescript.Tools;
 					compile(ecatch);
 				}));
 
+			case EImport(name, star, alias, func):
+				addCmd(RS_IMPORT);
+				addString(name);
+				addString(alias);
+				addString(func);
+
 			// case EFunction(args, e, name, ret):
-			// case EImport(name, star, alias, func):
 			// case EMeta(name, args, e):
 			// case EProp(n, g, s, t, e, global):
 			// case ESwitch(e, cases, defaultExpr):

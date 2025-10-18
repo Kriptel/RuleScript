@@ -431,6 +431,11 @@ abstract TypePath(_TypePath)
 
 		return path;
 	}
+
+	inline public static function getTypeName(typePath:String):String
+	{
+		return StringTools.contains(typePath, '.') ? typePath.substring(typePath.lastIndexOf('.') + 1) : typePath;
+	}
 }
 
 private typedef _TypePath =

@@ -52,6 +52,8 @@ enum abstract NeoByte(Int) from Int to Int
 	var CHECK_TYPE;
 	var CAST;
 	var PACKAGE;
+	var RS_IMPORT; // cpp does not allow `IMPORT` ident.
+	var USING;
 
 	// VALUES
 	var NULL;
@@ -91,6 +93,8 @@ enum abstract NeoByte(Int) from Int to Int
 	var OP_NOT;
 	var OP_EQUALS;
 	var OP_NOT_EQUALS;
+	var OP_AND;
+	var OP_OR;
 
 	var OP_LT;
 	var OP_LT_EQUAL;

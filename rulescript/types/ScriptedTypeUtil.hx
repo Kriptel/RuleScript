@@ -29,6 +29,6 @@ class ScriptedTypeUtil
 		if (module == null)
 			return null;
 
-		return new ScriptedModule(name, module, _currentContext).types[path.typeName];
+		return new ScriptedModule(path.modulePath(), module, _currentContext).types[path.typeName];
 	}
 }

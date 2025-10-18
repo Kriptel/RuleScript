@@ -5,6 +5,7 @@ import haxe.Exception;
 import haxe.display.Display.Package;
 import hscript.Expr;
 import rulescript.RuleScript.IInterp;
+import rulescript.Tools.TypePath;
 import rulescript.Tools.getScriptProp;
 import rulescript.interps.neo.NeoCompiler;
 import rulescript.interps.neo.NeoTypes;
@@ -148,6 +149,11 @@ class NeoInterp implements IInterp
 		return bytes[pos++];
 	}
 
+	inline function nextString():String
+	{
+		return stringBuffer[next()];
+	}
+
 	inline function skipCommand():NeoByte
 	{
 		pos = next();
@@ -181,7 +187,7 @@ class NeoInterp implements IInterp
 
 				FLOAT;
 			case STRING:
-				str = stringBuffer[next()];
+				str = nextString();
 
 				STRING;
 
@@ -195,7 +201,7 @@ class NeoInterp implements IInterp
 				BOOL_FALSE;
 
 			case IDENT:
-				final id:String = stringBuffer[next()];
+				final id:String = nextString();
 
 				dyn = variables[id];
 
@@ -210,7 +216,7 @@ class NeoInterp implements IInterp
 
 			case FIELD:
 				final obj:Dynamic = getValue(command());
-				final f:String = stringBuffer[next()];
+				final f:String = nextString();
 
 				if (obj == null)
 					error(EInvalidAccess(f));
@@ -327,7 +333,7 @@ class NeoInterp implements IInterp
 
 				for (_ in 0...next())
 				{
-					Reflect.setField(obj, stringBuffer[next()], getValue(command()));
+					Reflect.setField(obj, nextString(), getValue(command()));
 				}
 
 				dyn = obj;
@@ -347,12 +353,12 @@ class NeoInterp implements IInterp
 				throw CBreak;
 
 			case PACKAGE:
-				scriptPackage = stringBuffer[next()];
+				scriptPackage = nextString();
 
 				VOID;
 
 			case NEW:
-				final cl:String = stringBuffer[next()];
+				final cl:String = nextString();
 				final args:Array<Dynamic> = [for (_ in 0...next()) getValue(command())];
 
 				dyn = cnew(cl, args);
@@ -435,6 +441,25 @@ class NeoInterp implements IInterp
 					dynamicBuffer[next()] = e;
 					commandSkippable();
 				}
+			case RS_IMPORT:
+				final path:String = nextString(), alias:String = nextString();
+				final func:String = nextString();
+
+				var name:String = alias ?? func ?? TypePath.getTypeName(path);
+				var type:Dynamic = resolveType(path);
+
+				final value = if (func != null)
+				{
+					get(type, func);
+				}
+				else
+					type;
+
+				variables[name] = value;
+
+				trace(path, alias, func);
+
+				VOID;
 			case id:
 				error(EUnknownCommand(id));
 		}
@@ -525,6 +550,24 @@ class NeoInterp implements IInterp
 					BOOL_FALSE;
 				else
 					BOOL_TRUE;
+			case OP_AND:
+				if (isTrue(command()))
+					if (isTrue(commandSkippable()))
+					{
+						return BOOL_TRUE;
+					}
+
+				skipCommand();
+
+				BOOL_FALSE;
+			case OP_OR:
+				if (isTrue(command()))
+				{
+					skipCommand();
+					return BOOL_TRUE;
+				}
+
+				commandSkippable();
 
 			case OP_DYNAMIC:
 				NULL;

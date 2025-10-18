@@ -162,5 +162,14 @@ class NeoTest extends Test
 
 				a;
 			});
+
+		runScript('
+		import Reflect;
+		import Reflect as AliasReflect;
+		import Reflect.getProperty;
+		import Reflect.getProperty as gp;
+
+		return Reflect == AliasReflect && Reflect.getProperty == getProperty && getProperty == gp;
+		', true);
 	}
 }
