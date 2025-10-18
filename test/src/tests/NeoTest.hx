@@ -84,6 +84,22 @@ class NeoTest extends Test
 				a;
 			});
 
+		runScript("
+		var a = '';
+		
+		for(id => i in 'RuleScript'.split(''))
+			a += '$id $i, ';
+
+		a;
+		", {
+				var a = '';
+
+				for (id => i in 'RuleScript'.split(''))
+					a += '$id $i, ';
+
+				a;
+			});
+
 		runScript('
 		var a = 1;
 		

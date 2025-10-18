@@ -347,6 +347,47 @@ using rulescript.Tools;
 					compile(e);
 				});
 
+			#if rulescript_is_git_hscript
+			case EForGen(it, e):
+				var key:String = null, value:String = null;
+				var iterator:Expr = null;
+
+				switch (it.getExpr())
+				{
+					case EBinop('in', e1, e2):
+						switch (e1.getExpr())
+						{
+							case EBinop('=>', k, v):
+								key = switch (k.getExpr())
+								{
+									case EIdent(id): id;
+									default: error(EUnsupportedExpr(k));
+								}
+
+								value = switch (v.getExpr())
+								{
+									case EIdent(id): id;
+									default: error(EUnsupportedExpr(v));
+								}
+							default:
+								error(EUnsupportedExpr(e1));
+						}
+						iterator = e2;
+					default:
+						error(EUnsupportedExpr(it));
+				}
+
+				addCmd(FOR_KEY_VALUE);
+
+				scope({
+					addLocal(key);
+					addLocal(value);
+					compile(iterator);
+
+					compile(e);
+				});
+			#end
+
 			case EWhile(cond, e):
 				addCmd(WHILE);
 
@@ -373,7 +414,6 @@ using rulescript.Tools;
 					compile(ecatch);
 				}));
 
-			// case EForGen(it, e):
 			// case EFunction(args, e, name, ret):
 			// case EImport(name, star, alias, func):
 			// case EMeta(name, args, e):

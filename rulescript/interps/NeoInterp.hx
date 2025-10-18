@@ -375,6 +375,24 @@ class NeoInterp implements IInterp
 
 				VOID;
 
+			case FOR_KEY_VALUE:
+				final kID:Int = next();
+				final vID:Int = next();
+				final iterator:KeyValueIterator<Dynamic, Dynamic> = makeKeyValueIterator(getValue(command()));
+
+				final curPos:Int = this.pos;
+
+				for (key => value in iterator)
+				{
+					this.pos = curPos;
+
+					dynamicBuffer[kID] = key;
+					dynamicBuffer[vID] = value;
+					command();
+				}
+
+				VOID;
+
 			case WHILE:
 				final curPos:Int = this.pos;
 
