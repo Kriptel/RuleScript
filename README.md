@@ -51,9 +51,19 @@ package scripts.hello.world;
 import haxe.ds.StringMap;
 
 var map = new StringMap();
-map.set("Hello","World");
+map.set("Hello", "World");
 trace(map.get("Hello")); // World
 ```
+
+### Wildcard import
+```haxe
+import haxe.ds.*;
+
+new StringMap().set("Hello","World");
+new ObjectMap().set({hello: world}, 123);
+new IntMap().set(123, "Hello World");
+```
+
 ### Import with alias
 Supports both the `as` and `in` aliases.
 ```haxe
@@ -251,7 +261,6 @@ Parser modes:
 # Limitations
 
 - Script `using` callbacks support a maximum of 8 arguments.
-- [Wildcard imports](https://haxe.org/manual/type-system-import.html#wildcard-import) are not supported.
 - AbstractMacro only supports `static` [abstract](https://haxe.org/manual/types-abstract-class.html) fields.
 
 # Install

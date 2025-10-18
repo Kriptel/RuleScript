@@ -213,12 +213,15 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 					imports.set(name, value);
 
-					if (depth == 0)
-						variables.set(name, value)
-					else
+					variables.set(name, value);
+				}
+				else
+				{
+					for (typeName in Tools.getTypesInPackage(path))
 					{
-						declared.push({n: name, old: locals.get(name)});
-						locals.set(name, {r: value});
+						final type:Dynamic = resolveType(typeName);
+						imports.set(typeName, type);
+						variables.set(typeName, type);
 					}
 				}
 			case EUsing(path):

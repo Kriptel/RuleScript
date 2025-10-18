@@ -27,5 +27,13 @@ class ImportTest extends Test
 		
 		return getProperty("Hello World","length");
 		', "Hello World".length);
+
+		runScript('
+		import example.*;
+
+		ExampleEnum;
+		Test;
+		ScriptedClassTest;
+		');
 	}
 }

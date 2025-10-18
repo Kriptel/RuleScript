@@ -1,5 +1,6 @@
 package rulescript;
 
+import rulescript.macro.TypeListMacro;
 #if !macro
 import haxe.Constraints.Function;
 import hscript.Expr;
@@ -273,6 +274,16 @@ class Tools
 	inline public static function getScriptProp(v:Dynamic):Dynamic
 	{
 		return v is Property ? cast(v, Property).value : v;
+	}
+
+	inline public static function getTypesInPackage(packageName:String):Array<String>
+	{
+		final list = TypeListMacro.getTypeList()[packageName];
+
+		if (list == null)
+			return [];
+
+		return list.copy();
 	}
 
 	#if hl

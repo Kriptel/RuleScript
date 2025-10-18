@@ -515,8 +515,7 @@ class HScriptParser extends hscript.Parser
 
 				var func:String = null;
 
-				var char = path[path.length - 1].charAt(0);
-				if (char == char.toLowerCase())
+				if (!star && path[path.length - 1].startsWithLowerCase())
 					func = path.pop();
 
 				var alias:String = null;
