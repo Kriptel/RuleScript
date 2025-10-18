@@ -368,12 +368,16 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 								__constructors[__constructors.length - 1]?.stashVars();
 
 								__constructors.push(makeSuperFunction(args, params));
+							case EIdent('__super_end'):
+								__constructors[__constructors.length - 1].restoreVars();
+								__constructors.pop().finish();
 
+								if (__constructors.length == 1)
+								{
+									__constructors.pop().restoreVars();
+								}
 							default:
 						}
-					case EFunction(_, _, '__super_end', _):
-						__constructors[__constructors.length - 1].restoreVars();
-						__constructors.pop().finish();
 
 					case EIdent('__rulescript__interpType'):
 						return 'RuleScriptInterp';
@@ -1077,7 +1081,6 @@ class RuleScriptInterpAccess extends RuleScriptAccess
 					},
 					post: () ->
 					{
-						c.restoreVars();
 						// Post exprs
 						c.f(rulescript.Tools.toExpr(EBlock(exprs.slice(superID + 1))));
 

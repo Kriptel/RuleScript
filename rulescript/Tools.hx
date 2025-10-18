@@ -102,7 +102,7 @@ class Tools
 	inline public static function isClass(t:Dynamic):Bool
 	{
 		#if cpp
-		return Type.resolveClass(Type.getClassName(t)) != null;
+		return t is Class && untyped !cast(t, Class<Dynamic>).__IsEnum();
 		#else
 		return t is Class;
 		#end

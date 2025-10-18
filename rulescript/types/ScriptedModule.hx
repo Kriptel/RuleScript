@@ -16,9 +16,11 @@ class ScriptedModule implements ScriptedType
 
 	public var pack:String;
 
-	public function new(name:String, module:Array<ModuleDecl>, ?context:Context)
+	public function new(typePath:String, module:Array<ModuleDecl>, ?context:Context)
 	{
-		this.name = name;
+		final path = Tools.parseTypePath(typePath);
+
+		this.name = path.name;
 		this.context = context;
 
 		sharedDecls = [];
@@ -31,7 +33,13 @@ class ScriptedModule implements ScriptedType
 			{
 				case DPackage(p):
 					if (pack == null)
+					{
 						pack = p.join('.');
+
+						final filePack:String = path.pack.join('.');
+						if (filePack != pack)
+							throw '`package${pack != '' ? ' $pack' : ''};` should be `package${filePack != '' ? ' $filePack' : ''};';
+					}
 					else
 						throw 'unexpected package';
 
