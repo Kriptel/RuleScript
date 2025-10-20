@@ -383,7 +383,7 @@ abstract TypePath(_TypePath)
 
 		final pack:Array<String> = [];
 
-		while (Tools.startsWithLowerCase(path[0]))
+		while (path.length > 0 && Tools.startsWithLowerCase(path[0]))
 			pack.push(path.shift());
 
 		var typeName:String = null;
@@ -391,9 +391,11 @@ abstract TypePath(_TypePath)
 		if (path.length > 1)
 			typeName = path[1];
 
+		var name = path.length > 0 ? path[0] : pack.pop();
+
 		this = {
 			pack: pack,
-			name: path[0],
+			name: name,
 			sub: typeName,
 			fullPath: typePath
 		}
