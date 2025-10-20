@@ -47,10 +47,8 @@
 
 		- Haxelib : `haxelib git rulescript https://github.com/Kriptel/RuleScript.git`
 		- Hmm : `hmm git rulescript https://github.com/Kriptel/RuleScript.git`
-	- github version (dev)
-		> [!WARNING]
-		> Dev version of RuleScript requires [git version of hscript](https://github.com/HaxeFoundation/hscript)
-
+	- github version (dev) <br>
+		 ```WARNING ⚠️ Dev version of RuleScript requires [git version of hscript](https://github.com/HaxeFoundation/hscript)```
     	- Haxelib : `haxelib git rulescript https://github.com/Kriptel/RuleScript.git dev`
     	- Hmm : `hmm git rulescript https://github.com/Kriptel/RuleScript.git dev`
 2. Adding the library to your project:
