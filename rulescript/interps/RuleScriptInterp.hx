@@ -221,7 +221,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					{
 						if (!variables.exists(typeName))
 						{
-							final type:Dynamic = resolveType(typeName);
+							final type:Dynamic = resolveType(TypePath.createString(path.split('.'), typeName));
 							imports.set(typeName, type);
 							variables.set(typeName, type);
 						}
