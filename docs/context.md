@@ -5,16 +5,25 @@
 
 ---
 
-[`VARIABLE`] : `types` - Stores all previously `defined` types.<br>
-[`VARIABLE`] : `publicVariables` - **Public** variables, everything in this array is either added using the meta `@:contextValue('public')`, or the keyword `public`.
-<br>
-[`VARIABLE`] : `staticVariables` - **Static** variables, everything in this array is either added using the meta `@:contextValue('static')`, or the keyword `static`.
+### Variables
+
+> [!WARNING]
+> `public`/`static` keywords are only converted to `@:contextValue("static" || "public")` in the `DEFAULT` parser mode.<br>
+> See: [Parser Modes](./parser.md#parser-modes)
+
+- `types` - Stores all previously `defined` types.
+
+- `publicVariables` - **Public** variables, everything in this array is either added using the meta `@:contextValue('public')`, or the keyword `public`.
+
+- `staticVariables` - **Static** variables, everything in this array is either added using the meta `@:contextValue('static')`, or the keyword `static`.
 
 ---
 
-[`VOID`] : `reset` Resets `types`, `staticVariables`, and `publicVariables`.<br>
-[`VOID`] : `resetVariables` - Resets `publicVariables` and `staticVariables`.<br>
-[`VOID`] : `resolveType` - Checks if the type has already been processed and pushed to the `types` array, if it has i'll use that instead of processing it, this helps speed things up!
+`reset` Resets `types`, `staticVariables`, and `publicVariables`.
+
+`resetVariables` - Resets `publicVariables` and `staticVariables`.
+
+`resolveType` - Checks if the type has already been processed and pushed to the `types` array, if it has i'll use that instead of processing it, this helps speed things up!
 
 ---
 
