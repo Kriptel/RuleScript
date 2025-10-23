@@ -1,7 +1,16 @@
 # RuleScripted Class
 > [!NOTE]
 > RuleScript also supports scripted classes; these can have strict and non-strict constructors.
----
+
+## Metadata
+- `:noBuild` **(Type Metadata)** Stops the `RuleScriptedClassMacro` from building the **type**.
+- `:ignoreFields` **(Type Metadata; a1:`Array<String>`)**
+- `:forceOverride` **(Type Metadata; a1:`Array<String>`)** // **(Field Metadata)**
+- `:strictScriptedConstructor`/`:strictConstructor` **(Type Metadata)**, Enforces a **`strict`** scripted constructor...
+- `:strictConstructor` **(Type Metadata)**, Enforces a **`strict`** constructor...
+
+
+## Script Example
 ### Script:
 ```haxe
 class ScriptedClass extends test.ScriptedClassTest
@@ -29,4 +38,4 @@ class ScriptedClassTest implements RuleScriptedClass extends SrcClass {}
 
 ---
 
-Also, see [`Main.hx`](../test/src/Main.hx#l53), [`ScriptedClassTest.hx`](../test/src/example/ScriptedClassTest.hx), [`ScriptedClass`](../test/scripts/scriptedClass/ScriptedClass.rhx).
+Also, see [`Main.hx`](../test/src/Main.hx#l53), [`ScriptedClassTest.hx`](../test/src/example/ScriptedClassTest.hx), and/or [`ScriptedClass`](../test/scripts/scriptedClass/ScriptedClass.rhx).

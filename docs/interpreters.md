@@ -9,11 +9,11 @@
 
 ### Neo Interpreter
 > [!WARNING]
-> Neo interpreter is currently under development. 
+> [Neo Interpreter](#neo-interpreter) is currently under development. 
 > Its functionality is limited compared to other interpreters.
 
 > [!NOTE]
-> Neo interpreter is a successor to the previous bytecode interpreter, fixing its stability, performance, and readability problems.
+> [Neo Interpreter](#neo-interpreter) is a successor to the previous bytecode interpreter, fixing its stability, performance, and readability problems.
 
 ```haxe
 var script:RuleScript = new RuleScript(new rulescript.interps.NeoInterp());
@@ -49,3 +49,5 @@ script.execute('trace("Hello World")'); // Returns: "Hello World"
 ```
 
 ---
+
+<!-- orbl was here -->

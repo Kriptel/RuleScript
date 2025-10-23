@@ -1,4 +1,13 @@
-# Advanced
+# Advanced Features
+
+### Table of Contents:
+- [String interpolation](#string-interpolation)<!-- weird fix, i guess.... -->
+- [Regular expressions](#regular-expressions)
+- [Typedefs](#typedefs)
+- [`??` and `??=` operators](#-and--operators)
+- [Rest](#rest)
+
+---
 
 ### String interpolation
 ```haxe
@@ -15,14 +24,19 @@ var a = {
 trace('${a.a}: ${a.b() + ' ' + a.c(true)}'); // RuleScript: Hello World
 ```
 
+---
+
 ### Regular expressions
 ```haxe
 ~/haxe/i;
 ```
 
+---
+
 ### Typedefs
 
-Allows you to set the type path to any value. Has a higher resolve priority than classes, abstracts, or enums, but lower than `resolveScript`
+> [!NOTE]
+> Allows you to set the type path to any value. Has a higher resolve priority than classes, abstracts, or enums, but lower than `resolveScript`.
 
 ```haxe
 Typedefs.register('hello.world.HxParser', HxParser);
@@ -31,6 +45,8 @@ var script = new RuleScript();
 trace(script.execute('hello.world.HxParser') == HxParser); // true
 ```
 
+
+---
 
 ### `??` and `??=` operators
 ```haxe
@@ -46,6 +62,8 @@ a ??= 'world';
 trace(a) // world
 ```
 
+---
+
 ### Rest
 ```haxe
 var f = function(hello:String, ...rest:Dynamic)
@@ -59,3 +77,9 @@ trace(f('Rulescript',...['Hello','World','!'])); // Rulescript: Hello World !
 ```
 
 ---
+<br>
+<div align="center">
+
+[↑ To The Top ↑](#advanced-features)
+
+</div>
