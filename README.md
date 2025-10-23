@@ -26,7 +26,8 @@
 - [Rest](./docs/advanced.md#rest)
 
 ### Other
-- [Context](./docs/context)
+- [Context](./docs/context.md)
+- [Interpreters](./docs/interpreters.md)
 - [HxParser Settings](./docs/advanced.md#hxparser-settings)
 - [Limitations](#limitations)
 - [Install](#install)
