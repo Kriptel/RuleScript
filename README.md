@@ -16,6 +16,7 @@
   
 ### Advanced
 - [Abstracts](./docs/abstracts.md)
+- [Context](./docs/context.md)
 - [Interpreters](./docs/interpreters.md)
 - [RuleScriptedClass](./docs/scripted-classes.md)
 - [Scripted Classes](./docs/scripted-classes.md#rulescriptedclass)
@@ -26,9 +27,7 @@
 - [Rest](./docs/advanced.md#rest)
 
 ### Other
-- [Context](./docs/context.md)
-- [Interpreters](./docs/interpreters.md)
-- [HxParser Settings](./docs/advanced.md#hxparser-settings)
+- [HxParser Settings](./docs/parser.md)
 - [Limitations](#limitations)
 - [Install](#install)
 

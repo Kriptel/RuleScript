@@ -1,4 +1,4 @@
-# Abstracts in Scripts
+# Abstracts
 
 `RuleScriptAbstracts.txt` allows you to use abstracts in your code. 
 

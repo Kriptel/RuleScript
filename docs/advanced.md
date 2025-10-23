@@ -1,3 +1,5 @@
+# Advanced
+
 ### String interpolation
 ```haxe
 var a = 'Hello';
@@ -56,22 +58,4 @@ trace(f('Rulescript','Hello','World','!')); // Rulescript: Hello World !
 trace(f('Rulescript',...['Hello','World','!'])); // Rulescript: Hello World !
 ```
 
-### HxParser settings
-
-The parser can be configured, some functions can be disabled or enabled.
-
-Use the `setParameters` function to configure the parser.
-
-List of parameters:
-- allowJSON
-- allowMetadata
-- allowTypes
-- allowPackage
-- allowImport
-- allowUsing
-- allowStringInterpolation
-- allowTypePath
-
-Parser modes:
-- `HxParserMode.DEFAULT`
-- `HxParserMode.MODULE`
+---

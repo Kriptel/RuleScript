@@ -1,11 +1,9 @@
 # Interpreters
 
-Table of Contents:
+### Table of Contents:
 - [Neo Interpreter](#neo-interpreter) (IN DEVELOPMENT)
 - [Bytecode Interpreter](#bytecode-interpreter)
 - [RuleScript Interpreter](#rulescript-interpreter)
-
-<br>
 
 ---
 
