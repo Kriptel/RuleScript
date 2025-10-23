@@ -5,8 +5,8 @@ Documentation for parsers...
 ## Settings
 
 > [!NOTE]
-> The parser can be configured, some functions can be disabled or enabled.<br>
-> Use the `setParameters` function to configure the parser.
+> The parser can be configured, some methods can be **enabled** or **disabled**.<br>
+> Use the `setParameters` methods to configure the parser rules.
 
 ### List of parameters:
 

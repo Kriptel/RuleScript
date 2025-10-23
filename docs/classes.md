@@ -1,7 +1,8 @@
-### RuleScriptedClass
-RuleScript supports scripted classes; these can have strict and non-strict constructors.
-
-Script :
+# RuleScripted Class
+> [!NOTE]
+> RuleScript also supports scripted classes; these can have strict and non-strict constructors.
+---
+### Script:
 ```haxe
 class ScriptedClass extends test.ScriptedClassTest
 {
@@ -20,9 +21,12 @@ class ScriptedClass extends test.ScriptedClassTest
     }
 }
 ```
-Source :
+---
+### Source Code:
 ```haxe
 class ScriptedClassTest implements RuleScriptedClass extends SrcClass {}
 ```
 
-See [`Main.hx`](./test/src/Main.hx#l53), [`ScriptedClassTest.hx`](./test/src/example/ScriptedClassTest.hx), [`ScriptedClass`](./test/scripts/scriptedClass/ScriptedClass.rhx).
+---
+
+Also, see [`Main.hx`](../test/src/Main.hx#l53), [`ScriptedClassTest.hx`](../test/src/example/ScriptedClassTest.hx), [`ScriptedClass`](../test/scripts/scriptedClass/ScriptedClass.rhx).
