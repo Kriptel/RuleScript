@@ -23,8 +23,10 @@ Documentation for parsers...
 > [!NOTE]
 > To **set** the parser **mode**, you'll need to:
 > ```haxe
-> parser.mode = DEFAULT; // Default
-> parser.mode = MODULE; // Modules
+> import rulescript.parsers.HxParser.HxParserMode;
+>
+> parser.mode = HxParserMode.DEFAULT; // Default
+> parser.mode = HxParserMode.MODULE; // Modules
 > ```
 
 - `HxParserMode.DEFAULT` - Used for parsing **Normal** scripts...
