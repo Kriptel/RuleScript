@@ -4,7 +4,7 @@
 
 #
 
-RuleScript is an [Hscript](https://github.com/HaxeFoundation/hscript) addon featuring script classes, imports, usings, properties, string interpolation and more.
+RuleScript is an [HScript](https://github.com/HaxeFoundation/hscript) addon featuring script classes, imports, usings, properties, string interpolation and more.
 
 ## Features
 
