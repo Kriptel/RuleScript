@@ -1,7 +1,16 @@
 # Context
 
 > [!NOTE]
-> `Context` is a type store that helps avoid recompiling the same types, it is also used for storing shared and static variables for scripts using the same `Context` instance.
+> `Context` is a type store that helps avoid recompiling the same types, it is also used for storing public and static variables for scripts using the same `Context` instance.
+
+> [!IMPORTANT]
+> If you want to use **public** / **static** variables in different scripts, you'll need to create a **static** instance of the `Context` class
+>```haxe
+>import rulescript.Context;
+>
+>public static var context:Context = new Context();
+>```
+>Then change the `interp`'s `access.context` to that static instance.
 
 ---
 
