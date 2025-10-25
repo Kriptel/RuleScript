@@ -1,6 +1,10 @@
-# RuleScript
+<p align="center">
+  <img src="./docs/logo.png" width="60%"/>
+</p>
 
-[Hscript](https://github.com/HaxeFoundation/hscript) addon featuring script classes, imports, usings, properties, string interpolation and more.
+#
+
+RuleScript is an [Hscript](https://github.com/HaxeFoundation/hscript) addon featuring script classes, imports, usings, properties, string interpolation and more.
 
 ## Features
 
