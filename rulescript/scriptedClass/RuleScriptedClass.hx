@@ -18,11 +18,20 @@ interface RuleScriptedClass extends ScriptedType
 @:forward
 abstract Access(RuleScriptedClass)
 {
+	/**
+	 * Returns the contents of the wrapper with the given type
+	 * 
+	 * @param t The given type.
+	 * @return T
+	 */
 	inline public function self<T:RuleScriptedClass>(?t:T):T
 	{
 		return cast this;
 	}
 
+	/**
+	 * The constructor of the scripted class, this is also referred to as `new`. 
+	 */
 	public var constructor(get, set):(args:Array<Dynamic>) -> Dynamic;
 
 	public function new(cl:RuleScriptedClass)
@@ -42,6 +51,13 @@ abstract Access(RuleScriptedClass)
 		return this.setVariable(variable, value);
 	}
 
+	/**
+	 * This method allows you to create an instance of a scripted class.
+	 * If unsuccessful, it'll throw an error. 
+	 * 
+	 * @param args The scripted class instance arguments. (This is an optional parameter)
+	 * @return Returns an instance of `Access`.
+	 */
 	inline public function createInstance(?args:Array<Dynamic>):Access
 	{
 		return abstract is ScriptedClass ? cast(this, ScriptedClass).createInstance(args) : throw 'createInstance is only allowed for ScriptedClass';
