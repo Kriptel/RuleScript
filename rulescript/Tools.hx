@@ -1,6 +1,5 @@
 package rulescript;
 
-import rulescript.macro.TypeListMacro;
 #if !macro
 import haxe.Constraints.Function;
 import hscript.Expr;
@@ -278,7 +277,7 @@ class Tools
 
 	inline public static function getTypesInPackage(packageName:String):Array<String>
 	{
-		final list = TypeListMacro.getTypeList()[packageName];
+		final list = rulescript.macro.TypeListMacro.getTypeList()[packageName];
 
 		if (list == null)
 			return [];

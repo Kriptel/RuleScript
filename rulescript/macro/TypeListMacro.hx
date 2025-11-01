@@ -1,7 +1,6 @@
 package rulescript.macro;
 
 import haxe.rtti.Meta;
-import rulescript.Tools.TypePath;
 
 using StringTools;
 
@@ -10,9 +9,9 @@ import haxe.macro.Context;
 import haxe.macro.Expr;
 #end
 
+@:keep
 class TypeListMacro
 {
-	#if !macro
 	static var list(get, null):Map<String, Array<String>>;
 
 	static function get_list():Map<String, Array<String>>
@@ -21,7 +20,7 @@ class TypeListMacro
 		{
 			list = [];
 
-			var typeList:Array<String> = Meta.getType(TypeListMacro).typeList.map(function(f:Dynamic):String return f);
+			var typeList:Array<String> = (Meta.getType(rulescript.macro.TypeListMacro).typeList[0] : String).split(';');
 
 			for (type in typeList)
 			{
@@ -37,9 +36,8 @@ class TypeListMacro
 
 		return list;
 	}
-	#end
 
-	public static macro function getTypeList():ExprOf<Map<String, Array<String>>>
+	public static macro function getTypeList():Expr
 	{
 		Context.onGenerate(_ ->
 		{
@@ -48,19 +46,24 @@ class TypeListMacro
 				case TInst(t, params):
 					if (!t.get().meta.has('typeList'))
 						t.get().meta.add('typeList', [
-							for (t in Context.getAllModuleTypes())
+							macro $v
 							{
-								var typeName:String = null;
-								switch (t)
-								{
-									case TClassDecl(c):
-										typeName = c.toString();
-									case TEnumDecl(e):
-										typeName = e.toString();
-									default:
-								}
-								if (typeName != null && !typeName.endsWith('_Fields_') && !typeName.endsWith('_Impl_'))
-									macro $v{typeName};
+								[
+									for (t in Context.getAllModuleTypes())
+									{
+										var typeName:String = null;
+										switch (t)
+										{
+											case TClassDecl(c):
+												typeName = c.toString();
+											case TEnumDecl(e):
+												typeName = e.toString();
+											default:
+										}
+										if (typeName != null && !typeName.endsWith('_Fields_') && !typeName.endsWith('_Impl_'))
+											typeName;
+									}
+								].join(';')
 							}
 						], Context.currentPos());
 				default:

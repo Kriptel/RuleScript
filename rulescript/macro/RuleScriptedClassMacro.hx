@@ -165,7 +165,8 @@ class RuleScriptedClassMacro
 				name: name,
 				access: [APublic],
 				kind: FFun(MacroTools.toFunction(func)),
-				pos: pos
+				pos: pos,
+				meta: (name == 'get___rulescript_type') ? [{name: ':noCompletion', pos: pos}] : []
 			});
 
 		return fields;
