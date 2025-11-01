@@ -91,7 +91,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 		if (v == null && !variables.exists(id))
 		{
-			v = get(superInstance, id);
+			if (superInstance != null)
+				v = get(superInstance, id);
 
 			// SHARED VARIABLES
 			if (v == null && context != null)
