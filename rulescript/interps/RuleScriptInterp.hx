@@ -376,8 +376,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 								__constructors.push(makeSuperFunction(args, params));
 							case EIdent('__super_end'):
-								__constructors[__constructors.length - 1].restoreVars();
 								__constructors.pop().finish();
+								__constructors[__constructors.length - 1].restoreVars();
 
 								if (__constructors.length == 1)
 								{
