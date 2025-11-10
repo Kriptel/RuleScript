@@ -42,16 +42,6 @@ RuleScript is an [HScript](https://github.com/HaxeFoundation/hscript) addon feat
 
 ## Install
 
-> [!WARNING]
-> The [development](https://github.com/Kriptel/RuleScript/tree/dev) version of [RuleScript](https://github.com/Kriptel/RuleScript/) requires the `GIT` version of [HScript](https://github.com/HaxeFoundation/hscript).<br>
-> Which can be installed by running the following:
-> ```txt
-> haxelib git hscript https://github.com/HaxeFoundation/hscript.git
-> ```
-> or
-> ```txt
-> hmm git hscript https://github.com/HaxeFoundation/hscript.git
-> ```
 1. Installing the library: 
 	- **HaxeLib**
  		- Haxelib ● `haxelib install rulescript`
