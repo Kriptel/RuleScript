@@ -1,7 +1,7 @@
 # Context
 
 > [!NOTE]
-> `Context` is a type store that helps avoid recompiling the same types, It's also used for storing public and static variables for scripts using the same `Context` instance.
+> `Context` is a type store that helps avoid recompiling the same types; it's also used for storing public and static variables for scripts using the same `Context` instance.
 
 > [!IMPORTANT]
 > If you want to use **public** / **static** variables in different scripts, you'll need to create a **static** instance of the `Context` class
