@@ -59,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `rulescript.Parser` typedef.
 - `rulescript.HxParser` typedef.
 - Converter macro.
+- herobrine was removed
 
 ### Deprecated
 - rulescript.RulescriptInterp.
