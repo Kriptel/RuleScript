@@ -1,7 +1,7 @@
 # Advanced Features
 
 ### Table of Contents:
-- [String interpolation](#string-interpolation)<!-- weird fix, i guess.... -->
+- [String interpolation](#string-interpolation)<!-- stops one of my vscode extensions from automatically filling the TOC-->
 - [Regular expressions](#regular-expressions)
 - [Typedefs](#typedefs)
 - [`??` and `??=` operators](#-and--operators)
@@ -36,7 +36,7 @@ trace('${a.a}: ${a.b() + ' ' + a.c(true)}'); // RuleScript: Hello World
 ### Typedefs
 
 > [!NOTE]
-> Allows you to set the type path to any value. Has a higher resolve priority than classes, abstracts, or enums, but lower than `resolveScript`.
+> Allows you to set the type path to any value. Typedefs have a higher resolution priority than classes, abstracts, or enums, but lower than `resolveScript`.
 
 ```haxe
 Typedefs.register('hello.world.HxParser', HxParser);
@@ -59,7 +59,7 @@ trace(a); // hello
 
 a = null;
 a ??= 'world';
-trace(a) // world
+trace(a); // world
 ```
 
 ---

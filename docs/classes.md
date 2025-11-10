@@ -1,13 +1,12 @@
 # RuleScripted Class
 > [!NOTE]
-> RuleScript also supports scripted classes; these can have strict and non-strict constructors.
+> RuleScript also supports scripted classes, which can have either strict or non-strict constructors.
 
 ## Metadata
 - `:noBuild` **(Type Metadata)** Stops the `RuleScriptedClassMacro` from building the **type**.
 - `:ignoreFields` **(Type Metadata; a1:`Array<String>`)**
 - `:forceOverride` **(Type Metadata; a1:`Array<String>`)** // **(Field Metadata)**
-- `:strictScriptedConstructor`/`:strictConstructor` **(Type Metadata)**, Enforces a **`strict`** scripted constructor...
-- `:strictConstructor` **(Type Metadata)**, Enforces a **`strict`** constructor...
+- `:strictScriptedConstructor`/`:strictConstructor` **(Type Metadata)** Enforces a **strict** scripted constructor.
 
 
 ## Script Example
@@ -38,4 +37,11 @@ class ScriptedClassTest implements RuleScriptedClass extends SrcClass {}
 
 ---
 
-Also, see [`Main.hx`](../test/src/Main.hx#l53), [`ScriptedClassTest.hx`](../test/src/example/ScriptedClassTest.hx), and/or [`ScriptedClass`](../test/scripts/scriptedClass/ScriptedClass.rhx).
+See also: [`Main.hx`](../test/src/Main.hx#l53), [`ScriptedClassTest.hx`](../test/src/example/ScriptedClassTest.hx), and/or [`ScriptedClass`](../test/scripts/scriptedClass/ScriptedClass.rhx).
+
+<br>
+<div align="center">
+
+[↑ To The Top ↑](#rulescripted-class)
+
+</div>
