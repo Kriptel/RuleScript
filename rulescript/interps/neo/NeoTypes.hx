@@ -36,6 +36,9 @@ enum abstract NeoByte(Int) from Int to Int
 	var BREAK;
 	var CONTINUE;
 	var FUNCTION;
+	var ANON_FUNCTION;
+	var CONSTRUCTOR;
+	var CONSTRUCTOR_SUPER_CALL;
 	var RETURN;
 	var RETURN_VOID;
 	var ARRAY;
@@ -116,11 +119,12 @@ enum NeoError
 	ENullAccess;
 	EInvalidContinue;
 	EInvalidBreak;
+	MissingRequiredArgument(argsNum:Int, minArgs:Int);
 }
 
 enum LoopControl
 {
-	CReturn(v:Dynamic);
+	CReturn(v:NeoByte);
 	CContinue;
 	CBreak;
 }

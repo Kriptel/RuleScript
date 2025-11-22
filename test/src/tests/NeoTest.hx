@@ -171,5 +171,34 @@ class NeoTest extends Test
 
 		return Reflect == AliasReflect && Reflect.getProperty == getProperty && getProperty == gp;
 		', true);
+
+		runScript('
+		function a(a:Bool,?b:Int,...args:Int){
+			var x = 1;
+			x += (a ? 2 : 4);	
+			x += b;
+			x += { var i = 0;
+				for(arg in args) 
+					i += arg;
+				i; }
+			x;
+		}
+
+		var b = function(a:Bool,?b:Int,...args:Int){
+			var x = 1;
+			x += (a ? 2 : 4);	
+			x += b;
+			x += { var i = 0;
+				for(arg in args) 
+					i += arg;
+				i; }
+			x;
+		}
+
+		var x = 330;
+		var a = a(true,321, 0,1,2,3);
+		var b = b(true,321, 0,1,2,3);
+		return x == a && a == b;
+		', true);
 	}
 }

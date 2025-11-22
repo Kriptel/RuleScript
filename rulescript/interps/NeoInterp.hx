@@ -19,7 +19,6 @@ import rulescript.types.ScriptedTypedef;
  * TODO:
  * Do-while
  * ForGen
- * Function
  * Import
  * Meta
  * New
@@ -100,17 +99,7 @@ class NeoInterp implements IInterp
 	{
 		compiler.compileExpr(expr);
 
-		return try
-		{
-			return getValue(command());
-		}
-		catch (c:LoopControl)
-			switch (c)
-			{
-				case CReturn(v): return v;
-				case CContinue: throw EInvalidContinue;
-				case CBreak: throw EInvalidBreak;
-			}
+		return getValue(commandReturn());
 	}
 
 	function getValue(type:NeoByte):Dynamic
@@ -144,6 +133,11 @@ class NeoInterp implements IInterp
 		return getValue(type) == true;
 	}
 
+	inline function current():NeoByte
+	{
+		return bytes[pos];
+	}
+
 	inline function next():NeoByte
 	{
 		return bytes[pos++];
@@ -152,6 +146,11 @@ class NeoInterp implements IInterp
 	inline function nextString():String
 	{
 		return stringBuffer[next()];
+	}
+
+	inline function nextBool():Bool
+	{
+		return next() == BOOL_TRUE;
 	}
 
 	inline function skipCommand():NeoByte
@@ -164,6 +163,24 @@ class NeoInterp implements IInterp
 	{
 		next();
 		return command();
+	}
+
+	inline function commandReturn():NeoByte
+	{
+		return try
+		{
+			command();
+		}
+		catch (c:LoopControl)
+			switch (c)
+			{
+				case CReturn(v):
+					return v;
+				case CContinue:
+					throw EInvalidContinue;
+				case CBreak:
+					throw EInvalidBreak;
+			}
 	}
 
 	function command():NeoByte
@@ -344,7 +361,7 @@ class NeoInterp implements IInterp
 				command();
 
 			case RETURN:
-				throw CReturn(getValue(command()));
+				throw CReturn(command());
 
 			case CONTINUE:
 				throw CContinue;
@@ -457,9 +474,26 @@ class NeoInterp implements IInterp
 
 				variables[name] = value;
 
-				trace(path, alias, func);
-
 				VOID;
+
+			case FUNCTION:
+				final funcName:String = nextString();
+
+				final func = makeFunction();
+
+				variables[funcName] = func;
+
+				dyn = func;
+
+				DYNAMIC;
+
+			case ANON_FUNCTION:
+				final func = makeFunction();
+
+				dyn = func;
+
+				DYNAMIC;
+
 			case id:
 				error(EUnknownCommand(id));
 		}
@@ -635,7 +669,7 @@ class NeoInterp implements IInterp
 
 	function error(e:NeoError):Dynamic
 	{
-		throw e;
+		throw {e: e, line: curLine};
 	}
 
 	function resolve(id:String):Dynamic
@@ -703,6 +737,60 @@ class NeoInterp implements IInterp
 		if (v.hasNext == null || v.next == null)
 			error(EInvalidIterator(v));
 		return v;
+	}
+
+	function makeFunction():Dynamic
+	{
+		final argsNum:Int = next();
+		final minArgs:Int = next();
+
+		final isRest:Bool = nextBool();
+
+		final pos:Int = this.pos + 1; // The skip command is not needed here.
+
+		skipCommand();
+
+		final endPos:Int = this.pos;
+
+		final func:Dynamic = function(args:Array<Dynamic>)
+		{
+			final lastPos:Int = this.pos;
+
+			this.pos = pos;
+
+			if (args == null)
+				args = [];
+
+			if (args.length < minArgs)
+			{
+				error(MissingRequiredArgument(args.length, minArgs));
+			}
+
+			for (i in 0...argsNum + 1)
+			{
+				var argValue = (i < args.length) ? args[i] : null;
+				dynamicBuffer[next()] = argValue;
+			}
+
+			final type = command();
+
+			this.pos = lastPos;
+
+			return getValue(type);
+		}
+
+		return if (isRest)
+		{
+			Tools.makeRestFunction(func, argsNum);
+		}
+		else
+		{
+			#if hl
+			Tools.__hl_makeVarArgs(func, argsNum);
+			#else
+			Reflect.makeVarArgs(func);
+			#end
+		}
 	}
 
 	function resolveType(path:String)

@@ -1362,7 +1362,7 @@ class BytecodeInterp implements IInterp
 
 					var f:Dynamic = if (isRest)
 					{
-						makeRest(f, argNum);
+						Tools.makeRestFunction(f, argNum);
 					}
 					else
 					{
@@ -1414,7 +1414,7 @@ class BytecodeInterp implements IInterp
 
 				var f:Dynamic = if (isRest)
 				{
-					makeRest(f, argNum);
+					Tools.makeRestFunction(f, argNum);
 				}
 				else
 				{
@@ -1466,7 +1466,7 @@ class BytecodeInterp implements IInterp
 
 				var f:Dynamic = if (isRest)
 				{
-					makeRest(f, argNum);
+					Tools.makeRestFunction(f, argNum);
 				}
 				else
 				{
@@ -1515,7 +1515,7 @@ class BytecodeInterp implements IInterp
 
 				var f:Dynamic = if (isRest)
 				{
-					makeRest(f, argNum);
+					Tools.makeRestFunction(f, argNum);
 				}
 				else
 				{
@@ -1591,25 +1591,6 @@ class BytecodeInterp implements IInterp
 		}
 
 		return getScriptProp(Reflect.getProperty(o, f));
-	}
-
-	function makeRest(f:Array<Dynamic>->Dynamic, argNum:Int):Dynamic
-	{
-		final restId:Int = argNum - 1;
-		final f = function(args:Array<Dynamic>)
-		{
-			return if (args.length > argNum)
-			{
-				final newArgs:Array<Dynamic> = args.slice(0, restId);
-				newArgs.push(args.slice(restId, args.length));
-
-				return f(newArgs);
-			}
-			else
-				f(args);
-		};
-
-		return Reflect.makeVarArgs(f);
 	}
 
 	function makeIterator(obj:Dynamic):Iterator<Dynamic>

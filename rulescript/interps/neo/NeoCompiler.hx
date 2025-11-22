@@ -117,12 +117,14 @@ using rulescript.Tools;
 			case EVar(n, t, e, _, isFinal):
 				addCmd(VAR);
 
-				addLocal(n);
+				var local = addHiddenLocal(n);
 
 				if (e == null)
 					addCmd(NULL)
 				else
 					compile(e);
+
+				local.show();
 
 			case EBlock(exprs):
 				addCmd(BLOCK);
@@ -434,7 +436,39 @@ using rulescript.Tools;
 				addString(alias);
 				addString(func);
 
-			// case EFunction(args, e, name, ret):
+			case EFunction(args, e, name, ret):
+				switch (name)
+				{
+					// case 'new':
+					// addCmd(CONSTRUCTOR);
+					case null:
+						addCmd(ANON_FUNCTION);
+					default:
+						addCmd(FUNCTION);
+						addString(name);
+				};
+
+				addInt(args.length);
+
+				var minArgs:Int = 0;
+				for (arg in args)
+				{
+					if (!arg.opt)
+						minArgs++;
+				}
+
+				addInt(minArgs);
+
+				final isRest:Bool = (args.length > 0 && args[args.length - 1].t.match(CTPath(["haxe", "Rest"], _)));
+
+				addBool(isRest);
+
+				skippable(scope({
+					for (arg in args)
+						addLocal(arg.name);
+
+					skippable(compile(e));
+				}));
 			// case EMeta(name, args, e):
 			// case EProp(n, g, s, t, e, global):
 			// case ESwitch(e, cases, defaultExpr):
@@ -464,6 +498,11 @@ using rulescript.Tools;
 	inline function addInt(i:Int):Int
 	{
 		return interp.bytes.push(i);
+	}
+
+	inline function addBool(b:Bool):Int
+	{
+		return interp.bytes.push(b ? BOOL_TRUE : BOOL_FALSE);
 	}
 
 	inline function setInt(pos:Int, v:Int):Int
@@ -498,6 +537,14 @@ using rulescript.Tools;
 		setLocal(name, id);
 
 		return id;
+	}
+
+	inline function addHiddenLocal(name:String):{id:Int, show:Void->Void}
+	{
+		var id = linkDynamic(null);
+		addLink(id);
+
+		return {id: id, show: () -> setLocal(name, id)};
 	}
 
 	inline function linkFloat(fl:Float):Int

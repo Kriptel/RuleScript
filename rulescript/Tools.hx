@@ -63,6 +63,25 @@ class Tools
 		#end
 	}
 
+	public static function makeRestFunction(f:Array<Dynamic>->Dynamic, argNum:Int):Dynamic
+	{
+		final restId:Int = argNum - 1;
+		final f = function(args:Array<Dynamic>)
+		{
+			return if (args.length > argNum)
+			{
+				final newArgs:Array<Dynamic> = args.slice(0, restId);
+				newArgs.push(args.slice(restId, args.length));
+
+				return f(newArgs);
+			}
+			else
+				f(args);
+		};
+
+		return Reflect.makeVarArgs(f);
+	}
+
 	#if hscriptPos
 	public static function toExpr(e:ExprDef, ?parentExpr:Expr):Expr
 	{
