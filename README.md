@@ -43,26 +43,23 @@ RuleScript is an [HScript](https://github.com/HaxeFoundation/hscript) addon feat
 ## Install
 
 1. Installing the library: 
-	- haxelib version
-
- 		- Haxelib : `haxelib install rulescript`
-		- Hmm : `hmm haxelib rulescript`
-	- github version
-
-		- Haxelib : `haxelib git rulescript https://github.com/Kriptel/RuleScript.git`
-		- Hmm : `hmm git rulescript https://github.com/Kriptel/RuleScript.git`
-	- github version (dev) <br>
-		 ```WARNING ⚠️ Dev version of RuleScript requires [git version of hscript](https://github.com/HaxeFoundation/hscript)```
-    	- Haxelib : `haxelib git rulescript https://github.com/Kriptel/RuleScript.git dev`
-    	- Hmm : `hmm git rulescript https://github.com/Kriptel/RuleScript.git dev`
+	- **HaxeLib**
+ 		- Haxelib ● `haxelib install rulescript`
+		- Hmm ● `hmm haxelib rulescript`
+	- `GIT` **(master)**:
+		- Haxelib ● `haxelib git rulescript https://github.com/Kriptel/RuleScript.git`
+		- Hmm ● `hmm git rulescript https://github.com/Kriptel/RuleScript.git`
+	- `GIT` **(dev)**:
+    	- Haxelib ● `haxelib git rulescript https://github.com/Kriptel/RuleScript.git dev`
+    	- Hmm ● `hmm git rulescript https://github.com/Kriptel/RuleScript.git dev`
 2. Adding the library to your project:
     
-    Hxml :
+    **Hxml** :
     ```hxml
     -lib rulescript
     ```
     
-    Lime/OpenFL :
+    **Lime**/**OpenFL** :
     ```xml
     <haxelib name="rulescript"/>
     ```

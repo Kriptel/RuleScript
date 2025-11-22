@@ -21,7 +21,7 @@
 > ```
 > script:
 > ```haxe
-> new hello.TestAbstract(); // is the equivalent of example.TestAbstract
+> new hello.TestAbstract(); // which is the equivalent of example.TestAbstract
 > ```
 
 ---
@@ -62,3 +62,10 @@ trace(HelloWorldAbstract.rulescriptPrint()); // Hello World
 ---
 
 More templates can be found in [`test/src/Main.hx`](../test/src/Main.hx).
+
+<br>
+<div align="center">
+
+[↑ To The Top ↑](#abstracts)
+
+</div>

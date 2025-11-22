@@ -85,7 +85,8 @@ using Reflect;
 
 var a = {
   "Hello":"World"
-}
+};
+
 trace(a.getProperty("Hello")); // World
 ```
 
@@ -93,11 +94,15 @@ trace(a.getProperty("Hello")); // World
 
 ### Property
 > [!NOTE]
-> To set public or static variables you'll need to add the respective keyword, either `public` or `static`.<br>
-> Public / Static Variables are save into the context, so you'll need to use the same context on another script, for you to be able to access its variables...
+> To set `public`/`static` variables you'll need to add the respective keyword, either `public` or `static`.
+> 
+> `public` and `static` variables are saved into the context, so you'll need to use the same context on another script, so that you can access their variables later.
+>
+> You can also apply the metadata `@:contextValue('static')` or `@:contextValue('public')`.
 
 > [!WARNING]
 > There is a known issue with public/static `get`/`set` variables not being able to find the `get_v1` & `get_v2` functions, even though they are there...<br>
+> 
 > A work around for this would be defining the `get` & `set` functions before defining the variable... 
 ```haxe
 var _a = 'Hello World';

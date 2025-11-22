@@ -1,23 +1,21 @@
 # Parser
 
-Documentation for parsers...
-
 ## Settings
 
-> [!NOTE]
-> The parser can be configured, some methods can be **enabled** or **disabled**.<br>
-> Use the `setParameters` methods to configure the parser rules.
+>[!IMPORTANT]
+> You can configure the parser by enabling or disabling specific methods.<br>
+> Use the `setParameters` method to adjust its behavior.
 
 ### List of parameters:
 
-- `allowJSON` - **Whether to allow `JSON`s or not...**
+- `allowJSON` - **Whether to allow `JSONs` or not...**
 - `allowMetadata` - **Whether to allow `Metadata` or not...** 
 - `allowTypes` - **Whether to allow `Types` or not...**  
-- `allowPackage` - **Whether to allow `Package`'s or not...** 
+- `allowPackage` - **Whether to allow `Packages` or not...** 
 - `allowImport` - **Whether to allow `Importing` or not...** 
 - `allowUsing` - **Whether to allow `Using` or not...** 
 - `allowStringInterpolation` - **Whether to allow `String Interpolation` or not...** 
-- `allowTypePath`  - Whether to allow `Type Path` or not... 
+- `allowTypePath` - **Whether to allow `Type Path` or not...**
 
 ## Parser modes:
 > [!NOTE]
