@@ -5,4 +5,5 @@ enum EnumTest<T>
 	HELLO;
 	WORLD<T>;
 	RULESCRIPT<T>(arg1:Float,arg2:T);
+	ABC(a:EnumTest);
 }

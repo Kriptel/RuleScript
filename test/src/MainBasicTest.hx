@@ -44,9 +44,14 @@ function test()
 		Test.callNum = 0;
 		script.interp = interp.interp;
 
-		for (test in tests)
+		try
+			for (test in tests)
+			{
+				test.test();
+			}
+		catch (e)
 		{
-			test.test();
+			trace(e.details());
 		}
 	}
 

@@ -50,6 +50,8 @@ class ScriptedModule implements ScriptedType
 					types[c.name] = new ScriptedClass(c, this);
 				case DAbstract(a):
 					types[a.name] = new ScriptedAbstract(a, this);
+				case DEnum(e):
+					types[e.name] = new ScriptedEnum(e, this);
 				case DTypedef(c):
 					switch (c.t)
 					{

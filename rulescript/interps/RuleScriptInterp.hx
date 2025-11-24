@@ -7,6 +7,7 @@ import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.types.IRuleScriptCustomAccessor;
 import rulescript.types.Property;
 import rulescript.types.ScriptedAbstract;
+import rulescript.types.ScriptedEnum;
 import rulescript.types.ScriptedType;
 import rulescript.types.ScriptedTypeUtil;
 import rulescript.types.ScriptedTypedef;
@@ -352,7 +353,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						args.push(this.expr(p));
 				}
 
-				switch (hscript.Tools.expr(e))
+				switch (e.getExpr())
 				{
 					case EField(e, f):
 						var obj = this.expr(e);
@@ -519,7 +520,33 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					}
 				}
 				return f;
+			case ESwitch(e, cases, defaultExpr):
+				var val:Dynamic = this.expr(e);
+				var match = false;
+				for (c in cases)
+				{
+					var old = declared.length;
 
+					for (v in c.values)
+						if (caseMatch(v, e, val))
+						{
+							match = true;
+							break;
+						}
+						else
+							restore(old);
+
+					if (match)
+					{
+						val = this.expr(c.expr);
+						break;
+					}
+
+					restore(old);
+				}
+				if (!match)
+					val = defaultExpr == null ? null : this.expr(defaultExpr);
+				return val;
 			default:
 				return super.expr(expr);
 		}
@@ -613,11 +640,20 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		if (o is IRuleScriptCustomAccessor)
 			return cast(o, IRuleScriptCustomAccessor).getField(f);
 
-		if (o is RuleScriptedClass)
+		if (o is ScriptedType)
 		{
-			var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
-			if (cl.variableExists(f))
-				return getScriptProp(cl.getVariable(f));
+			switch (cast(o, ScriptedType).__rulescript_type)
+			{
+				case CLASS:
+					var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
+					if (cl.variableExists(f))
+						return getScriptProp(cl.getVariable(f));
+				case ENUM:
+					var en:ScriptedEnum = cast(o, ScriptedEnum);
+
+					return en.getEnumConstructor(f);
+				default:
+			}
 		}
 
 		var prop:Dynamic = super.get(o, f);
@@ -721,6 +757,97 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		#else
 		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : Tools.isClass(c) ? Type.createInstance(c, args) : c;
 		#end
+	}
+
+	function caseMatch(ecase:Expr, evalue:Expr, value:Dynamic):Bool
+	{
+		if (value is ScriptedEnumInstance || Reflect.isEnumValue(value))
+		{
+			final isEnumValue:Bool = Reflect.isEnumValue(value);
+
+			final enChecker:EnumHandler = if (!isEnumValue)
+			{
+				final enInst:ScriptedEnumInstance = cast(value, ScriptedEnumInstance);
+
+				{
+					obj: enInst.en,
+					hasEnumConstructor: enInst.en.hasEnumConstructor,
+					enumHasParams: enInst.en.enumHasParams,
+					getEnumConstructor: enInst.en.getEnumConstructor,
+					equals: Tools.enumEq.bind(enInst)
+				};
+			}
+			else
+			{
+				final en:Enum<Dynamic> = cast Type.getEnum(value);
+				final enInst:EnumValue = cast value;
+
+				final enConstructs:Array<String> = Type.getEnumConstructs(en);
+				final simpleEnums:Array<String> = Type.allEnums(en).map(_ -> Std.string(_));
+
+				{
+					obj: en,
+					hasEnumConstructor: enConstructs.contains,
+					enumHasParams: e -> !simpleEnums.contains(e),
+					getEnumConstructor: function(f:String):Dynamic
+					{
+						return if (simpleEnums.contains(f))
+							EnumPattern(en, enConstructs.indexOf(f), null);
+						else
+							Reflect.makeVarArgs((args:Array<Dynamic>) ->
+							{
+								EnumPattern(en, enConstructs.indexOf(f), args);
+							});
+					},
+					equals: Tools.enumEq.bind(enInst)
+				}
+			}
+
+			function enumExpr(e:Expr):Dynamic
+			{
+				return switch (e.getExpr())
+				{
+					case EIdent(v) if (enChecker.hasEnumConstructor(v) && !enChecker.enumHasParams(v)):
+						enChecker.getEnumConstructor(v);
+					case ECall(e, params):
+						var isEnumPattern:Bool = false;
+
+						final args:Array<Dynamic> = [
+							for (id => param in params)
+							{
+								switch (param.getExpr())
+								{
+									case EIdent('_'):
+										WildcardPattern;
+									case EIdent(id), EVar(id, _) if (!enChecker.hasEnumConstructor(id)):
+										VarPattern(value ->
+										{
+											declared.push({n: id, old: locals.get(id)});
+											locals.set(id, {r: value});
+										});
+									default:
+										enumExpr(param);
+								}
+							}
+						];
+
+						switch (e.getExpr())
+						{
+							case EIdent(v) if (enChecker.hasEnumConstructor(v) && enChecker.enumHasParams(v)):
+								call(null, enChecker.getEnumConstructor(v), args);
+							default:
+								call(null, enumExpr(e), args);
+						}
+					case EParent(e): enumExpr(e);
+					case ECast(e, t): enumExpr(e);
+					default: expr(e);
+				}
+			}
+
+			return enChecker.equals(enumExpr(ecase));
+		}
+
+		return expr(ecase) == value;
 	}
 
 	function set_errorHandler(v:haxe.Exception->Void):haxe.Exception->Void
@@ -879,10 +1006,19 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 private typedef SuperFunction =
 {
-	f:Expr->Dynamic,
-	stashVars:Void->Void,
-	restoreVars:Void->Void,
-	finish:Void->Void
+	var f:Expr->Dynamic;
+	var stashVars:Void->Void;
+	var restoreVars:Void->Void;
+	var finish:Void->Void;
+}
+
+private typedef EnumHandler =
+{
+	var obj:Dynamic;
+	var hasEnumConstructor:String->Bool;
+	var enumHasParams:String->Bool;
+	var getEnumConstructor:String->Dynamic;
+	var equals:Dynamic->Bool;
 }
 
 @:access(rulescript.interps.RuleScriptInterp)

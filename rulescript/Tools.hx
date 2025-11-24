@@ -6,8 +6,8 @@ import hscript.Expr;
 import hscript.Printer;
 import rulescript.types.Abstracts;
 import rulescript.types.Property;
+import rulescript.types.ScriptedEnum;
 import rulescript.types.ScriptedTypeUtil;
-import rulescript.types.ScriptedTypedef;
 import rulescript.types.Typedefs;
 #end
 
@@ -304,6 +304,80 @@ class Tools
 		return list.copy();
 	}
 
+	public static function enumEq(a:Dynamic, b:Dynamic):Bool
+	{
+		if (a == b)
+		{
+			return true;
+		}
+
+		if (b is EnumPattern)
+		{
+			switch (cast(b, EnumPattern))
+			{
+				case EnumPattern(en, index, args):
+					if (a is ScriptedEnumInstance)
+						return cast(a, ScriptedEnumInstance).matchPattern(b);
+
+					if (en != Type.getEnum(a) || index != Type.enumIndex(a))
+						return false;
+
+					final params:Array<Dynamic> = Type.enumParameters(a);
+
+					for (i in 0...params.length)
+					{
+						if (!Tools.enumEq(params[i], args[i]))
+							return false;
+					}
+
+					return true;
+
+				case WildcardPattern:
+					return true;
+				case VarPattern(v):
+					v(a);
+					return true;
+			}
+		}
+
+		if (a is ScriptedEnumInstance || b is ScriptedEnumInstance)
+		{
+			if (a is ScriptedEnumInstance != b is ScriptedEnumInstance)
+				return false;
+
+			return cast(a, ScriptedEnumInstance).equals(cast b);
+		}
+
+		if (!Tools.isEnum(a) && !Tools.isEnum(b) && Type.getEnum(a) != Type.getEnum(b))
+		{
+			return false;
+		}
+
+		if (Type.enumIndex(a) != Type.enumIndex(b))
+			return false;
+
+		final paramsA:Array<Dynamic> = Type.enumParameters(a);
+		final paramsB:Array<Dynamic> = Type.enumParameters(b);
+
+		if (paramsA.length != paramsB.length)
+		{
+			return false;
+		}
+
+		for (i in 0...paramsA.length)
+		{
+			var paramA:Dynamic = paramsA[i];
+			var paramB:Dynamic = paramsB[i];
+
+			if (!enumEq(paramA, paramB))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	#if hl
 	@:noCompletion public inline static function __hl_makeVarArgs(f:Array<Dynamic>->Dynamic, numArgs:Int):Dynamic
 	{
@@ -389,6 +463,15 @@ class Tools
 	#end
 	#end
 }
+
+#if !macro
+enum EnumPattern
+{
+	EnumPattern(e:haxe.extern.EitherType<Enum<Dynamic>, ScriptedEnum>, index:Int, args:Array<Dynamic>);
+	WildcardPattern; // _
+	VarPattern(v:Dynamic->Void);
+}
+#end
 
 @:forward
 abstract TypePath(_TypePath)

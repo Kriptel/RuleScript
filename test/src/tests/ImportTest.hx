@@ -35,5 +35,11 @@ class ImportTest extends Test
 		Test;
 		ScriptedClassTest;
 		');
+
+		runScript('
+		import haxe.ds.*;
+
+		IntMap == null;
+		', false);
 	}
 }
