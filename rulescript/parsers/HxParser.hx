@@ -1410,21 +1410,23 @@ class HScriptParser extends hscript.Parser
 							case "e".code, "E".code:
 								var tk = token();
 								var pow:Null<Int> = null;
+
 								switch (tk)
 								{
 									case TConst(CInt(e)): pow = e;
-									case TOp("-"):
-										tk = token();
-										switch (tk)
+									case TOp("-"), TOp("+"):
+										switch (token())
 										{
-											case TConst(CInt(e)): pow = -e;
-											default: push(tk);
+											case TConst(CInt(e)): pow = tk.match(TOp("-")) ? -e : e;
+											case tk: push(tk);
 										}
 									default:
 										push(tk);
 								}
 								if (pow == null)
 									invalidChar(char);
+								if (exp == 0)
+									exp = 10;
 								return TConst(CFloat((Math.pow(10, pow) / exp) * n * 10));
 							case ".".code:
 								if (exp > 0)

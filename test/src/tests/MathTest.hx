@@ -9,6 +9,9 @@ class MathTest extends Test
 		runScript('15 * 2', 15 * 2);
 		runScript('10 / 2', 10 / 2);
 
+		runScript('1e-3', 1e-3);
+		runScript('1e+3', 1e+3);
+
 		runScript('5 + 5 * 2', 5 + 5 * 2);
 		runScript('1.1 + 2.53 + 122', 1.1 + 2.53 + 122);
 		runScript('(15 * 2) + (12 / 2)', (15 * 2) + (12 / 2));
