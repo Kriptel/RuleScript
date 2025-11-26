@@ -15,7 +15,6 @@ import rulescript.types.context.EVariableDeclarations;
 class Context {
 	public var types:Map<String, Dynamic> = [];
 	public var variables:Map<String, ContextVariable> = [];
-	public var overridableFinals:Bool = true;
 
 	@:deprecated public var publicVariables(default, never):Map<String, Dynamic> = [];
 	@:deprecated public var staticVariables(default, never):Map<String, Dynamic> = [];

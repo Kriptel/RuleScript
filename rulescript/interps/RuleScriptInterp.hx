@@ -150,7 +150,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			Reflect.setProperty(superInstance, name, v);
 		else if (context != null && context.variables.exists(name)) {
 			final cv:rulescript.Context.ContextVariable = context.variables.get(name);
-			if (context.overridableFinals && cv.declaration == FINAL && cv.parent != scriptName)
+			if (cv.declaration == FINAL && cv.parent != scriptName)
 				error(ECustom('$name: Unable to override final variable defined by another script.'));
 			else context.variables.set(name, {modifier: cv.modifier, declaration:cv.declaration, value: v, parent: scriptName});
 		}
