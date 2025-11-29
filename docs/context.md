@@ -22,7 +22,9 @@
 
 - `types` - Stores all previously `defined` types.
 
-- `variables` - **Public** & **Static** variables, each entry in this array is added using the meta `@:contextValue('public')`, or the keyword `public`.
+- `publicVariables` - **Public** variables, each entry in this array is added using the meta `@:contextValue('public')`, or the keyword `public`.
+
+- `staticVariables` - **Static** variables, each entry in this array is added using the meta `@:contextValue('static')`, or the keyword `static`.
 
 ---
 

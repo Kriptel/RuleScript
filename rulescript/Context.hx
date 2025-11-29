@@ -3,8 +3,8 @@ package rulescript;
 import rulescript.types.ScriptedAbstract;
 import rulescript.types.ScriptedType;
 import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
-import rulescript.types.context.EVariableModifiers;
 import rulescript.types.context.EVariableDeclarations;
+import rulescript.types.context.TContextVariable;
 
 /**
  * The Context stores types to preserve repeated imports, 
@@ -14,10 +14,9 @@ import rulescript.types.context.EVariableDeclarations;
  */
 class Context {
 	public var types:Map<String, Dynamic> = [];
-	public var variables:Map<String, ContextVariable> = [];
-
-	@:deprecated public var publicVariables(default, never):Map<String, Dynamic> = [];
-	@:deprecated public var staticVariables(default, never):Map<String, Dynamic> = [];
+	
+	public var publicVariables:Map<String, TContextVariable> = new Map<String, TContextVariable>();
+	public var staticVariables:Map<String, TContextVariable> = new Map<String, TContextVariable>();
 
 	public function new() {}
 
@@ -28,7 +27,8 @@ class Context {
 	}
 
 	public function resetVariables():Void {
-		variables = []; // yuhuh -orbl
+		staticVariables = []; // yuhuh -orbl
+		publicVariables = [];
 	}
 
 	public function resolveType(path:String):Dynamic {
@@ -50,5 +50,3 @@ class Context {
 		};
 	}
 }
-
-typedef ContextVariable = {modifier:EVariableModifiers, declaration:EVariableDeclarations, value:Dynamic, ?parent:String};
