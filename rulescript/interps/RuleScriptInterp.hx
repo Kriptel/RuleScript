@@ -11,8 +11,8 @@ import rulescript.types.ScriptedEnum;
 import rulescript.types.ScriptedType;
 import rulescript.types.ScriptedTypeUtil;
 import rulescript.types.ScriptedTypedef;
+import rulescript.types.context.EVariableModifiers;
 import rulescript.types.context.EVariableDeclarations;
-import rulescript.types.context.TContextVariable;
 
 using rulescript.Tools;
 
@@ -98,12 +98,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				v = get(superInstance, id);
 
 			// SHARED VARIABLES
-			if (v == null && context != null) {
-				if (context.publicVariables.exists(id))
-					v = context.publicVariables.get(id).value;
-				else if (context.staticVariables.exists(id))
-					v = context.staticVariables.get(id).value;
-			}
+			if (v == null && context != null && context.variables.exists(id))
+				v = context.variables.get(id).value;
 
 			if (v == null)
 				error(EUnknownVariable(id)); // fixes - orbl
@@ -147,18 +143,19 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		}
 		return v;
 	}
-	override function setVar(name:String, v:Dynamic) {
+
+	override function setVar(name:String, v:Dynamic)
+	{
 		if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
 			Reflect.setProperty(superInstance, name, v);
-		else if (context != null && (context.staticVariables.exists(name) || context.publicVariables.exists(name))) {
-			final vg:Map<String, TContextVariable> = context.staticVariables.exists(name) ? context.staticVariables : context.publicVariables;
-			final cv:TContextVariable = vg.get(name);
-			if (cv.declaration == FINAL && cv.parent != scriptName) {
+		else if (context != null && context.variables.exists(name)) {
+			final cv:rulescript.Context.ContextVariable = context.variables.get(name);
+			if (cv.declaration == FINAL && cv.parent != scriptName)
 				error(ECustom('$name: Unable to override final variable defined by another script.'));
-			} else {
-				vg.set(name, {declaration: cv.declaration, value: v, parent: scriptName});
-			}
-		} else {
+			else context.variables.set(name, {modifier: cv.modifier, declaration:cv.declaration, value: v, parent: scriptName});
+		}
+		else
+		{
 			var lastValue = variables.get(name);
 
 			if (lastValue is Property)
@@ -244,7 +241,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 				if ((!locals.exists(id) && !variables.exists(id))
 					&& (!superFields.contains(id) && !superFields.contains('get_$id'))
-					&& (context == null || !context.publicVariables.exists(id) || context.staticVariables.exists(id)))
+					&& (context == null || !context.variables.exists(id)))
 				{
 					final typePath:String = path.join('.');
 
@@ -295,20 +292,20 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 						if (isFunction && depth == 0)
 						{
-							(isStatic ? context.staticVariables : context.publicVariables)[n] = {
+							return context.variables[n] = {
 								value: this.expr(e),
 								declaration: isFinal ? EVariableDeclarations.FINAL : EVariableDeclarations.VAR,
+								modifier: isStatic ? EVariableModifiers.STATIC : EVariableModifiers.PUBLIC,
 								parent: scriptName
 							};
-
-							return (isStatic ? context.staticVariables : context.publicVariables)[n];
 						}
 						else if (depth == 0)
 						{
 							this.expr(e);
-							(isStatic ? context.staticVariables : context.publicVariables).set(n, {
+							context.variables.set(n, {
 								value: resolve(n),
 								declaration: isFinal ? EVariableDeclarations.FINAL : EVariableDeclarations.VAR,
+								modifier: isStatic ? EVariableModifiers.STATIC : EVariableModifiers.PUBLIC,
 								parent: scriptName
 							});						
 						}
@@ -325,7 +322,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case EVar(n, _, e, global, _):
 				if (global)
 				{
-					if (context == null || (!context.staticVariables.exists(n) || !context.publicVariables.exists(n)))
+					if (context == null || !context.variables.exists(n))
 						variables.set(n, (e == null) ? null : this.expr(e));
 				}
 				else
