@@ -578,7 +578,7 @@ class Converter
 
 					buffer[endId] = buffer.length;
 
-				#if rulescript_is_git_hscript
+				#if (hscript >= "2.7.0")
 				case EForGen(it, e):
 					var key:String, value:String;
 					var iterator:Expr;

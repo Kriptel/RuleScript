@@ -14,21 +14,36 @@ class ExprMacro
 
 		var pos = Context.currentPos();
 
-		fields = fields.filter(field -> !(['EVar', 'ENew', 'ECast']).contains(field.name));
+		var keepENew:Bool = false;
 
-		var newFields:Map<String, Expr> = [
+		final newFields:Map<String, Expr> = [
 			'EPackage' => macro function(path:String) {},
 
 			'EImport' => macro function(name:String, star:Bool, alias:String, func:String) {},
 			'EUsing' => macro function(name:String) {},
 
-			'ENew' => macro function(cl:String, params:Array<Expr>, ?typeParams:Array<CType>) {},
 			'EVar' => macro function(n:String, ?t:CType, ?e:Expr, ?global:Bool, ?isFinal:Bool) {},
 			'EProp' => macro function(n:String, g:String, s:String, ?t:CType, ?e:Expr, ?global:Bool) {},
 			'ETypeVarPath' => macro function(path:Array<String>) {},
 			'EUntyped' => macro function(e:Expr) {},
 			'ECast' => macro function(e:Expr, ?t:CType) {}
 		];
+
+		fields = fields.filter(field ->
+		{
+			if (field.name == 'ENew')
+			{
+				return switch (field.kind)
+				{
+					case FFun({args: args}) if (args.length == 2):
+						newFields.set('ENew', macro function(cl:String, params:Array<Expr>, ?typeParams:Array<CType>) {});
+						false;
+					default:
+						true;
+				}
+			}
+			return !(['EVar', 'ECast']).contains(field.name);
+		});
 
 		for (key => value in newFields)
 			fields.push({

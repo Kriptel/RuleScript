@@ -17,17 +17,12 @@ import rulescript.types.ScriptedTypedef;
 
 /**
  * TODO:
- * Do-while
  * ForGen
- * Import
  * Meta
- * New
  * Prop
  * Switch
- * Try
  * TypeVarPath
  * Using
- * While
  */
 class NeoInterp implements IInterp
 {

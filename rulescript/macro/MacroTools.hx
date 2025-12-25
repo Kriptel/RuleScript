@@ -16,8 +16,12 @@ class MacroTools
 		switch (exprType)
 		{
 			case TEnum(t, params):
-				if (t.get().constructs.exists('EForGen'))
-					Compiler.define('rulescript_is_git_hscript');
+				switch (t.get().constructs.get('ENew').type)
+				{
+					case TFun(args, ret) if (args.length == 3 && args[2].name == 'args'):
+						Compiler.define('rulescript_is_git_hscript');
+					default:
+				}
 			default:
 		}
 	}
