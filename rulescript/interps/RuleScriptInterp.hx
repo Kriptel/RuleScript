@@ -592,7 +592,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		return prop;
 	}
 
-	override function resolveType(path:String):Dynamic
+	#if rulescript_is_git_hscript override #end function resolveType(path:String):Dynamic
 	{
 		if (context != null)
 			return context.resolveType(path)

@@ -1644,7 +1644,9 @@ class HScriptParser extends hscript.Parser
 			case TBrClose: "}";
 			case TDot: ".";
 			case TQuestionDot: "?.";
+			#if rulescript_is_git_hscript
 			case TQuestionDouble: "??";
+			#end
 			case TComma: ",";
 			case TSemicolon: ";";
 			case TBkOpen: "[";
