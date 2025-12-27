@@ -798,8 +798,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 				{
 					obj: en,
-					hasEnumConstructor: enConstructs.contains,
-					enumHasParams: e -> !simpleEnums.contains(e),
+					hasEnumConstructor: function(v) return enConstructs.contains(v),
+					enumHasParams: function(e) return !simpleEnums.contains(e),
 					getEnumConstructor: function(f:String):Dynamic
 					{
 						return if (simpleEnums.contains(f))
