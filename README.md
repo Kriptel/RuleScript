@@ -64,6 +64,13 @@ RuleScript is an [HScript](https://github.com/HaxeFoundation/hscript) addon feat
     <haxelib name="rulescript"/>
     ```
 
+## Compatibility
+
+The following HScript versions are currently compatible:
+- HScript 2.6.0
+- HScript 2.7.0
+- HScript git [31882f1](https://github.com/HaxeFoundation/hscript/tree/31882f176a9deb4bda3aaba83f6ebc1981a060b3)
+
 ---
 
 Full list of contributors [here](https://github.com/Kriptel/RuleScript/graphs/contributors).

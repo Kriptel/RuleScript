@@ -8,6 +8,9 @@ import rulescript.parsers.Parser;
 import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.types.ScriptedTypeUtil;
 
+#if (hscript < "2.6.0")
+#error "Error: HScript version is outdated. RuleScript requires version 2.6.0 or higher."
+#end
 
 /**
  * This class serves as a wrapper/container(?) for executing code and managing the interpreter, 
@@ -31,7 +34,6 @@ import rulescript.types.ScriptedTypeUtil;
 class RuleScript
 {
 	// i'm not documenting deprecated variables/methods... -orbl
-
 	@:deprecated('`resolveScript` is deprecated, use `ScriptedTypeUtil.resolveScript`')
 	public static var resolveScript(get, set):String->Dynamic;
 
@@ -120,7 +122,7 @@ class RuleScript
 			'Bool' => Bool
 		]
 	];
-	
+
 	/**
 	 * The interpreter.
 	 */
@@ -150,7 +152,7 @@ class RuleScript
 	 * ```
 	 */
 	public var scriptPackage(get, set):String;
-	
+
 	/**
 	 * The super instance.
 	 * 

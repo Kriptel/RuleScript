@@ -126,6 +126,11 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				}
 			case EField(e, f):
 				v = set(expr(e), f, v);
+			case ETypeVarPath(_path):
+				final path:Array<String> = _path.copy();
+				final f:String = path.pop();
+
+				v = set(resolveTypeOrValue(path), f, v);
 			case EArray(e, index):
 				var arr:Dynamic = expr(e);
 				var index:Dynamic = expr(index);
@@ -237,42 +242,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				if (t != null)
 					usings.set(path, t);
 			case ETypeVarPath(path):
-				var id:String = path[0];
-
-				if ((!locals.exists(id) && !variables.exists(id))
-					&& (!superFields.contains(id) && !superFields.contains('get_$id'))
-					&& (context == null || !context.variables.exists(id)))
-				{
-					final typePath:String = path.join('.');
-
-					if (typePaths.exists(typePath))
-						return typePaths[typePath];
-					else
-					{
-						final type:Dynamic = resolveType(typePath);
-						if (type != null)
-							return typePaths[typePath] = type;
-						else
-						{
-							final field = typePath.substring(typePath.lastIndexOf('.') + 1);
-
-							return typePaths[typePath] = get(resolveType(typePath.substring(0, typePath.lastIndexOf('.'))), field);
-						}
-					}
-				}
-
-				var obj:Dynamic = null;
-				var l = locals.get(id);
-				if (l != null)
-					obj = getScriptProp(l.r);
-
-				obj ??= resolve(id);
-
-				var currentField:Int = 0;
-				while (path[++currentField] != null)
-					obj = get(obj, path[currentField]);
-
-				return obj;
+				return resolveTypeOrValue(path);
 			case EMeta(n, args, e):
 				return switch (n)
 				{
@@ -600,6 +570,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		return prop;
 	}
 
+	#if rulescript_is_git_hscript override #end
 	function resolveType(path:String):Dynamic
 	{
 		if (context != null)
@@ -608,7 +579,47 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			return Tools.resolveType(path);
 	}
 
-	#if rulescript_is_git_hscript
+	function resolveTypeOrValue(path:Array<String>):Dynamic
+	{
+		final id:String = path[0];
+
+		if ((!locals.exists(id) && !variables.exists(id))
+			&& (!superFields.contains(id) && !superFields.contains('get_$id'))
+			&& (context == null || !context.staticVariables.exists(id) && !context.publicVariables.exists(id)))
+		{
+			final typePath:String = path.join('.');
+
+			if (typePaths.exists(typePath))
+				return typePaths[typePath];
+			else
+			{
+				final type:Dynamic = resolveType(typePath);
+				if (type != null)
+					return typePaths[typePath] = type;
+				else
+				{
+					final field = typePath.substring(typePath.lastIndexOf('.') + 1);
+
+					return typePaths[typePath] = get(resolveType(typePath.substring(0, typePath.lastIndexOf('.'))), field);
+				}
+			}
+		}
+
+		var obj:Dynamic = null;
+		var l = locals.get(id);
+		if (l != null)
+			obj = getScriptProp(l.r);
+
+		obj ??= resolve(id);
+
+		var currentField:Int = 0;
+		while (path[++currentField] != null)
+			obj = get(obj, path[currentField]);
+
+		return obj;
+	}
+
+	#if (hscript >= "2.7.0")
 	override function makeKeyValueIterator(v:Dynamic):KeyValueIterator<Dynamic, Dynamic>
 	{
 		#if hl
@@ -795,8 +806,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 				{
 					obj: en,
-					hasEnumConstructor: enConstructs.contains,
-					enumHasParams: e -> !simpleEnums.contains(e),
+					hasEnumConstructor: function(v) return enConstructs.contains(v),
+					enumHasParams: function(e) return !simpleEnums.contains(e),
 					getEnumConstructor: function(f:String):Dynamic
 					{
 						return if (simpleEnums.contains(f))
