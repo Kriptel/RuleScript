@@ -577,7 +577,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 		if ((!locals.exists(id) && !variables.exists(id))
 			&& (!superFields.contains(id) && !superFields.contains('get_$id'))
-			&& (context == null || !context.staticVariables.exists(id) && !context.publicVariables.exists(id)))
+			&& (context == null || !context.variables.exists(id)))
 		{
 			final typePath:String = path.join('.');
 
