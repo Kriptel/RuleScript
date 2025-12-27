@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Reworked shared variables. (see [#36](https://github.com/Kriptel/RuleScript/pull/36))
 - Wildcard import.
 - ScriptedModule.
 - Shared variables between interps. (see [#29](https://github.com/Kriptel/RuleScript/pull/29))
