@@ -11,6 +11,8 @@ import rulescript.types.ScriptedEnum;
 import rulescript.types.ScriptedType;
 import rulescript.types.ScriptedTypeUtil;
 import rulescript.types.ScriptedTypedef;
+import rulescript.types.context.EVariableModifiers;
+import rulescript.types.context.EVariableDeclarations;
 
 using rulescript.Tools;
 
@@ -96,13 +98,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				v = get(superInstance, id);
 
 			// SHARED VARIABLES
-			if (v == null && context != null)
-			{
-				if (context.staticVariables.exists(id))
-					v = context.staticVariables.get(id);
-				if (context.publicVariables.exists(id))
-					v = context.publicVariables.get(id);
-			}
+			if (v == null && context != null && context.variables.exists(id))
+				v = context.variables.get(id).value;
 
 			if (v == null)
 				error(EUnknownVariable(id)); // fixes - orbl
@@ -156,10 +153,12 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	{
 		if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
 			Reflect.setProperty(superInstance, name, v);
-		else if (context != null && context.staticVariables.exists(name))
-			context.staticVariables.set(name, v);
-		else if (context != null && context.publicVariables.exists(name))
-			context.publicVariables.set(name, v);
+		else if (context != null && context.variables.exists(name)) {
+			final cv:rulescript.Context.ContextVariable = context.variables.get(name);
+			if (cv.declaration == FINAL && cv.parent != scriptName)
+				error(ECustom('$name: Unable to override final variable defined by another script.'));
+			else context.variables.set(name, {modifier: cv.modifier, declaration:cv.declaration, value: v, parent: scriptName});
+		}
 		else
 		{
 			var lastValue = variables.get(name);
@@ -248,14 +247,14 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				return switch (n)
 				{
 					case ':contextValue' if (context != null):
-						var isFunction:Bool = false;
-
+						var isFunction:Bool = false, isFinal:Bool = false;
 						final n:Null<String> = switch (Tools.getExpr(e))
 						{
 							case EFunction(_, _, n):
 								isFunction = true;
 								n;
-							case EProp(n, _), EVar(n, _): n;
+							case EProp(n, _):  n;
+							case EVar(n, _,_,_,f): isFinal = f; n;
 							default: null;
 						};
 
@@ -263,13 +262,22 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 						if (isFunction && depth == 0)
 						{
-							return (isStatic ? context.staticVariables : context.publicVariables)[n] = this.expr(e);
+							return context.variables[n] = {
+								value: this.expr(e),
+								declaration: isFinal ? EVariableDeclarations.FINAL : EVariableDeclarations.VAR,
+								modifier: isStatic ? EVariableModifiers.STATIC : EVariableModifiers.PUBLIC,
+								parent: scriptName
+							};
 						}
 						else if (depth == 0)
 						{
 							this.expr(e);
-
-							(isStatic ? context.staticVariables : context.publicVariables).set(n, resolve(n));
+							context.variables.set(n, {
+								value: resolve(n),
+								declaration: isFinal ? EVariableDeclarations.FINAL : EVariableDeclarations.VAR,
+								modifier: isStatic ? EVariableModifiers.STATIC : EVariableModifiers.PUBLIC,
+								parent: scriptName
+							});						
 						}
 						else
 						{
@@ -284,7 +292,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case EVar(n, _, e, global, _):
 				if (global)
 				{
-					if (context == null || (!context.staticVariables.exists(n) && !context.publicVariables.exists(n)))
+					if (context == null || !context.variables.exists(n))
 						variables.set(n, (e == null) ? null : this.expr(e));
 				}
 				else
@@ -576,7 +584,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 		if ((!locals.exists(id) && !variables.exists(id))
 			&& (!superFields.contains(id) && !superFields.contains('get_$id'))
-			&& (context == null || !context.staticVariables.exists(id) && !context.publicVariables.exists(id)))
+			&& (context == null || !context.variables.exists(id)))
 		{
 			final typePath:String = path.join('.');
 
