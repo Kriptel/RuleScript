@@ -115,9 +115,16 @@ abstract Access(RuleScriptedClass)
 		interp.access.setVariable(className, this);
 	}
 
+	var initialized:Bool = false;
+
 	@:allow(rulescript.types.ScriptedModule)
 	function init()
 	{
+		if (initialized)
+			return;
+		else
+			initialized = true;
+
 		for (name => type in module.types)
 		{
 			interp.access.setVariable(name, type);
@@ -149,6 +156,8 @@ abstract Access(RuleScriptedClass)
 		{
 			if (superClass is ScriptedClass)
 			{
+				superClass.init();
+
 				nativeClass = superClass.nativeClass;
 			}
 			else
@@ -254,15 +263,26 @@ abstract Access(RuleScriptedClass)
 		interp = RuleScript.createInterp();
 		interp.access.scriptName = cl.toString();
 
-		var list = [];
+		final list:Array<Dynamic> = [];
 
-		var currentClass:ScriptedClass = cl;
+		var currentClass:Dynamic = cl;
 
 		while (currentClass != null)
 		{
-			list.insert(0, currentClass);
-			setVariable(currentClass.className, currentClass);
-			currentClass = currentClass.superClass;
+			if (currentClass is ScriptedClass)
+			{
+				final sc:ScriptedClass = cast currentClass;
+				list.insert(0, sc);
+				setVariable(sc.className, sc);
+
+				currentClass = sc.superClass;
+			}
+			else
+			{
+				setVariable(Type.getClassName(currentClass), currentClass);
+
+				break;
+			}
 		}
 
 		for (cl in list)
