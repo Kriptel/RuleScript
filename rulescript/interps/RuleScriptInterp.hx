@@ -240,8 +240,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				if (t == null)
 					error(ECustom('Type not found : $path'));
 
-				if (t != null)
-					usings.set(path, t);
+				usings.set(path, t);
 			case ETypeVarPath(path):
 				return resolveTypeOrValue(path);
 			case EMeta(n, args, e):
@@ -278,7 +277,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 						null;
 					default:
-						(onMeta != null) ? onMeta(n, args, e) : this.expr(e);
+						(onMeta != null) ? onMeta(n, args, e) : exprMeta(n, args, e);
 				}
 
 			case EVar(n, _, e, global, _):
@@ -655,13 +654,12 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		{
 			switch (cast(o, ScriptedType).__rulescript_type)
 			{
-				case CLASS:
+				case CLASS, ABSTRACT:
 					var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
 					if (cl.variableExists(f))
 						return getScriptProp(cl.getVariable(f));
 				case ENUM:
 					var en:ScriptedEnum = cast(o, ScriptedEnum);
-
 					return en.getEnumConstructor(f);
 				default:
 			}
