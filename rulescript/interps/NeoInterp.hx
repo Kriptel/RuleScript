@@ -10,20 +10,15 @@ import rulescript.Tools.getScriptProp;
 import rulescript.interps.neo.NeoCompiler;
 import rulescript.interps.neo.NeoTypes;
 import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
+import rulescript.scriptedClass.RuleScriptedClass;
+import rulescript.types.IRuleScriptCustomAccessor;
+import rulescript.types.Property;
 import rulescript.types.ScriptedAbstract;
+import rulescript.types.ScriptedEnum;
 import rulescript.types.ScriptedType;
 import rulescript.types.ScriptedTypeUtil;
 import rulescript.types.ScriptedTypedef;
 
-/**
- * TODO:
- * ForGen
- * Meta
- * Prop
- * Switch
- * TypeVarPath
- * Using
- */
 class NeoInterp implements IInterp
 {
 	public var scriptPackage(default, set):String = '';
@@ -43,6 +38,8 @@ class NeoInterp implements IInterp
 	public var compiler:NeoCompiler;
 
 	public var variables:Map<String, Dynamic>;
+
+	public var usings:Array<Dynamic>;
 
 	var bytes:Array<NeoByte>;
 	var pos:Int = 0;
@@ -66,11 +63,7 @@ class NeoInterp implements IInterp
 
 	public function reset()
 	{
-		if (variables == null)
-			variables = new Map<String, Dynamic>();
-		else
-			variables.clear();
-
+		variables = [];
 		variables.set('trace', Reflect.makeVarArgs(function(args:Array<Dynamic>)
 		{
 			haxe.Log.trace(args.join(', '), cast {
@@ -80,6 +73,8 @@ class NeoInterp implements IInterp
 
 			return;
 		}));
+
+		usings = [];
 
 		bytes = [];
 
@@ -244,6 +239,20 @@ class NeoInterp implements IInterp
 
 				VOID;
 
+			case PROPERTY:
+				final name:String = nextString();
+
+				variables[name] = createProperty();
+
+				VOID;
+
+			case PROPERTY_LOCAL:
+				final id:Int = next();
+
+				dynamicBuffer[id] = createProperty();
+
+				VOID;
+
 			case BLOCK:
 				var v:NeoByte = VOID;
 
@@ -369,6 +378,25 @@ class NeoInterp implements IInterp
 
 				VOID;
 
+			case META:
+				final name:String = nextString();
+
+				final argsNum:Int = next();
+
+				final args:Null<Array<Dynamic>> = if (argsNum == -1)
+					null;
+				else
+				{
+					[
+						for (arg in 0...argsNum)
+						{
+							dynamicBuffer[arg];
+						}
+					];
+				}
+
+				commandMeta(name, args);
+
 			case NEW:
 				final cl:String = nextString();
 				final args:Array<Dynamic> = [for (_ in 0...next()) getValue(command())];
@@ -437,6 +465,54 @@ class NeoInterp implements IInterp
 				while (getValue(command()));
 
 				VOID;
+			case SWITCH:
+				final switchValue:Dynamic = getValue(command());
+
+				final numCases:Int = next();
+				final startPos:Int = pos;
+
+				var matched:Bool = false;
+				var type:NeoByte = NULL;
+
+				next();
+
+				for (i in 0...numCases)
+				{
+					final numValues:Int = next();
+					var caseMatch:Bool = false;
+
+					final casePos:Int = pos;
+					next();
+
+					for (j in 0...numValues)
+					{
+						final val:Dynamic = getValue(command());
+						if (!caseMatch && switchValue == val)
+						{
+							caseMatch = matched = true;
+							this.pos = casePos;
+							skipCommand(); // Skip case values
+							break;
+						}
+					}
+
+					if (caseMatch)
+					{
+						type = commandSkippable();
+						this.pos = startPos;
+						skipCommand(); // Skip cases
+					}
+					else
+						skipCommand();
+				}
+
+				if (matched)
+					skipCommand();
+				else
+					type = commandSkippable();
+
+				type;
+
 			case TRY:
 				final curPos:Int = this.pos;
 
@@ -454,23 +530,44 @@ class NeoInterp implements IInterp
 					commandSkippable();
 				}
 			case RS_IMPORT:
-				final path:String = nextString(), alias:String = nextString();
-				final func:String = nextString();
+				final path:String = nextString(), star:Bool = nextBool();
+				final alias:String = nextString(), func:String = nextString();
 
-				var name:String = alias ?? func ?? TypePath.getTypeName(path);
-				var type:Dynamic = resolveType(path);
-
-				final value = if (func != null)
+				if (star)
 				{
-					get(type, func);
+					for (typeName in Tools.getTypesInPackage(path))
+					{
+						if (!variables.exists(typeName))
+						{
+							final type:Dynamic = resolveType(TypePath.createString(path.split('.'), typeName));
+							variables.set(typeName, type);
+						}
+					}
 				}
 				else
-					type;
+				{
+					var name:String = alias ?? func ?? TypePath.getTypeName(path);
+					var type:Dynamic = resolveType(path);
 
-				variables[name] = value;
+					final value = if (func != null)
+					{
+						get(type, func);
+					}
+					else
+						type;
+
+					variables[name] = value;
+				}
 
 				VOID;
+			case USING:
+				final path:String = nextString();
+				final type:Dynamic = resolveType(path);
 
+				if (!usings.contains(type))
+					usings.push(type);
+
+				VOID;
 			case FUNCTION:
 				final funcName:String = nextString();
 
@@ -488,10 +585,20 @@ class NeoInterp implements IInterp
 				dyn = func;
 
 				DYNAMIC;
+			case TYPE_VAR_PATH:
+				final path:Array<String> = dynamicBuffer[next()];
 
+				dyn = resolveTypeOrValue(path);
+
+				DYNAMIC;
 			case id:
 				error(EUnknownCommand(id));
 		}
+	}
+
+	function commandMeta(name:String, args:Array<Dynamic>):NeoByte
+	{
+		return command();
 	}
 
 	function commandOp(op:NeoByte):NeoByte
@@ -623,11 +730,92 @@ class NeoInterp implements IInterp
 
 	function get(o:Dynamic, f:String):Dynamic
 	{
-		return Reflect.getProperty(o, f);
+		if (Tools.isEnum(o))
+		{
+			if (Type.getEnumConstructs(o).contains(f))
+			{
+				return if (Type.allEnums(o).map(_ -> Std.string(_)).contains(f))
+					Type.createEnum(o, f);
+				else
+					Reflect.makeVarArgs((args:Array<Dynamic>) -> Type.createEnum(o, f, args));
+			}
+		}
+
+		if (o == this)
+		{
+			if (variables.exists(f))
+				return getScriptProp(variables.get(f));
+			else
+				o = superInstance;
+		}
+
+		if (o is IRuleScriptCustomAccessor)
+			return cast(o, IRuleScriptCustomAccessor).getField(f);
+
+		if (o is ScriptedType)
+		{
+			switch (cast(o, ScriptedType).__rulescript_type)
+			{
+				case CLASS, ABSTRACT:
+					var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
+					if (cl.variableExists(f))
+						return getScriptProp(cl.getVariable(f));
+				case ENUM:
+					var en:ScriptedEnum = cast(o, ScriptedEnum);
+
+					return en.getEnumConstructor(f);
+				default:
+			}
+		}
+
+		var prop:Dynamic = Reflect.getProperty(o, f);
+
+		if (prop != null)
+			return getScriptProp(prop);
+
+		if (usings.length > 0)
+		{
+			for (cl in usings)
+			{
+				var prop:Dynamic = Reflect.getProperty(cl, f);
+				if (prop != null)
+					return Tools.usingFunction.bind(o, prop, _, _, _, _, _, _, _, _);
+			}
+		}
+
+		return null;
 	}
 
 	function set(obj:Dynamic, field:String, value:Dynamic):Dynamic
 	{
+		if (obj == null)
+			error(EInvalidAccess(field));
+
+		if (obj == this)
+		{
+			if (variables.exists(field))
+			{
+				var variable:Dynamic = variables.get(field);
+				variable is Property ? cast(variable, Property).value = value : variables.set(field, value);
+				return value;
+			}
+			else
+				obj = superInstance;
+		}
+
+		if (obj is IRuleScriptCustomAccessor)
+			return cast(obj, IRuleScriptCustomAccessor).setField(field, value);
+
+		if (obj is RuleScriptedClass)
+		{
+			var cl:RuleScriptedClass = cast(obj, RuleScriptedClass);
+			if (cl.variableExists(field))
+			{
+				var o = cl.getVariable(field);
+				return o is Property ? cast(o, Property).value = value : cl.setVariable(field, value);
+			}
+		}
+
 		Reflect.setProperty(obj, field, value);
 
 		return value;
@@ -732,6 +920,70 @@ class NeoInterp implements IInterp
 		if (v.hasNext == null || v.next == null)
 			error(EInvalidIterator(v));
 		return v;
+	}
+
+	var typePaths:Map<String, Dynamic> = [];
+
+	function resolveTypeOrValue(path:Array<String>):Dynamic
+	{
+		final id:String = path[0];
+
+		if ((!variables.exists(id))
+			&& (!superFields.contains(id) && !superFields.contains('get_$id'))
+			&& (context == null || !context.staticVariables.exists(id) && !context.publicVariables.exists(id)))
+		{
+			final typePath:String = path.join('.');
+
+			if (typePaths.exists(typePath))
+				return typePaths[typePath];
+			else
+			{
+				final type:Dynamic = resolveType(typePath);
+				if (type != null)
+					return typePaths[typePath] = type;
+				else
+				{
+					final field = typePath.substring(typePath.lastIndexOf('.') + 1);
+
+					return typePaths[typePath] = get(resolveType(typePath.substring(0, typePath.lastIndexOf('.'))), field);
+				}
+			}
+		}
+
+		var obj:Dynamic = resolve(id);
+
+		var currentField:Int = 0;
+		while (path[++currentField] != null)
+			obj = get(obj, path[currentField]);
+
+		return obj;
+	}
+
+	function createProperty()
+	{
+		final getF:PropertyAccess = switch (next())
+		{
+			case PROP_DEFAULT: DEFAULT;
+			case PROP_CALLBACK: GET(getValue(command()));
+			case PROP_NULL: NULL;
+			case PROP_DYNAMIC: DYNAMIC(getValue(command()));
+			case PROP_NEVER: NEVER;
+			default: null;
+		}
+
+		final setF:PropertyAccess = switch (next())
+		{
+			case PROP_DEFAULT: DEFAULT;
+			case PROP_CALLBACK: SET(cast getValue(command()));
+			case PROP_NULL: NULL;
+			case PROP_DYNAMIC: DYNAMIC(getValue(command()));
+			case PROP_NEVER: NEVER;
+			default: null;
+		}
+
+		final prop = new Property(getF, setF);
+		prop._lazyValue = cast getValue(command());
+		return prop;
 	}
 
 	function makeFunction():Dynamic

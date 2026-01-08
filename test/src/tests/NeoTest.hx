@@ -200,5 +200,35 @@ class NeoTest extends Test
 		var b = b(true,321, 0,1,2,3);
 		return x == a && a == b;
 		', true);
+
+		runScript('
+		var _a = 0;
+
+		var a(get,set):Int;
+
+		function get_a(){
+			return _a;
+		}
+		
+		function set_a(A:Int){
+			return _a = A;
+		}
+		');
+
+		runScript('
+		var a = 1234;
+
+		return switch(a)
+		{
+			case 123:
+				"hello";
+			case 456:
+				"world";
+			case true, 1234:
+				"RuleScript";
+			default:
+				"RuleScript: Hello world";
+		}
+		');
 	}
 }

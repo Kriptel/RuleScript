@@ -1,7 +1,6 @@
 package rulescript.interps.neo;
 
 import hscript.Expr;
-import rulescript.RuleScript.IInterp;
 import rulescript.Tools.toExpr;
 import rulescript.interps.neo.NeoTypes;
 import rulescript.macro.NeoMacro.*;
@@ -111,20 +110,79 @@ using rulescript.Tools;
 						}
 				}
 
-			case EVar(n, t, e, true, isFinal):
-				compile(EBinop('=', EIdent(n).toExpr(), e).toExpr());
-
-			case EVar(n, t, e, _, isFinal):
-				addCmd(VAR);
-
-				var local = addHiddenLocal(n);
-
-				if (e == null)
-					addCmd(NULL)
+			case EVar(name, type, expr, global, isFinal):
+				if (global)
+					compile(EBinop('=', EIdent(name).toExpr(), expr).toExpr());
 				else
-					compile(e);
+				{
+					addCmd(VAR);
 
-				local.show();
+					var local = addHiddenLocal(name);
+
+					if (expr == null)
+						addCmd(NULL)
+					else
+						compile(expr);
+
+					local.show();
+				}
+			case EProp(name, get, set, type, expr, global):
+				var local:Null<{id:Int, show:Void->Void}> = null;
+
+				if (global)
+				{
+					addCmd(PROPERTY);
+					addString(name);
+				}
+				else
+				{
+					addCmd(PROPERTY_LOCAL);
+					local = addHiddenLocal(name);
+				}
+
+				switch (get)
+				{
+					case 'default':
+						addCmd(PROP_DEFAULT);
+					case 'get':
+						addCmd(PROP_CALLBACK);
+						compile(EFunction([], ECall(EIdent('get_$name').toExpr(), []).toExpr()).toExpr());
+					case 'null':
+						addCmd(PROP_NULL);
+					case 'dynamic':
+						addCmd(PROP_DYNAMIC);
+						compile(EFunction([], ECall(EIdent('get_$name').toExpr(), []).toExpr()).toExpr());
+					case 'never':
+						addCmd(PROP_NEVER);
+					default:
+						throw '$name: Custom property accessor is no longer supported, please use `get`';
+				}
+
+				switch (set)
+				{
+					case 'default':
+						addCmd(PROP_DEFAULT);
+					case 'set':
+						addCmd(PROP_CALLBACK);
+						compile(EFunction([{name: 'v'}], ECall(EIdent('set_$name').toExpr(), [EIdent('v').toExpr()]).toExpr()).toExpr());
+					case 'null':
+						addCmd(PROP_NULL);
+					case 'dynamic':
+						addCmd(PROP_DYNAMIC);
+						compile(EFunction([{name: 'v'}], ECall(EIdent('set_$name').toExpr(), [EIdent('v').toExpr()]).toExpr()).toExpr());
+					case 'never':
+						addCmd(PROP_NEVER);
+					default:
+						throw '$name: Custom property accessor is no longer supported, please use `set`';
+				}
+
+				if (expr != null)
+					compile(EFunction([], EBlock([EVar('__v', type, expr).toExpr(), EIdent('__v').toExpr()]).toExpr()).toExpr());
+				else
+					addCmd(NULL);
+
+				if (local != null)
+					local.show();
 
 			case EBlock(exprs):
 				addCmd(BLOCK);
@@ -363,7 +421,7 @@ using rulescript.Tools;
 					compile(e);
 				});
 
-			#if rulescript_is_git_hscript
+			#if (hscript >= "2.7.0")
 			case EForGen(it, e):
 				var key:String = null, value:String = null;
 				var iterator:Expr = null;
@@ -433,6 +491,7 @@ using rulescript.Tools;
 			case EImport(name, star, alias, func):
 				addCmd(RS_IMPORT);
 				addString(name);
+				addBool(star);
 				addString(alias);
 				addString(func);
 
@@ -469,12 +528,43 @@ using rulescript.Tools;
 
 					skippable(compile(e));
 				}));
-			// case EMeta(name, args, e):
-			// case EProp(n, g, s, t, e, global):
-			// case ESwitch(e, cases, defaultExpr):
-			// case ETypeVarPath(path):
-			// case EUsing(name):
+			case EMeta(name, args, e):
+				addCmd(META);
+				addString(name);
 
+				if (args == null)
+					addInt(-1);
+				else
+				{
+					addInt(args.length);
+					for (arg in args)
+						addDynamic(arg); // The expression remains in AST form
+				}
+
+				compile(e);
+			case EUsing(name):
+				addCmd(USING);
+				addString(name);
+
+			case ESwitch(e, cases, defaultExpr):
+				addCmd(SWITCH);
+				compile(e);
+
+				addInt(cases.length);
+
+				skippable(for (c in cases)
+				{
+					addInt(c.values.length);
+					skippable(for (v in c.values) compile(v));
+
+					skippable(scope(compile(c.expr)));
+				});
+
+				skippable(defaultExpr == null ? addCmd(NULL) : scope(compile(defaultExpr)));
+			case ETypeVarPath(path):
+				addCmd(TYPE_VAR_PATH);
+
+				addDynamic(path);
 			default:
 				error(EUnsupportedExpr(expr));
 		}

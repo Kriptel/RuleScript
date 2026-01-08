@@ -22,6 +22,8 @@ enum abstract NeoByte(Int) from Int to Int
 	var IDENT;
 	var IDENT_LOCAL;
 	var VAR;
+	var PROPERTY;
+	var PROPERTY_LOCAL;
 	var BLOCK;
 	var FIELD;
 	var BINOP;
@@ -57,6 +59,7 @@ enum abstract NeoByte(Int) from Int to Int
 	var PACKAGE;
 	var RS_IMPORT; // cpp does not allow `IMPORT` ident.
 	var USING;
+	var TYPE_VAR_PATH;
 
 	// VALUES
 	var NULL;
@@ -105,6 +108,13 @@ enum abstract NeoByte(Int) from Int to Int
 	var OP_GT_EQUAL;
 
 	var OP_DYNAMIC;
+
+	// Property
+	var PROP_DEFAULT;
+	var PROP_CALLBACK;
+	var PROP_DYNAMIC;
+	var PROP_NULL;
+	var PROP_NEVER;
 }
 
 enum NeoError

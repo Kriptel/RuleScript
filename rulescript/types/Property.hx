@@ -17,6 +17,7 @@ class Property
 
 	@:allow(rulescript.interps.RuleScriptInterp)
 	@:allow(rulescript.interps.BytecodeInterp)
+	@:allow(rulescript.interps.NeoInterp)
 	var _lazyValue:() -> Dynamic;
 
 	@:isVar public var value(get, set):Dynamic;
