@@ -84,6 +84,22 @@ class NeoTest extends Test
 				a;
 			});
 
+		runScript("
+		var a = '';
+		
+		for(id => i in 'RuleScript'.split(''))
+			a += '$id $i, ';
+
+		a;
+		", {
+				var a = '';
+
+				for (id => i in 'RuleScript'.split(''))
+					a += '$id $i, ';
+
+				a;
+			});
+
 		runScript('
 		var a = 1;
 		
@@ -146,5 +162,73 @@ class NeoTest extends Test
 
 				a;
 			});
+
+		runScript('
+		import Reflect;
+		import Reflect as AliasReflect;
+		import Reflect.getProperty;
+		import Reflect.getProperty as gp;
+
+		return Reflect == AliasReflect && Reflect.getProperty == getProperty && getProperty == gp;
+		', true);
+
+		runScript('
+		function a(a:Bool,?b:Int,...args:Int){
+			var x = 1;
+			x += (a ? 2 : 4);	
+			x += b;
+			x += { var i = 0;
+				for(arg in args) 
+					i += arg;
+				i; }
+			x;
+		}
+
+		var b = function(a:Bool,?b:Int,...args:Int){
+			var x = 1;
+			x += (a ? 2 : 4);	
+			x += b;
+			x += { var i = 0;
+				for(arg in args) 
+					i += arg;
+				i; }
+			x;
+		}
+
+		var x = 330;
+		var a = a(true,321, 0,1,2,3);
+		var b = b(true,321, 0,1,2,3);
+		return x == a && a == b;
+		', true);
+
+		runScript('
+		var _a = 0;
+
+		var a(get,set):Int;
+
+		function get_a(){
+			return _a;
+		}
+		
+		function set_a(A:Int){
+			return _a = A;
+		}
+		');
+
+		runScript('
+		var a = 1234;
+
+		return switch(a)
+		{
+			case 123:
+				"hello";
+			case 456:
+				"world";
+			case true, 1234:
+				"RuleScript";
+			default:
+				"RuleScript: Hello world";
+		}
+		');
 	}
 }

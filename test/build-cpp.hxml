@@ -1,5 +1,7 @@
 test/build.hxml
 
+--debug
+
 -cpp export/cpp/main.exe
 
---cmd export\\cpp\\main.exe\\Main
+--cmd export\\cpp\\main.exe\\Main-debug

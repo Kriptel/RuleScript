@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Wildcard import.
+- ScriptedModule.
 - Shared variables between interps. (see [#29](https://github.com/Kriptel/RuleScript/pull/29))
 - Scripted typedef.
 - Neo interpreter.
@@ -57,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `rulescript.Parser` typedef.
 - `rulescript.HxParser` typedef.
 - Converter macro.
+- herobrine was removed
 
 ### Deprecated
 - rulescript.RulescriptInterp.

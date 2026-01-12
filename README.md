@@ -1,283 +1,76 @@
-# RuleScript
+<p align="center">
+  <img src="./docs/logo.png" width="60%"/>
+</p>
 
-[Hscript](https://github.com/HaxeFoundation/hscript) addon featuring script classes, imports, usings, properties, string interpolation and more.
+#
 
-## Features:
+RuleScript is an [HScript](https://github.com/HaxeFoundation/hscript) addon featuring script classes, imports, usings, properties, string interpolation and more.
 
-- [Bytecode interpeter](#bytecode-interpeter)
-- [Neo interpeter](#bytecode-interpeter)
-- [Package](#package)
-- [Import](#import)
-	- [Alias](#import-with-alias)
-	- [Static field](#static-field-import)
-- [Using](#using)
-- [Property](#property)
-- [Type path](#type-path)
-- [String interpolation](#string-interpolation)
-- [Regular expressions.](#regular-expressions)
-- [Script Class](#rulescriptedclass)
-- [Abstracts in script](#abstracts-in-script)
-- [`??` and `??=` operators](#and--operators)
-- [Rest](#rest)
-- [HxParser settings](#hxparser-settings)
+## Features
 
-### Bytecode interpeter
+### Basic
+- [Package](./docs/basic.md#package)
+- [Import](./docs/basic.md#import)
+- [Wildcard Import](./docs/basic.md#wildcard-import)
+- [Import with Alias](./docs/basic.md#import-with-alias)
+- [Static Field Import](./docs/basic.md#static-field-import)
+- [Using](./docs/basic.md#using)
+- [Property Access](./docs/basic.md#property)
+- [Type Path](./docs/basic.md#type-path)
+  
+### Advanced
+- [Abstracts](./docs/abstracts.md)
+- [Context](./docs/context.md)
+- [Interpreters](./docs/interpreters.md)
+- [RuleScriptedClass](./docs/classes.md)
+- [Scripted Classes](./docs/classes.md#rulescriptedclass)
+- [String Interpolation](./docs/advanced.md#string-interpolation)
+- [Regular Expressions](./docs/advanced.md#regular-expressions)
+- [Typedefs](./docs/advanced.md#typedefs)
+- [`??` and `??=` Operators](./docs/advanced.md#-and--operators)
+- [Rest](./docs/advanced.md#rest)
 
-Optimizes and converts `hscript.Expr` to bytecode, distributes objects into buffers. Works much faster than RuleScriptInterp.
+### Other
+- [HxParser Settings](./docs/parser.md)
+- [Limitations](#limitations)
+- [Install](#install)
 
-```haxe
-script = new RuleScript(new rulescript.interps.BytecodeInterp());
-
-script.execute('trace("Hello World")'); // Hello World
-```
-
-### Neo interpeter
-> ⚠️ **Warning:** neo interpreter is currently under development. Its functionality is limited compared to other interpreters.
-
-Neo interpreter is a successor to the previous bytecode interpreter, fixing its stability, performance, and readability problems.
-
-```haxe
-script = new RuleScript(new rulescript.interps.NeoInterp());
-
-script.execute('trace("Hello World")'); // Hello World
-```
-
-### Package
-```haxe
-package scripts.hello.world;
-```
-### Import
-```haxe
-import haxe.ds.StringMap;
-
-var map = new StringMap();
-map.set("Hello","World");
-trace(map.get("Hello")); // World
-```
-### Import with alias
-Supports both the `as` and `in` aliases.
-```haxe
-import haxe.ds.StringMap as StrMap;
-
-var map = new StrMap();
-map.set("Hello","World");
-trace(map.get("Hello")); // World
-```
-```haxe
-import haxe.ds.StringMap in StrMap;
-
-var map = new StrMap();
-map.set("Hello","World");
-trace(map.get("Hello")); // World
-```
-
-### Static field import
-```haxe
-import Reflect.getProperty;
-
-var a = {
-	"hello":"world"
-};
-
-return getProperty(a,"hello");
-```
-
-### Using
-```haxe
-using Reflect;
-
-var a = {
-  "Hello":"World"
-}
-trace(a.getProperty("Hello")); // World
-```
-
-### Property
-```haxe
-var _a = 'Hello World';
-
-var a(get,set):String;
-
-function get_a():String
-	return _a;
-
-function set_a(v:String):String
-	return _a = v;
-
-trace(a); // Hello World
-```
-
-### Type path
-
-Use any types without importing them using their type path.
-
-```haxe
-sys.FileSystem;
-```
-```haxe
-haxe.ds.StringMap;
-```
-
-### String interpolation
-```haxe
-var a = 'Hello';
-trace('RuleScript: $a World'); // RuleScript: Hello World
-```
-```haxe
-var a = {
-    a:'RuleScript',
-    b: () -> 'Hello',
-    c: (a) -> a ? 'World' : '';
-};
-        
-trace('${a.a}: ${a.b() + ' ' + a.c(true)}'); // RuleScript: Hello World
-```
-
-
-### Regular expressions
-```haxe
-~/haxe/i;
-```
-
-### RuleScriptedClass
-RuleScript supports scripted classes; these can have strict and non-strict constructors.
-
-Script :
-```haxe
-class ScriptedClass extends test.ScriptedClassTest
-{
-	public function new(customArg:Int,arg1:String)
-	{
-		trace('Constructor.pre: $customArg, $arg1');
-		
-		super('Super Arg');
-
-		trace('Constructor.post: $customArg, $arg1');	
-	}
-
-	override public function info()
-	{
-		return 'Scripted class, super info: ${super.info()}';
-	}
-}
-```
-Source :
-```haxe
-class ScriptedClassTest implements RuleScriptedClass extends SrcClass {}
-```
-
-See [`Main.hx`](./test/src/Main.hx#l232), [`ScriptedClassTest.hx`](./test/src/test/ScriptedClassTest.hx), [`ScriptedClass`](./test/scripts/haxe/ScriptedClass.rhx).
-
-### Typedefs
-
-Allows you to set the type path to any value. Has a higher resolve priority than classes, abstracts, or enums, but lower than `resolveScript`
-
-```haxe
-Typedefs.register('hello.world.HxParser', HxParser);
-
-var script = new RuleScript();
-trace(script.execute('hello.world.HxParser') == HxParser); // true
-```
-
-### Abstracts in script
-
-`RuleScriptAbstracts.txt` in any classpath :
-```
-test.HelloWorldAbstract
-```
-
-test/HelloWorldAbstract.hx :
-```haxe
-abstract HelloWorldAbstract(String) from String to String
-{
-	public static function rulescriptPrint():HelloWorldAbstract
-		return 'Hello World';
-}
-```
-Script :
-```haxe
-import test.HelloWorldAbstract;
-
-trace(HelloWorldAbstract.rulescriptPrint()); // Hello World
-```
-More templates can be found in [`test/src/Main.hx`](./test//src/Main.hx).
-
-### `??` and `??=` operators
-```haxe
-trace(null ?? 'Hello World'); // Hello World
-
-var a = 'hello';
-
-a ??= 'world';
-trace(a); // hello
-
-a = null;
-a ??= 'world';
-trace(a) // world
-```
-
-### Rest
-```haxe
-var f = function(hello:String, ...rest:Dynamic)
-{
-	return '$hello: ' + rest.join(' ');
-}
-
-trace(f('Rulescript','Hello','World','!')); // Rulescript: Hello World !
-
-trace(f('Rulescript',...['Hello','World','!'])); // Rulescript: Hello World !
-```
-
-### HxParser settings
-
-The parser can be configured, some functions can be disabled or enabled.
-
-Use the `setParameters` function to configure the parser.
-
-List of parameters:
-- allowJSON
-- allowMetadata
-- allowTypes
-- allowPackage
-- allowImport
-- allowUsing
-- allowStringInterpolation
-- allowTypePath
-
-Parser modes:
-- HxParserMode.DEFAULT
-- HxParserMode.MODULE
-
-# Limitations
+## Limitations
 
 - Script `using` callbacks support a maximum of 8 arguments.
-- [Wildcard imports](https://haxe.org/manual/type-system-import.html#wildcard-import) are not supported.
 - AbstractMacro only supports `static` [abstract](https://haxe.org/manual/types-abstract-class.html) fields.
 
-# Install
+## Install
 
 1. Installing the library: 
-	- haxelib version
-
- 		- Haxelib : `haxelib install rulescript`
-		- Hmm : `hmm haxelib rulescript`
-	- github version
-
-		- Haxelib : `haxelib git rulescript https://github.com/Kriptel/RuleScript.git`
-		- Hmm : `hmm git rulescript https://github.com/Kriptel/RuleScript.git`
-	- github version (dev)
-		> ⚠️ **Warning:** Dev version of RuleScript requires [git version of hscript](https://github.com/HaxeFoundation/hscript)
-
-    	- Haxelib : `haxelib git rulescript https://github.com/Kriptel/RuleScript.git dev`
-    	- Hmm : `hmm git rulescript https://github.com/Kriptel/RuleScript.git dev`
+	- **HaxeLib**
+ 		- Haxelib ● `haxelib install rulescript`
+		- Hmm ● `hmm haxelib rulescript`
+	- `GIT` **(master)**:
+		- Haxelib ● `haxelib git rulescript https://github.com/Kriptel/RuleScript.git`
+		- Hmm ● `hmm git rulescript https://github.com/Kriptel/RuleScript.git`
+	- `GIT` **(dev)**:
+    	- Haxelib ● `haxelib git rulescript https://github.com/Kriptel/RuleScript.git dev`
+    	- Hmm ● `hmm git rulescript https://github.com/Kriptel/RuleScript.git dev`
 2. Adding the library to your project:
     
-    Hxml :
+    **Hxml** :
     ```hxml
     -lib rulescript
     ```
     
-    Lime/OpenFL :
+    **Lime**/**OpenFL** :
     ```xml
     <haxelib name="rulescript"/>
     ```
+
+## Compatibility
+
+The following HScript versions are currently compatible:
+- HScript 2.6.0
+- HScript 2.7.0
+- HScript git [31882f1](https://github.com/HaxeFoundation/hscript/tree/31882f176a9deb4bda3aaba83f6ebc1981a060b3)
+
+---
+
+Full list of contributors [here](https://github.com/Kriptel/RuleScript/graphs/contributors).

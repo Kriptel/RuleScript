@@ -41,6 +41,7 @@ class RuleScriptedClassUtil
 
 			var rulescript = new rulescript.RuleScript();
 			rulescript.superInstance = superInstance;
+			rulescript.scriptName = typePath;
 			if (rulescript.interp is RuleScriptInterp)
 				cast(rulescript.interp, RuleScriptInterp).skipNextRestore = true;
 
@@ -72,7 +73,7 @@ class RuleScriptedClassUtil
 
 	public static function buildScriptedClass(cl:ScriptedClass, rulescript:RuleScript):Void
 	{
-		rulescript.variables['new'] = () -> {};
+		rulescript.access.setVariable('new', () -> {});
 
 		var list = [];
 
@@ -81,6 +82,7 @@ class RuleScriptedClassUtil
 		while (currentClass != null)
 		{
 			list.insert(0, currentClass);
+
 			if (currentClass.superClass is ScriptedClass)
 				currentClass = currentClass.superClass;
 			else
@@ -91,7 +93,8 @@ class RuleScriptedClassUtil
 
 		for (cl in list)
 		{
-			final exprs = Tools.moduleDeclsToExpr(cl.module.decl, {isScriptedClass: true, fieldFilter: f -> !f.access.contains(AStatic)});
+			final exprs = Tools.moduleDeclsToExpr(cl.module.sharedDecls,
+				{classImpl: cl.impl, isScriptedClass: true, fieldFilter: f -> !f.access.contains(AStatic)});
 
 			final exprs:Array<Expr> = switch (exprs.getExpr())
 			{

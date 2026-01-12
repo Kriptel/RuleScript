@@ -1,7 +1,6 @@
 package rulescript.interps.neo;
 
 import hscript.Expr;
-import rulescript.RuleScript.IInterp;
 import rulescript.Tools.toExpr;
 import rulescript.interps.neo.NeoTypes;
 import rulescript.macro.NeoMacro.*;
@@ -111,18 +110,79 @@ using rulescript.Tools;
 						}
 				}
 
-			case EVar(n, t, e, true, isFinal):
-				compile(EBinop('=', EIdent(n).toExpr(), e).toExpr());
-
-			case EVar(n, t, e, _, isFinal):
-				addCmd(VAR);
-
-				addLocal(n);
-
-				if (e == null)
-					addCmd(NULL)
+			case EVar(name, type, expr, global, isFinal):
+				if (global)
+					compile(EBinop('=', EIdent(name).toExpr(), expr).toExpr());
 				else
-					compile(e);
+				{
+					addCmd(VAR);
+
+					var local = addHiddenLocal(name);
+
+					if (expr == null)
+						addCmd(NULL)
+					else
+						compile(expr);
+
+					local.show();
+				}
+			case EProp(name, get, set, type, expr, global):
+				var local:Null<{id:Int, show:Void->Void}> = null;
+
+				if (global)
+				{
+					addCmd(PROPERTY);
+					addString(name);
+				}
+				else
+				{
+					addCmd(PROPERTY_LOCAL);
+					local = addHiddenLocal(name);
+				}
+
+				switch (get)
+				{
+					case 'default':
+						addCmd(PROP_DEFAULT);
+					case 'get':
+						addCmd(PROP_CALLBACK);
+						compile(EFunction([], ECall(EIdent('get_$name').toExpr(), []).toExpr()).toExpr());
+					case 'null':
+						addCmd(PROP_NULL);
+					case 'dynamic':
+						addCmd(PROP_DYNAMIC);
+						compile(EFunction([], ECall(EIdent('get_$name').toExpr(), []).toExpr()).toExpr());
+					case 'never':
+						addCmd(PROP_NEVER);
+					default:
+						throw '$name: Custom property accessor is no longer supported, please use `get`';
+				}
+
+				switch (set)
+				{
+					case 'default':
+						addCmd(PROP_DEFAULT);
+					case 'set':
+						addCmd(PROP_CALLBACK);
+						compile(EFunction([{name: 'v'}], ECall(EIdent('set_$name').toExpr(), [EIdent('v').toExpr()]).toExpr()).toExpr());
+					case 'null':
+						addCmd(PROP_NULL);
+					case 'dynamic':
+						addCmd(PROP_DYNAMIC);
+						compile(EFunction([{name: 'v'}], ECall(EIdent('set_$name').toExpr(), [EIdent('v').toExpr()]).toExpr()).toExpr());
+					case 'never':
+						addCmd(PROP_NEVER);
+					default:
+						throw '$name: Custom property accessor is no longer supported, please use `set`';
+				}
+
+				if (expr != null)
+					compile(EFunction([], EBlock([EVar('__v', type, expr).toExpr(), EIdent('__v').toExpr()]).toExpr()).toExpr());
+				else
+					addCmd(NULL);
+
+				if (local != null)
+					local.show();
 
 			case EBlock(exprs):
 				addCmd(BLOCK);
@@ -173,6 +233,18 @@ using rulescript.Tools;
 						}
 
 						compile(e2);
+					case '&&', '||':
+						addCmd(OP);
+
+						addCmd(switch (op)
+						{
+							case '&&': OP_AND;
+							case '||': OP_OR;
+							default: error(EInvalidOperator(op));
+						});
+
+						compile(e1);
+						skippable(compile(e2));
 
 					case '+', '-', '*', '/', '%', '<<', '>>', '>>>', '&', '|', '^', '==', '!=', '<', '<=', '>', '>=':
 						addCmd(OP);
@@ -203,6 +275,8 @@ using rulescript.Tools;
 						compile(e2);
 					case '%=', '*=', '/=', '+=', '-=', '<<=', '>>=', '>>>=', '&=', '|=', '^=':
 						compile(EBinop('=', e1, EBinop(op.substr(0, -1), e1, e2).toExpr()).toExpr());
+					default:
+						error(EInvalidOperator(op));
 				}
 
 			case EUnop(op, prefix, e):
@@ -347,6 +421,47 @@ using rulescript.Tools;
 					compile(e);
 				});
 
+			#if (hscript >= "2.7.0")
+			case EForGen(it, e):
+				var key:String = null, value:String = null;
+				var iterator:Expr = null;
+
+				switch (it.getExpr())
+				{
+					case EBinop('in', e1, e2):
+						switch (e1.getExpr())
+						{
+							case EBinop('=>', k, v):
+								key = switch (k.getExpr())
+								{
+									case EIdent(id): id;
+									default: error(EUnsupportedExpr(k));
+								}
+
+								value = switch (v.getExpr())
+								{
+									case EIdent(id): id;
+									default: error(EUnsupportedExpr(v));
+								}
+							default:
+								error(EUnsupportedExpr(e1));
+						}
+						iterator = e2;
+					default:
+						error(EUnsupportedExpr(it));
+				}
+
+				addCmd(FOR_KEY_VALUE);
+
+				scope({
+					addLocal(key);
+					addLocal(value);
+					compile(iterator);
+
+					compile(e);
+				});
+			#end
+
 			case EWhile(cond, e):
 				addCmd(WHILE);
 
@@ -373,15 +488,83 @@ using rulescript.Tools;
 					compile(ecatch);
 				}));
 
-			// case EForGen(it, e):
-			// case EFunction(args, e, name, ret):
-			// case EImport(name, star, alias, func):
-			// case EMeta(name, args, e):
-			// case EProp(n, g, s, t, e, global):
-			// case ESwitch(e, cases, defaultExpr):
-			// case ETypeVarPath(path):
-			// case EUsing(name):
+			case EImport(name, star, alias, func):
+				addCmd(RS_IMPORT);
+				addString(name);
+				addBool(star);
+				addString(alias);
+				addString(func);
 
+			case EFunction(args, e, name, ret):
+				switch (name)
+				{
+					// case 'new':
+					// addCmd(CONSTRUCTOR);
+					case null:
+						addCmd(ANON_FUNCTION);
+					default:
+						addCmd(FUNCTION);
+						addString(name);
+				};
+
+				addInt(args.length);
+
+				var minArgs:Int = 0;
+				for (arg in args)
+				{
+					if (!arg.opt)
+						minArgs++;
+				}
+
+				addInt(minArgs);
+
+				final isRest:Bool = (args.length > 0 && args[args.length - 1].t.match(CTPath(["haxe", "Rest"], _)));
+
+				addBool(isRest);
+
+				skippable(scope({
+					for (arg in args)
+						addLocal(arg.name);
+
+					skippable(compile(e));
+				}));
+			case EMeta(name, args, e):
+				addCmd(META);
+				addString(name);
+
+				if (args == null)
+					addInt(-1);
+				else
+				{
+					addInt(args.length);
+					for (arg in args)
+						addDynamic(arg); // The expression remains in AST form
+				}
+
+				compile(e);
+			case EUsing(name):
+				addCmd(USING);
+				addString(name);
+
+			case ESwitch(e, cases, defaultExpr):
+				addCmd(SWITCH);
+				compile(e);
+
+				addInt(cases.length);
+
+				skippable(for (c in cases)
+				{
+					addInt(c.values.length);
+					skippable(for (v in c.values) compile(v));
+
+					skippable(scope(compile(c.expr)));
+				});
+
+				skippable(defaultExpr == null ? addCmd(NULL) : scope(compile(defaultExpr)));
+			case ETypeVarPath(path):
+				addCmd(TYPE_VAR_PATH);
+
+				addDynamic(path);
 			default:
 				error(EUnsupportedExpr(expr));
 		}
@@ -405,6 +588,11 @@ using rulescript.Tools;
 	inline function addInt(i:Int):Int
 	{
 		return interp.bytes.push(i);
+	}
+
+	inline function addBool(b:Bool):Int
+	{
+		return interp.bytes.push(b ? BOOL_TRUE : BOOL_FALSE);
 	}
 
 	inline function setInt(pos:Int, v:Int):Int
@@ -439,6 +627,14 @@ using rulescript.Tools;
 		setLocal(name, id);
 
 		return id;
+	}
+
+	inline function addHiddenLocal(name:String):{id:Int, show:Void->Void}
+	{
+		var id = linkDynamic(null);
+		addLink(id);
+
+		return {id: id, show: () -> setLocal(name, id)};
 	}
 
 	inline function linkFloat(fl:Float):Int
@@ -478,6 +674,11 @@ class NeoInterpAccess extends RuleScriptAccess
 	}
 
 	override function resetVariables():Void
+	{
+		interp.reset();
+	}
+
+	override function resetInterp():Void
 	{
 		interp.reset();
 	}

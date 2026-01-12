@@ -7,6 +7,7 @@ import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.types.IRuleScriptCustomAccessor;
 import rulescript.types.Property;
 import rulescript.types.ScriptedAbstract;
+import rulescript.types.ScriptedEnum;
 import rulescript.types.ScriptedType;
 import rulescript.types.ScriptedTypeUtil;
 import rulescript.types.ScriptedTypedef;
@@ -91,7 +92,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 		if (v == null && !variables.exists(id))
 		{
-			v = Reflect.getProperty(superInstance, id);
+			if (superInstance != null)
+				v = get(superInstance, id);
 
 			// SHARED VARIABLES
 			if (v == null && context != null)
@@ -127,6 +129,11 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				}
 			case EField(e, f):
 				v = set(expr(e), f, v);
+			case ETypeVarPath(_path):
+				final path:Array<String> = _path.copy();
+				final f:String = path.pop();
+
+				v = set(resolveTypeOrValue(path), f, v);
 			case EArray(e, index):
 				var arr:Dynamic = expr(e);
 				var index:Dynamic = expr(index);
@@ -213,12 +220,18 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 					imports.set(name, value);
 
-					if (depth == 0)
-						variables.set(name, value)
-					else
+					variables.set(name, value);
+				}
+				else
+				{
+					for (typeName in Tools.getTypesInPackage(path))
 					{
-						declared.push({n: name, old: locals.get(name)});
-						locals.set(name, {r: value});
+						if (!variables.exists(typeName))
+						{
+							final type:Dynamic = resolveType(TypePath.createString(path.split('.'), typeName));
+							imports.set(typeName, type);
+							variables.set(typeName, type);
+						}
 					}
 				}
 			case EUsing(path):
@@ -227,45 +240,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				if (t == null)
 					error(ECustom('Type not found : $path'));
 
-				if (t != null)
-					usings.set(path, t);
+				usings.set(path, t);
 			case ETypeVarPath(path):
-				var id:String = path[0];
-
-				if ((!locals.exists(id) && !variables.exists(id))
-					&& (!superFields.contains(id) && !superFields.contains('get_$id'))
-					&& (context == null || !context.staticVariables.exists(id) && !context.publicVariables.exists(id)))
-				{
-					final typePath:String = path.join('.');
-
-					if (typePaths.exists(typePath))
-						return typePaths[typePath];
-					else
-					{
-						final type:Dynamic = resolveType(typePath);
-						if (type != null)
-							return typePaths[typePath] = type;
-						else
-						{
-							final field = typePath.substring(typePath.lastIndexOf('.') + 1);
-
-							return typePaths[typePath] = get(resolveType(typePath.substring(0, typePath.lastIndexOf('.'))), field);
-						}
-					}
-				}
-
-				var obj:Dynamic = null;
-				var l = locals.get(id);
-				if (l != null)
-					obj = getScriptProp(l.r);
-
-				obj ??= resolve(id);
-
-				var currentField:Int = 0;
-				while (path[++currentField] != null)
-					obj = get(obj, path[currentField]);
-
-				return obj;
+				return resolveTypeOrValue(path);
 			case EMeta(n, args, e):
 				return switch (n)
 				{
@@ -300,7 +277,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 						null;
 					default:
-						(onMeta != null) ? onMeta(n, args, e) : this.expr(e);
+						(onMeta != null) ? onMeta(n, args, e) : exprMeta(n, args, e);
 				}
 
 			case EVar(n, _, e, global, _):
@@ -345,7 +322,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						args.push(this.expr(p));
 				}
 
-				switch (hscript.Tools.expr(e))
+				switch (e.getExpr())
 				{
 					case EField(e, f):
 						var obj = this.expr(e);
@@ -368,12 +345,16 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 								__constructors[__constructors.length - 1]?.stashVars();
 
 								__constructors.push(makeSuperFunction(args, params));
+							case EIdent('__super_end'):
+								__constructors.pop().finish();
+								__constructors[__constructors.length - 1].restoreVars();
 
+								if (__constructors.length == 1)
+								{
+									__constructors.pop().restoreVars();
+								}
 							default:
 						}
-					case EFunction(_, _, '__super_end', _):
-						__constructors[__constructors.length - 1].restoreVars();
-						__constructors.pop().finish();
 
 					case EIdent('__rulescript__interpType'):
 						return 'RuleScriptInterp';
@@ -508,7 +489,33 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					}
 				}
 				return f;
+			case ESwitch(e, cases, defaultExpr):
+				var val:Dynamic = this.expr(e);
+				var match = false;
+				for (c in cases)
+				{
+					var old = declared.length;
 
+					for (v in c.values)
+						if (caseMatch(v, e, val))
+						{
+							match = true;
+							break;
+						}
+						else
+							restore(old);
+
+					if (match)
+					{
+						val = this.expr(c.expr);
+						break;
+					}
+
+					restore(old);
+				}
+				if (!match)
+					val = defaultExpr == null ? null : this.expr(defaultExpr);
+				return val;
 			default:
 				return super.expr(expr);
 		}
@@ -554,6 +561,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		return prop;
 	}
 
+	#if rulescript_is_git_hscript override #end
 	function resolveType(path:String):Dynamic
 	{
 		if (context != null)
@@ -562,7 +570,47 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			return Tools.resolveType(path);
 	}
 
-	#if rulescript_is_git_hscript
+	function resolveTypeOrValue(path:Array<String>):Dynamic
+	{
+		final id:String = path[0];
+
+		if ((!locals.exists(id) && !variables.exists(id))
+			&& (!superFields.contains(id) && !superFields.contains('get_$id'))
+			&& (context == null || !context.staticVariables.exists(id) && !context.publicVariables.exists(id)))
+		{
+			final typePath:String = path.join('.');
+
+			if (typePaths.exists(typePath))
+				return typePaths[typePath];
+			else
+			{
+				final type:Dynamic = resolveType(typePath);
+				if (type != null)
+					return typePaths[typePath] = type;
+				else
+				{
+					final field = typePath.substring(typePath.lastIndexOf('.') + 1);
+
+					return typePaths[typePath] = get(resolveType(typePath.substring(0, typePath.lastIndexOf('.'))), field);
+				}
+			}
+		}
+
+		var obj:Dynamic = null;
+		var l = locals.get(id);
+		if (l != null)
+			obj = getScriptProp(l.r);
+
+		obj ??= resolve(id);
+
+		var currentField:Int = 0;
+		while (path[++currentField] != null)
+			obj = get(obj, path[currentField]);
+
+		return obj;
+	}
+
+	#if (hscript >= "2.7.0")
 	override function makeKeyValueIterator(v:Dynamic):KeyValueIterator<Dynamic, Dynamic>
 	{
 		#if hl
@@ -602,11 +650,19 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		if (o is IRuleScriptCustomAccessor)
 			return cast(o, IRuleScriptCustomAccessor).getField(f);
 
-		if (o is RuleScriptedClass)
+		if (o is ScriptedType)
 		{
-			var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
-			if (cl.variableExists(f))
-				return getScriptProp(cl.getVariable(f));
+			switch (cast(o, ScriptedType).__rulescript_type)
+			{
+				case CLASS, ABSTRACT:
+					var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
+					if (cl.variableExists(f))
+						return getScriptProp(cl.getVariable(f));
+				case ENUM:
+					var en:ScriptedEnum = cast(o, ScriptedEnum);
+					return en.getEnumConstructor(f);
+				default:
+			}
 		}
 
 		var prop:Dynamic = super.get(o, f);
@@ -710,6 +766,97 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		#else
 		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : Tools.isClass(c) ? Type.createInstance(c, args) : c;
 		#end
+	}
+
+	function caseMatch(ecase:Expr, evalue:Expr, value:Dynamic):Bool
+	{
+		if (value is ScriptedEnumInstance || Reflect.isEnumValue(value))
+		{
+			final isEnumValue:Bool = Reflect.isEnumValue(value);
+
+			final enChecker:EnumHandler = if (!isEnumValue)
+			{
+				final enInst:ScriptedEnumInstance = cast(value, ScriptedEnumInstance);
+
+				{
+					obj: enInst.en,
+					hasEnumConstructor: enInst.en.hasEnumConstructor,
+					enumHasParams: enInst.en.enumHasParams,
+					getEnumConstructor: enInst.en.getEnumConstructor,
+					equals: Tools.enumEq.bind(enInst)
+				};
+			}
+			else
+			{
+				final en:Enum<Dynamic> = cast Type.getEnum(value);
+				final enInst:EnumValue = cast value;
+
+				final enConstructs:Array<String> = Type.getEnumConstructs(en);
+				final simpleEnums:Array<String> = Type.allEnums(en).map(_ -> Std.string(_));
+
+				{
+					obj: en,
+					hasEnumConstructor: function(v) return enConstructs.contains(v),
+					enumHasParams: function(e) return !simpleEnums.contains(e),
+					getEnumConstructor: function(f:String):Dynamic
+					{
+						return if (simpleEnums.contains(f))
+							EnumPattern(en, enConstructs.indexOf(f), null);
+						else
+							Reflect.makeVarArgs((args:Array<Dynamic>) ->
+							{
+								EnumPattern(en, enConstructs.indexOf(f), args);
+							});
+					},
+					equals: Tools.enumEq.bind(enInst)
+				}
+			}
+
+			function enumExpr(e:Expr):Dynamic
+			{
+				return switch (e.getExpr())
+				{
+					case EIdent(v) if (enChecker.hasEnumConstructor(v) && !enChecker.enumHasParams(v)):
+						enChecker.getEnumConstructor(v);
+					case ECall(e, params):
+						var isEnumPattern:Bool = false;
+
+						final args:Array<Dynamic> = [
+							for (id => param in params)
+							{
+								switch (param.getExpr())
+								{
+									case EIdent('_'):
+										WildcardPattern;
+									case EIdent(id), EVar(id, _) if (!enChecker.hasEnumConstructor(id)):
+										VarPattern(value ->
+										{
+											declared.push({n: id, old: locals.get(id)});
+											locals.set(id, {r: value});
+										});
+									default:
+										enumExpr(param);
+								}
+							}
+						];
+
+						switch (e.getExpr())
+						{
+							case EIdent(v) if (enChecker.hasEnumConstructor(v) && enChecker.enumHasParams(v)):
+								call(null, enChecker.getEnumConstructor(v), args);
+							default:
+								call(null, enumExpr(e), args);
+						}
+					case EParent(e): enumExpr(e);
+					case ECast(e, t): enumExpr(e);
+					default: expr(e);
+				}
+			}
+
+			return enChecker.equals(enumExpr(ecase));
+		}
+
+		return expr(ecase) == value;
 	}
 
 	function set_errorHandler(v:haxe.Exception->Void):haxe.Exception->Void
@@ -868,10 +1015,19 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 private typedef SuperFunction =
 {
-	f:Expr->Dynamic,
-	stashVars:Void->Void,
-	restoreVars:Void->Void,
-	finish:Void->Void
+	var f:Expr->Dynamic;
+	var stashVars:Void->Void;
+	var restoreVars:Void->Void;
+	var finish:Void->Void;
+}
+
+private typedef EnumHandler =
+{
+	var obj:Dynamic;
+	var hasEnumConstructor:String->Bool;
+	var enumHasParams:String->Bool;
+	var getEnumConstructor:String->Dynamic;
+	var equals:Dynamic->Bool;
 }
 
 @:access(rulescript.interps.RuleScriptInterp)
@@ -895,6 +1051,11 @@ class RuleScriptInterpAccess extends RuleScriptAccess
 	}
 	
 	override function resetVariables():Void
+	{
+		interp.resetVariables();
+	}
+
+	override function resetInterp():Void
 	{
 		interp.resetVariables();
 	}
@@ -1077,7 +1238,6 @@ class RuleScriptInterpAccess extends RuleScriptAccess
 					},
 					post: () ->
 					{
-						c.restoreVars();
 						// Post exprs
 						c.f(rulescript.Tools.toExpr(EBlock(exprs.slice(superID + 1))));
 

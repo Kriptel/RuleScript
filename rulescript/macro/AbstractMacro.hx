@@ -4,7 +4,7 @@ package rulescript.macro;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 import haxe.macro.ExprTools;
-import rulescript.macro.MacroTools.TypePath;
+import rulescript.Tools.TypePath;
 import sys.FileSystem;
 import sys.io.File;
 
@@ -39,7 +39,7 @@ class AbstractMacro
 			for (abstractType in abstractsList)
 			{
 				if (!ignoreList.contains('-#$abstractType'))
-					buildAbstract(MacroTools.parseTypePath(abstractType));
+					buildAbstract(new TypePath(abstractType));
 			}
 		];
 
@@ -82,8 +82,8 @@ class AbstractMacro
 
 			alias = ExprTools.getValue(meta.params[0]);
 
-			if (!ExprTools.getValue(meta.params[1] ?? macro false))
-				alias = '${typePath.pack}.${alias}';
+			if (typePath.pack.length > 0 && !ExprTools.getValue(meta.params[1] ?? macro false))
+				alias = typePath.pack.join('.') + '.' + alias;
 		}
 
 		var value:Expr = {

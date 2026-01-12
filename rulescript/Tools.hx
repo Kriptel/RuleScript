@@ -1,19 +1,33 @@
 package rulescript;
 
+#if !macro
 import haxe.Constraints.Function;
 import hscript.Expr;
 import hscript.Printer;
 import rulescript.types.Abstracts;
 import rulescript.types.Property;
+import rulescript.types.ScriptedEnum;
 import rulescript.types.ScriptedTypeUtil;
-import rulescript.types.ScriptedTypedef;
 import rulescript.types.Typedefs;
+#end
 
 #if hl
 @:build(rulescript.macro.CallMethodMacro.build())
 #end
 class Tools
 {
+	public static function parseTypePath(typePath:String):TypePath
+	{
+		return new TypePath(typePath);
+	}
+
+	inline public static function startsWithLowerCase(s:String):Bool
+		return s.charAt(0) == s.charAt(0).toLowerCase();
+
+	inline public static function startsWithUpperCase(s:String):Bool
+		return s.charAt(0) == s.charAt(0).toUpperCase();
+
+	#if !macro
 	static var _printer:Printer = new Printer();
 
 	inline public static function exprToString(expr:Expr):String
@@ -47,6 +61,25 @@ class Tools
 		#else
 		return Reflect.callMethod(o, f, [o, a1, a2, a3, a4, a5, a6, a7, a8]);
 		#end
+	}
+
+	public static function makeRestFunction(f:Array<Dynamic>->Dynamic, argNum:Int):Dynamic
+	{
+		final restId:Int = argNum - 1;
+		final f = function(args:Array<Dynamic>)
+		{
+			return if (args.length > argNum)
+			{
+				final newArgs:Array<Dynamic> = args.slice(0, restId);
+				newArgs.push(args.slice(restId, args.length));
+
+				return f(newArgs);
+			}
+			else
+				f(args);
+		};
+
+		return Reflect.makeVarArgs(f);
 	}
 
 	#if hscriptPos
@@ -88,7 +121,7 @@ class Tools
 	inline public static function isClass(t:Dynamic):Bool
 	{
 		#if cpp
-		return Type.resolveClass(Type.getClassName(t)) != null;
+		return t is Class && untyped !cast(t, Class<Dynamic>).__IsEnum();
 		#else
 		return t is Class;
 		#end
@@ -103,12 +136,6 @@ class Tools
 		#end
 	}
 
-	inline public static function startsWithLowerCase(s:String):Bool
-		return s.charAt(0) == s.charAt(0).toLowerCase();
-
-	inline public static function startsWithUpperCase(s:String):Bool
-		return s.charAt(0) == s.charAt(0).toUpperCase();
-
 	inline public static function isEmptyClass(cl:Class<Dynamic>):Bool
 	{
 		#if interp
@@ -119,7 +146,8 @@ class Tools
 		#end
 	}
 
-	public static function moduleDeclsToExpr(moduleDecls:Array<ModuleDecl>, ?parameters:{?isScriptedClass:Bool, ?fieldFilter:FieldDecl->Bool}):Expr
+	public static function moduleDeclsToExpr(moduleDecls:Array<ModuleDecl>,
+			?parameters:{?isScriptedClass:Bool, ?fieldFilter:FieldDecl->Bool, ?classImpl:ClassDecl}):Expr
 	{
 		final fields:Array<Expr> = [];
 
@@ -129,7 +157,8 @@ class Tools
 
 		function pushField(field:FieldDecl, ?hasExtend:Bool = false)
 		{
-			if (parameters?.fieldFilter(field) ?? true)
+			if ((parameters?.fieldFilter != null) ? parameters.fieldFilter(field) : true)
+			{
 				switch (field.kind)
 				{
 					case KFunction(f):
@@ -150,6 +179,23 @@ class Tools
 						if (v.expr != null)
 							values.push(toExpr(EBinop('=', toExpr(EIdent(field.name)), v.expr)));
 				}
+			}
+		}
+
+		inline function pushClassDecl(c:ClassDecl)
+		{
+			c.fields.sort((f1:FieldDecl, f2:FieldDecl) ->
+			{
+				return switch [f1.kind.match(KVar(_)), f2.kind.match(KVar(_))]
+				{
+					case [true, true], [false, false]: 0;
+					case [true, false]: -1;
+					case [false, true]: 1;
+				};
+			});
+
+			for (field in c.fields)
+				pushField(field, c.extend != null);
 		}
 
 		for (moduleDecl in moduleDecls)
@@ -162,23 +208,17 @@ class Tools
 				case DUsing(path):
 					pushExpr(EUsing(path));
 				case DClass(c):
-					c.fields.sort((f1:FieldDecl, f2:FieldDecl) ->
-					{
-						return switch [f1.kind.match(KVar(_)), f2.kind.match(KVar(_))]
-						{
-							case [true, true], [false, false]: 0;
-							case [true, false]: -1;
-							case [false, true]: 1;
-						};
-					});
-
-					for (field in c.fields)
-						pushField(field, c.extend != null);
+					pushClassDecl(c);
 				case DTypedef(c):
 				case DField(f):
 					pushField(f);
 				default:
 			}
+
+		if (parameters?.classImpl != null)
+		{
+			pushClassDecl(parameters.classImpl);
+		}
 
 		for (value in values)
 			fields.push(value);
@@ -196,9 +236,14 @@ class Tools
 		#end
 	}
 
-	public static function resolveType(path:String):Dynamic
+	public static function resolveType(path:String, ?context:Context):Dynamic
 	{
+		final lastContext = ScriptedTypeUtil._currentContext;
+		ScriptedTypeUtil._currentContext = context;
+
 		var t:Dynamic = ScriptedTypeUtil.resolveScript(path);
+
+		ScriptedTypeUtil._currentContext = lastContext;
 
 		if (t != null)
 			return t;
@@ -247,6 +292,90 @@ class Tools
 	inline public static function getScriptProp(v:Dynamic):Dynamic
 	{
 		return v is Property ? cast(v, Property).value : v;
+	}
+
+	inline public static function getTypesInPackage(packageName:String):Array<String>
+	{
+		final list = rulescript.macro.TypeListMacro.getTypeList()[packageName];
+
+		if (list == null)
+			return [];
+
+		return list.copy();
+	}
+
+	public static function enumEq(a:Dynamic, b:Dynamic):Bool
+	{
+		if (a == b)
+		{
+			return true;
+		}
+
+		if (b is EnumPattern)
+		{
+			switch (cast(b, EnumPattern))
+			{
+				case EnumPattern(en, index, args):
+					if (a is ScriptedEnumInstance)
+						return cast(a, ScriptedEnumInstance).matchPattern(b);
+
+					if (en != Type.getEnum(a) || index != Type.enumIndex(a))
+						return false;
+
+					final params:Array<Dynamic> = Type.enumParameters(a);
+
+					for (i in 0...params.length)
+					{
+						if (!Tools.enumEq(params[i], args[i]))
+							return false;
+					}
+
+					return true;
+
+				case WildcardPattern:
+					return true;
+				case VarPattern(v):
+					v(a);
+					return true;
+			}
+		}
+
+		if (a is ScriptedEnumInstance || b is ScriptedEnumInstance)
+		{
+			if (a is ScriptedEnumInstance != b is ScriptedEnumInstance)
+				return false;
+
+			return cast(a, ScriptedEnumInstance).equals(cast b);
+		}
+
+		if (!Tools.isEnum(a) && !Tools.isEnum(b) && Type.getEnum(a) != Type.getEnum(b))
+		{
+			return false;
+		}
+
+		if (Type.enumIndex(a) != Type.enumIndex(b))
+			return false;
+
+		final paramsA:Array<Dynamic> = Type.enumParameters(a);
+		final paramsB:Array<Dynamic> = Type.enumParameters(b);
+
+		if (paramsA.length != paramsB.length)
+		{
+			return false;
+		}
+
+		for (i in 0...paramsA.length)
+		{
+			var paramA:Dynamic = paramsA[i];
+			var paramB:Dynamic = paramsB[i];
+
+			if (!enumEq(paramA, paramB))
+			{
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	#if hl
@@ -332,4 +461,101 @@ class Tools
 		return o;
 	}
 	#end
+	#end
+}
+
+#if !macro
+enum EnumPattern
+{
+	EnumPattern(e:haxe.extern.EitherType<Enum<Dynamic>, ScriptedEnum>, index:Int, args:Array<Dynamic>);
+	WildcardPattern; // _
+	VarPattern(v:Dynamic->Void);
+}
+#end
+
+@:forward
+abstract TypePath(_TypePath)
+{
+	public var typeName(get, never):String;
+
+	public function new(typePath:String)
+	{
+		final path:Array<String> = typePath.split('.');
+
+		final pack:Array<String> = [];
+
+		while (path.length > 0 && Tools.startsWithLowerCase(path[0]))
+			pack.push(path.shift());
+
+		var typeName:String = null;
+
+		if (path.length > 1)
+			typeName = path[1];
+
+		var name = path.length > 0 ? path[0] : pack.pop();
+
+		this = {
+			pack: pack,
+			name: name,
+			sub: typeName,
+			fullPath: typePath
+		}
+	}
+
+	/**
+	 * Returns the module path for a type, **excluding the type name**.
+	 * Example: For `a.B`, returns `a.B`; for `a.B.C`, returns `a.B`.
+	 * 
+	 * @return The module path as a String.
+	 */
+	inline public function modulePath():String
+	{
+		return if (this.pack.length > 0)
+			this.pack.join('.') + '.' + this.name;
+		else
+			this.name;
+	}
+
+	inline function get_typeName():String
+	{
+		return this.sub ?? this.name;
+	}
+
+	public static function create(pack:Array<String>, name:String, sub:String):TypePath
+	{
+		return new TypePath(createString(pack, name, sub));
+	}
+
+	public static function createString(pack:Array<String>, name:String, ?sub:String):String
+	{
+		var path:String = '';
+
+		if (pack.length > 0)
+		{
+			path = pack.join('.');
+
+			if (path != '')
+				path += '.';
+		}
+
+		path += name;
+
+		if (sub != null && name != sub)
+			path += '.' + sub;
+
+		return path;
+	}
+
+	inline public static function getTypeName(typePath:String):String
+	{
+		return StringTools.contains(typePath, '.') ? typePath.substring(typePath.lastIndexOf('.') + 1) : typePath;
+	}
+}
+
+private typedef _TypePath =
+{
+	var pack:Array<String>;
+	var name:String;
+	var ?sub:String;
+	var fullPath:String;
 }

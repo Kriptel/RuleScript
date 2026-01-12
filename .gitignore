@@ -1,7 +1,7 @@
 
 /.haxelib
 /.vscode
-/test/export
+**/export/
 hxformat.json
 /test/dump
 /.DS_Store

@@ -27,5 +27,19 @@ class ImportTest extends Test
 		
 		return getProperty("Hello World","length");
 		', "Hello World".length);
+
+		runScript('
+		import example.*;
+
+		ExampleEnum;
+		Test;
+		ScriptedClassTest;
+		');
+
+		runScript('
+		import haxe.ds.*;
+
+		IntMap == null;
+		', false);
 	}
 }

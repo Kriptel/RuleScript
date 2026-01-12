@@ -16,33 +16,13 @@ class MacroTools
 		switch (exprType)
 		{
 			case TEnum(t, params):
-				if (t.get().constructs.exists('EForGen'))
-					Compiler.define('rulescript_is_git_hscript');
+				switch (t.get().constructs.get('ENew').type)
+				{
+					case TFun(args, ret) if (args.length == 3 && args[2].name == 'args'):
+						Compiler.define('rulescript_is_git_hscript');
+					default:
+				}
 			default:
-		}
-	}
-
-	public static function parseTypePath(classPath:String):TypePath
-	{
-		if (classPath == null || classPath.length == 0)
-			return null;
-
-		var path:Array<String> = classPath.split('.');
-
-		var pack:Array<String> = [];
-
-		while (path[0].charAt(0) == path[0].charAt(0).toLowerCase())
-			pack.push(path.shift());
-
-		var module:String = null;
-		if (path.length > 1)
-			module = path.shift();
-
-		return {
-			fullPath: classPath,
-			name: path[0],
-			module: module,
-			pack: pack.join('.')
 		}
 	}
 
@@ -60,14 +40,6 @@ class MacroTools
 		}
 	}
 }
-
-typedef TypePath =
-{
-	var fullPath:String;
-	var name:String;
-	var ?module:String;
-	var pack:String;
-};
 
 typedef ClassFunctionArg =
 {

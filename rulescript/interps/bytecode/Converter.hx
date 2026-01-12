@@ -299,7 +299,7 @@ class Converter
 							switch (expr.getExpr())
 							{
 								case EArrayDecl(e):
-									ce(EMapDecl(e).toExpr());
+									ce(EMeta('rulescript.EMapDecl', null, EArrayDecl(e).toExpr()).toExpr());
 								default:
 							}
 						}
@@ -578,7 +578,7 @@ class Converter
 
 					buffer[endId] = buffer.length;
 
-				#if rulescript_is_git_hscript
+				#if (hscript >= "2.7.0")
 				case EForGen(it, e):
 					var key:String, value:String;
 					var iterator:Expr;
@@ -797,7 +797,13 @@ class Converter
 						variables.set(name, TFunction(null));
 					}
 
-				case EMapDecl(exprs):
+				case EMeta('rulescript.EMapDecl', _, e):
+					final exprs:Array<Expr> = switch (e.getExpr())
+					{
+						case EArrayDecl(e): e;
+						default: throw 'Invalid expression';
+					}
+
 					final mapType:Command = if (buffer.length > 0)
 						buffer[buffer.length - 1]
 					else
@@ -821,7 +827,8 @@ class Converter
 					if ((exprs.length > 0 && exprs[0].getExpr().match(EBinop("=>", _))))
 					{
 						add(MAP);
-						ce(EMapDecl(exprs).toExpr());
+
+						ce(EMeta('rulescript.EMapDecl', null, EArrayDecl(exprs).toExpr()).toExpr());
 					}
 					else
 					{

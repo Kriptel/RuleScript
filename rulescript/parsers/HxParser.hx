@@ -210,274 +210,17 @@ class HScriptParser extends hscript.Parser
 	}
 	#end
 
-	#if hscriptPos
-	override function _token():Token
-	#else
-	override function token():Token
-	#end
+	var isMainBlock:Bool = false;
+
+	override function parseString(s:String, ?origin:String = "hscript", ?position:Int = 0):Expr
 	{
-		#if !hscriptPos
-		if (!tokens.isEmpty())
-			return tokens.pop();
-		#end
-		var char;
-		if (this.char < 0)
-			char = readChar();
-		else
-		{
-			char = this.char;
-			this.char = -1;
-		}
-		while (true)
-		{
-			if (StringTools.isEof(char))
-			{
-				this.char = char;
-				return TEof;
-			}
-			switch (char)
-			{
-				case 0:
-					return TEof;
-				case 32, 9, 13: // space, tab, CR
-					#if hscriptPos
-					tokenMin++;
-					#end
-				case 10:
-					line++; // LF
-					#if hscriptPos
-					tokenMin++;
-					#end
-				case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57: // 0...9
-					var n = (char - 48) * 1.0;
-					var exp = 0.;
-					while (true)
-					{
-						char = readChar();
-						exp *= 10;
-						switch (char)
-						{
-							case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
-								n = n * 10 + (char - 48);
-							case "e".code, "E".code:
-								var tk = token();
-								var pow:Null<Int> = null;
-								switch (tk)
-								{
-									case TConst(CInt(e)): pow = e;
-									case TOp("-"):
-										tk = token();
-										switch (tk)
-										{
-											case TConst(CInt(e)): pow = -e;
-											default: push(tk);
-										}
-									default:
-										push(tk);
-								}
-								if (pow == null)
-									invalidChar(char);
-								return TConst(CFloat((Math.pow(10, pow) / exp) * n * 10));
-							case ".".code:
-								if (exp > 0)
-								{
-									// in case of '0...'
-									if (exp == 10 && readChar() == ".".code)
-									{
-										push(TOp("..."));
-										var i = Std.int(n);
-										return TConst((i == n) ? CInt(i) : CFloat(n));
-									}
-									invalidChar(char);
-								}
-								exp = 1.;
-							case "x".code:
-								if (n > 0 || exp > 0)
-									invalidChar(char);
-								// read hexa
-								var n = 0;
+		isMainBlock = true;
 
-								while (true)
-								{
-									char = readChar();
-									switch (char)
-									{
-										case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57: // 0-9
-											n = (n << 4) + char - 48;
-										case 65, 66, 67, 68, 69, 70: // A-F
-											n = (n << 4) + (char - 55);
-										case 97, 98, 99, 100, 101, 102: // a-f
-											n = (n << 4) + (char - 87);
-										default:
-											this.char = char;
-											return TConst(CInt(n));
-									}
-								}
-							default:
-								this.char = char;
-								var i = Std.int(n);
-								return TConst((exp > 0) ? CFloat(n * 10 / exp) : ((i == n) ? CInt(i) : CFloat(n)));
-						}
-					}
-				case ";".code:
-					return TSemicolon;
-				case "(".code:
-					return TPOpen;
-				case ")".code:
-					return TPClose;
-				case ",".code:
-					return TComma;
-				case ".".code:
-					char = readChar();
-					switch (char)
-					{
-						case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
-							var n = char - 48;
-							var exp = 1;
+		var e = super.parseString(s, origin, position);
 
-							while (true)
-							{
-								char = readChar();
-								exp *= 10;
-								switch (char)
-								{
-									case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
-										n = n * 10 + (char - 48);
-									default:
-										this.char = char;
-										return TConst(CFloat(n / exp));
-								}
-							}
-						case ".".code:
-							char = readChar();
-							if (char != ".".code)
-								invalidChar(char);
-							return TOp("...");
-						default:
-							this.char = char;
-							return TDot;
-					}
-				case "{".code:
-					return TBrOpen;
-				case "}".code:
-					return TBrClose;
-				case "[".code:
-					return TBkOpen;
-				case "]".code:
-					return TBkClose;
-				case "'".code if (allowStringInterpolation):
-					return TApostr;
-				case "'".code, '"'.code:
-					return TConst(CString(readString(char)));
-				case "?".code:
-					char = readChar();
-					if (char == ".".code)
-						return TQuestionDot;
-					else if (char == '?'.code)
-					{
-						var char = readChar();
+		isMainBlock = false;
 
-						if (char == '='.code)
-							return TOp("??=")
-						else
-						{
-							this.char = char;
-							return TOp("??");
-						}
-					}
-					this.char = char;
-					return TQuestion;
-				case ":".code:
-					return TDoubleDot;
-				case '='.code:
-					char = readChar();
-					if (char == '='.code)
-						return TOp("==");
-					else if (char == '>'.code)
-						return TOp("=>");
-					this.char = char;
-					return TOp("=");
-				case '@'.code:
-					char = readChar();
-					if (idents[char] || char == ':'.code)
-					{
-						var id = String.fromCharCode(char);
-						while (true)
-						{
-							char = readChar();
-							if (!idents[char])
-							{
-								this.char = char;
-								return TMeta(id);
-							}
-							id += String.fromCharCode(char);
-						}
-					}
-					invalidChar(char);
-				case '#'.code:
-					char = readChar();
-					if (idents[char])
-					{
-						var id = String.fromCharCode(char);
-						while (true)
-						{
-							char = readChar();
-							if (!idents[char])
-							{
-								this.char = char;
-								return preprocess(id);
-							}
-							id += String.fromCharCode(char);
-						}
-					}
-					invalidChar(char);
-				default:
-					if (ops[char])
-					{
-						var op = String.fromCharCode(char);
-						while (true)
-						{
-							char = readChar();
-							if (StringTools.isEof(char))
-								char = 0;
-							if (!ops[char])
-							{
-								this.char = char;
-								return TOp(op);
-							}
-							var pop = op;
-							op += String.fromCharCode(char);
-							if (!opPriority.exists(op) && opPriority.exists(pop))
-							{
-								if (op == "//" || op == "/*")
-									return tokenComment(op, char);
-								this.char = char;
-								return TOp(pop);
-							}
-						}
-					}
-					if (idents[char])
-					{
-						var id = String.fromCharCode(char);
-
-						while (true)
-						{
-							char = readChar();
-							if (StringTools.isEof(char))
-								char = 0;
-							if (!idents[char])
-							{
-								this.char = char;
-								return TId(id);
-							}
-							id += String.fromCharCode(char);
-						}
-					}
-					invalidChar(char);
-			}
-			char = readChar();
-		}
-		return null;
+		return e;
 	}
 
 	override function parseExpr()
@@ -612,6 +355,64 @@ class HScriptParser extends hscript.Parser
 
 				this.char = char;
 				return makeUnop('~', parseExpr());
+
+			case TBrOpen:
+				tk = token();
+				switch (tk)
+				{
+					case TBrClose:
+						return parseExprNext(mk(EObject([]), p1));
+					case TId(_):
+						var tk2 = token();
+						push(tk2);
+						push(tk);
+						switch (tk2)
+						{
+							case TDoubleDot:
+								return parseExprNext(parseObject(p1));
+							default:
+						}
+					case TConst(c):
+						if (allowJSON)
+						{
+							switch (c)
+							{
+								case CString(_):
+									var tk2 = token();
+									push(tk2);
+									push(tk);
+									switch (tk2)
+									{
+										case TDoubleDot:
+											return parseExprNext(parseObject(p1));
+										default:
+									}
+								default:
+									push(tk);
+							}
+						}
+						else
+							push(tk);
+					default:
+						push(tk);
+				}
+				var a = new Array();
+				while (true)
+				{
+					final lastIsMainBlock = isMainBlock;
+
+					isMainBlock = false;
+
+					parseFullExpr(a);
+
+					isMainBlock = lastIsMainBlock;
+
+					tk = token();
+					if (tk == TBrClose || (resumeErrors && tk == TEof))
+						break;
+					push(tk);
+				}
+				return mk(EBlock(a), p1);
 			default:
 				push(tk);
 				super.parseExpr();
@@ -652,7 +453,10 @@ class HScriptParser extends hscript.Parser
 
 		return switch (id)
 		{
-			case 'package' if (allowPackage):
+			case 'package' if (mode == DEFAULT && allowPackage):
+				if (!isMainBlock)
+					error(ECustom('Package is allowed only in the main block'), p1, tokenMax);
+
 				var path:Array<String> = [];
 
 				var tk = token();
@@ -682,7 +486,10 @@ class HScriptParser extends hscript.Parser
 				}
 
 				mk(EPackage(path.join('.')));
-			case 'import' if (allowImport):
+			case 'import' if (mode == DEFAULT && allowImport):
+				if (!isMainBlock)
+					error(ECustom('Import is allowed only in the main block'), p1, tokenMax);
+
 				var path:Array<String> = [getIdent()];
 				var star = false;
 
@@ -708,8 +515,7 @@ class HScriptParser extends hscript.Parser
 
 				var func:String = null;
 
-				var char = path[path.length - 1].charAt(0);
-				if (char == char.toLowerCase())
+				if (!star && path[path.length - 1].startsWithLowerCase())
 					func = path.pop();
 
 				var alias:String = null;
@@ -719,8 +525,11 @@ class HScriptParser extends hscript.Parser
 				else if (maybe(TId('in')))
 					!star ? alias = getIdent() : unexpected(TId("in"));
 
-				mk(EImport(path.join('.'), star, alias, func));
-			case 'using' if (allowUsing):
+				mk(EImport(path.join('.'), star, alias, func), p1, tokenMax);
+			case 'using' if (mode == DEFAULT && allowUsing):
+				if (!isMainBlock)
+					error(ECustom('Using is allowed only in the main block'), p1, tokenMax);
+
 				var path = [getIdent()];
 				while (true)
 				{
@@ -740,7 +549,7 @@ class HScriptParser extends hscript.Parser
 					}
 				}
 
-				return mk(EUsing(path.join('.')));
+				return mk(EUsing(path.join('.')), p1, tokenMax);
 			case 'var', 'final':
 				var ident = getIdent();
 
@@ -1546,6 +1355,281 @@ class HScriptParser extends hscript.Parser
 		return Tools.moduleDeclsToExpr(moduleDecls);
 	}
 
+	/**
+	 * Token
+	**/
+	#if hscriptPos
+	override function _token():Token
+	#else
+	override function token():Token
+	#end
+	{
+		#if !hscriptPos
+		if (!tokens.isEmpty())
+			return tokens.pop();
+		#end
+		var char;
+		if (this.char < 0)
+			char = readChar();
+		else
+		{
+			char = this.char;
+			this.char = -1;
+		}
+		while (true)
+		{
+			if (StringTools.isEof(char))
+			{
+				this.char = char;
+				return TEof;
+			}
+			switch (char)
+			{
+				case 0:
+					return TEof;
+				case 32, 9, 13: // space, tab, CR
+					#if hscriptPos
+					tokenMin++;
+					#end
+				case 10:
+					line++; // LF
+					#if hscriptPos
+					tokenMin++;
+					#end
+				case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57: // 0...9
+					var n = (char - 48) * 1.0;
+					var exp = 0.;
+					while (true)
+					{
+						char = readChar();
+						exp *= 10;
+						switch (char)
+						{
+							case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
+								n = n * 10 + (char - 48);
+							case "e".code, "E".code:
+								var tk = token();
+								var pow:Null<Int> = null;
+
+								switch (tk)
+								{
+									case TConst(CInt(e)): pow = e;
+									case TOp("-"), TOp("+"):
+										switch (token())
+										{
+											case TConst(CInt(e)): pow = tk.match(TOp("-")) ? -e : e;
+											case tk: push(tk);
+										}
+									default:
+										push(tk);
+								}
+								if (pow == null)
+									invalidChar(char);
+								if (exp == 0)
+									exp = 10;
+								return TConst(CFloat((Math.pow(10, pow) / exp) * n * 10));
+							case ".".code:
+								if (exp > 0)
+								{
+									// in case of '0...'
+									if (exp == 10 && readChar() == ".".code)
+									{
+										push(TOp("..."));
+										var i = Std.int(n);
+										return TConst((i == n) ? CInt(i) : CFloat(n));
+									}
+									invalidChar(char);
+								}
+								exp = 1.;
+							case "x".code:
+								if (n > 0 || exp > 0)
+									invalidChar(char);
+								// read hexa
+								var n = 0;
+
+								while (true)
+								{
+									char = readChar();
+									switch (char)
+									{
+										case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57: // 0-9
+											n = (n << 4) + char - 48;
+										case 65, 66, 67, 68, 69, 70: // A-F
+											n = (n << 4) + (char - 55);
+										case 97, 98, 99, 100, 101, 102: // a-f
+											n = (n << 4) + (char - 87);
+										default:
+											this.char = char;
+											return TConst(CInt(n));
+									}
+								}
+							default:
+								this.char = char;
+								var i = Std.int(n);
+								return TConst((exp > 0) ? CFloat(n * 10 / exp) : ((i == n) ? CInt(i) : CFloat(n)));
+						}
+					}
+				case ";".code:
+					return TSemicolon;
+				case "(".code:
+					return TPOpen;
+				case ")".code:
+					return TPClose;
+				case ",".code:
+					return TComma;
+				case ".".code:
+					char = readChar();
+					switch (char)
+					{
+						case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
+							var n = char - 48;
+							var exp = 1;
+
+							while (true)
+							{
+								char = readChar();
+								exp *= 10;
+								switch (char)
+								{
+									case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57:
+										n = n * 10 + (char - 48);
+									default:
+										this.char = char;
+										return TConst(CFloat(n / exp));
+								}
+							}
+						case ".".code:
+							char = readChar();
+							if (char != ".".code)
+								invalidChar(char);
+							return TOp("...");
+						default:
+							this.char = char;
+							return TDot;
+					}
+				case "{".code:
+					return TBrOpen;
+				case "}".code:
+					return TBrClose;
+				case "[".code:
+					return TBkOpen;
+				case "]".code:
+					return TBkClose;
+				case "'".code if (allowStringInterpolation):
+					return TApostr;
+				case "'".code, '"'.code:
+					return TConst(CString(readString(char)));
+				case "?".code:
+					char = readChar();
+					if (char == ".".code)
+						return TQuestionDot;
+					else if (char == '?'.code)
+					{
+						var char = readChar();
+
+						if (char == '='.code)
+							return TOp("??=")
+						else
+						{
+							this.char = char;
+							return TOp("??");
+						}
+					}
+					this.char = char;
+					return TQuestion;
+				case ":".code:
+					return TDoubleDot;
+				case '='.code:
+					char = readChar();
+					if (char == '='.code)
+						return TOp("==");
+					else if (char == '>'.code)
+						return TOp("=>");
+					this.char = char;
+					return TOp("=");
+				case '@'.code:
+					char = readChar();
+					if (idents[char] || char == ':'.code)
+					{
+						var id = String.fromCharCode(char);
+						while (true)
+						{
+							char = readChar();
+							if (!idents[char])
+							{
+								this.char = char;
+								return TMeta(id);
+							}
+							id += String.fromCharCode(char);
+						}
+					}
+					invalidChar(char);
+				case '#'.code:
+					char = readChar();
+					if (idents[char])
+					{
+						var id = String.fromCharCode(char);
+						while (true)
+						{
+							char = readChar();
+							if (!idents[char])
+							{
+								this.char = char;
+								return preprocess(id);
+							}
+							id += String.fromCharCode(char);
+						}
+					}
+					invalidChar(char);
+				default:
+					if (ops[char])
+					{
+						var op = String.fromCharCode(char);
+						while (true)
+						{
+							char = readChar();
+							if (StringTools.isEof(char))
+								char = 0;
+							if (!ops[char])
+							{
+								this.char = char;
+								return TOp(op);
+							}
+							var pop = op;
+							op += String.fromCharCode(char);
+							if (!opPriority.exists(op) && opPriority.exists(pop))
+							{
+								if (op == "//" || op == "/*")
+									return tokenComment(op, char);
+								this.char = char;
+								return TOp(pop);
+							}
+						}
+					}
+					if (idents[char])
+					{
+						var id = String.fromCharCode(char);
+
+						while (true)
+						{
+							char = readChar();
+							if (StringTools.isEof(char))
+								char = 0;
+							if (!idents[char])
+							{
+								this.char = char;
+								return TId(id);
+							}
+							id += String.fromCharCode(char);
+						}
+					}
+					invalidChar(char);
+			}
+			char = readChar();
+		}
+		return null;
+	}
+
 	override function tokenString(t)
 	{
 		return switch (t)
@@ -1560,6 +1644,9 @@ class HScriptParser extends hscript.Parser
 			case TBrClose: "}";
 			case TDot: ".";
 			case TQuestionDot: "?.";
+			#if (rulescript_is_git_hscript)
+			case TQuestionDouble: "??";
+			#end
 			case TComma: ",";
 			case TSemicolon: ";";
 			case TBkOpen: "[";

@@ -5,76 +5,35 @@ import hscript.Expr;
 import rulescript.interps.RuleScriptInterp;
 import rulescript.parsers.HxParser;
 import rulescript.parsers.Parser;
+import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.types.ScriptedTypeUtil;
 
+#if (hscript < "2.6.0")
+#error "Error: HScript version is outdated. RuleScript requires version 2.6.0 or higher."
+#end
+
 /**
- * ## Adding script:
- *
- * ```haxe
- * script = new RuleScript(new HxParser());
- *
- * // Get parser as HxParser
- * script.getParser(HxParser).allowAll();
- *
- * // Run execute inside try-catch
- * script.tryExecute('trace("Hello World");'); // Hello World
- *
- * script.execute('1+1'); // 2
- * ```
- *
- * ## Example:
- *
- * Package
- * ```haxe
- * package scripts.hello.world;
- * ```
- * ### Import class:
- * ```haxe
- * import haxe.ds.StringMap;
- *
- * var map = new StringMap();
- * map.set("Hello","World");
- * trace(map.get("Hello")); // World
- * ```
- *
- * ### Import with alias:
- *
- * ```haxe
- * import haxe.ds.StringMap as StrMap;
- *
- * var map = new StrMap();
- * map.set("Hello","World");
- * trace(map.get("Hello")); // World
- * ```
- *
- * You also can use `in` keyword
- * ```haxe
- * import haxe.ds.StringMap in StrMap;
- *
- * var map = new StrMap();
- * map.set("Hello","World");
- * trace(map.get("Hello")); // World
- * ```
- *
- * ### Using:
- * ```haxe
- * using Reflect;
- *
- * var a = {
- *  "Hello":"World"
- * };
- * trace(a.getProperty("Hello")); // World
- * ```
- *
- * ### String interpolation
- * ```haxe
- * var a = 'Hello';
- * return 'RuleScript: $a World'; // RuleScript: Hello World
- * ```
- *
+ * This class serves as a wrapper/container(?) for executing code and managing the interpreter, 
+ * parser, script context, variables, super instances, and error handling. 💛
+ * 
+ * **This isn't required for RuleScript to work, so you can either use this or create your own...**
+ * 
+ * This class provides functions for:
+ * - Executing code (`execute`, `tryExecute`)
+ * - Creating scripted instances (`createScriptedInstance`)
+ * - Accessing the parser / interp. (`getInterp` / `getParser`)
+ * - Changing Interp, Parser, or Access. (check the constructor (`new`) for a reference)
+ * - Managing default imports. (`defaultImports`) `STATIC`
+ * 
+ * **NOTICE: Default imports are stored as a static variable. Access them via `RuleScript.defaultImports`.**
+ * 
+ * **This class is designed to be extendable, allowing you to use your own parser, interp or context...**
+ * 
+ * @see https://github.com/kriptel/rulescript/tree/dev/docs/the-basics.md
  */
 class RuleScript
 {
+	// i'm not documenting deprecated variables/methods... -orbl
 	@:deprecated('`resolveScript` is deprecated, use `ScriptedTypeUtil.resolveScript`')
 	public static var resolveScript(get, set):String->Dynamic;
 
@@ -88,15 +47,61 @@ class RuleScript
 		return ScriptedTypeUtil.resolveScript = v;
 	}
 
+	/**
+	 * This dynamic method is internally used to create an interp.
+	 * To change the default interp, you'll need to override this method. 
+	 * 
+	 * **Make sure the interp you override it with has implemented `IInterp`**
+	 * 
+	 * @return IInterp
+	 */
 	public static dynamic function createInterp():IInterp
 	{
 		return new RuleScriptInterp();
 	}
 
 	/**
-	 * Functions similarly to import.hx (https://haxe.org/manual/type-system-import-defaults.html).
+	 * Resolves a scripted class by it's type path and returns an `Access` instance.
 	 * 
-	 * Package => Types.
+	 * @param typePath The string path of the type to resolve.
+	 * @param context (Optional) The context used for type resolution. If null, a default resolver is used.
+	 * @return Access
+	 */
+	public static function resolveScriptedClass(typePath:String, ?context:Context):Access
+	{
+		final cl:Dynamic = context != null ? context.resolveType(typePath) : Tools.resolveType(typePath);
+
+		if (cl is RuleScriptedClass)
+		{
+			return cast new Access(cl);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Create an scripted instance, by either using a type or a path.
+	 * 
+	 * @param typeOrPath Either a `ScriptedClass` or a path.
+	 * @param args (Optional) Constructor arguments. 
+	 * @param context (Optional) Use an already created context.
+	 * @return Null<Access>
+	 */
+	public static function createScriptedInstance(typeOrPath:EitherType<String, ScriptedClass>, ?args:Array<Dynamic>, ?context:Context):Null<Access>
+	{
+		if (typeOrPath is String)
+			return resolveScriptedClass(typeOrPath, context).createInstance(args);
+
+		return cast(typeOrPath, ScriptedClass).createInstance(args);
+	}
+
+	/**
+	 * Default imports, everything here will be automatically added to the variables when creating a new script.
+	 * This functions similarly to `import.hx`.
+	 * 
+	 * Structure: Package => Types.
+	 * 
+	 * @see https://haxe.org/manual/type-system-import-defaults.html/
 	 */
 	public static var defaultImports:Map<String, Map<String, Dynamic>> = [
 		'' => [
@@ -118,26 +123,89 @@ class RuleScript
 		]
 	];
 
+	/**
+	 * The interpreter.
+	 */
 	public var interp(default, set):IInterp;
 
+	/**
+	 * The access.
+	 */
 	public var access:RuleScriptAccess;
 
+	/** 
+	 * The script name.
+	 * 
+	 * This value is automatically set when using a scripted class.
+	 * Otherwise, it remains unchanged unless you modify it manually.
+	 */
 	public var scriptName(get, set):String;
 
+	/**
+	 * The script package.
+	 * 
+	 * This value is usually whatever you set the package to inside of the script.
+	 * 
+	 * For example: 
+	 * ```haxe
+	 * package rule.script; // `scriptPackage` will return "rule.script".
+	 * ```
+	 */
 	public var scriptPackage(get, set):String;
 
+	/**
+	 * The super instance.
+	 * 
+	 * This is whatever you want the script to be able to access.
+	 * 
+	 * For example:
+	 * ```haxe
+	 * // lets say you have a variable in the class instance like.
+	 * public var name:Array<String> = ["kriptel", "orbl"]; // class instance
+	 * 
+	 * /////////////////////////////////////////////////////////////////////////
+	 * 
+	 * // you'll be able to access that variable inside the script.
+	 * trace(name); // Returns: [kriptel, orbl]; || script.
+	 * 
+	 * ```
+	 */
 	public var superInstance(get, set):Dynamic;
 
+	/**
+	 * The script variables.
+	 * 
+	 * ```haxe
+	 * variables.set('name', 'orbl'); // source
+	 * 
+	 * ///////////////////////////////////////////
+	 * 
+	 * trace(name); // returns: "orbl" || script
+	 */
 	public var variables(get, set):Map<String, Dynamic>;
 
+	/**
+	 * The parser.
+	 */
 	public var parser:Parser;
 
+	/**
+	 * This variable indicates whether an error handler has been set.
+	 * Its recommended to check this before trying to call the `errorHandler` method...
+	 */
 	public var hasErrorHandler(get, set):Bool;
 
+	/**
+	 * Error handler
+	 */
 	public var errorHandler(get, set):haxe.Exception->Void;
 
+	/**
+	 * The script context handles repeated imports, and public / static variables.
+	 */
 	public var context(get, set):Context;
 
+	// i wonder what this is...
 	public function new(?interp:IInterp, ?parser:Parser, ?context:Context)
 	{
 		// You can register custom parser in a child class
@@ -148,11 +216,25 @@ class RuleScript
 			this.context = context;
 	}
 
+	/**
+	 * This method allows you to either execute a `Expr` or a string.
+	 * pretty self explanatory...
+	 * 
+	 * @param code Either a `Expr` or a `String`.
+	 * @return Dynamic Whether gets returned after executing...
+	 */
 	public function execute(code:EitherType<String, Expr>):Dynamic
 	{
 		return access.execute(code is String ? parser.parse(cast code) : cast code);
 	}
 
+	/**
+	 * Tries to execute the given code and optionally handles exceptions with a custom catch.
+	 * 
+	 * @param code Either a string or a `Expr`.
+	 * @param customCatch (Optional) Exception catch error.
+	 * @return It returns either the result of the execution or information about the error.
+	 */
 	public function tryExecute(code:EitherType<String, Expr>, ?customCatch:haxe.Exception->Dynamic):Dynamic
 	{
 		return try
@@ -163,15 +245,29 @@ class RuleScript
 			customCatch != null ? customCatch(v) : v.details();
 	}
 
+	/**
+	 * Returns the current parser instance, optionally cast to a specific parser class.
+	 * 
+	 * @param parserClass (Optional) Parser class type.
+	 * @return The parser instance.
+	 */
 	public function getParser<T:Parser>(?parserClass:Class<T>):T
 	{
 		return cast parser;
 	}
 
+	/**
+	 * Returns the current interpreter instance.
+	 * 
+	 * @param interpClass (Optional) Interpreter class type.
+	 * @return The interpreter instance.
+	 */
 	public function getInterp<T:IInterp>(?interpClass:Class<T>):T
 	{
 		return cast interp;
 	}
+
+	////////////////////////////////////////////////////////////////////
 
 	function set_interp(v:IInterp):IInterp
 	{

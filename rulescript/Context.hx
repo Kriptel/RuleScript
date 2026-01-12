@@ -12,18 +12,25 @@ import rulescript.types.ScriptedType;
  */
 class Context
 {
-	public var publicVariables:Map<String, Dynamic> = []; 
-	public var staticVariables:Map<String, Dynamic> = []; 
+	public var types:Map<String, Dynamic> = [];
+
+	public var publicVariables:Map<String, Dynamic> = [];
+	public var staticVariables:Map<String, Dynamic> = [];
+
+	public function new() {}
+
+	public function reset():Void
+	{
+		types = [];
+
+		resetVariables();
+	}
 
 	public function resetVariables():Void
 	{
 		publicVariables = []; // yuhuh -orbl
 		staticVariables = [];
 	}
-	
-	public var types:Map<String, Dynamic> = [];
-
-	public function new() {}
 
 	public function resolveType(path:String):Dynamic
 	{
@@ -31,7 +38,7 @@ class Context
 			return types[path];
 		else
 		{
-			final t:Dynamic = Tools.resolveType(path);
+			final t:Dynamic = Tools.resolveType(path, this);
 
 			if (t is ScriptedType)
 				switch (cast(t, ScriptedType).__rulescript_type)

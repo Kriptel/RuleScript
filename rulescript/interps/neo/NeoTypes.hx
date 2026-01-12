@@ -22,6 +22,8 @@ enum abstract NeoByte(Int) from Int to Int
 	var IDENT;
 	var IDENT_LOCAL;
 	var VAR;
+	var PROPERTY;
+	var PROPERTY_LOCAL;
 	var BLOCK;
 	var FIELD;
 	var BINOP;
@@ -36,6 +38,9 @@ enum abstract NeoByte(Int) from Int to Int
 	var BREAK;
 	var CONTINUE;
 	var FUNCTION;
+	var ANON_FUNCTION;
+	var CONSTRUCTOR;
+	var CONSTRUCTOR_SUPER_CALL;
 	var RETURN;
 	var RETURN_VOID;
 	var ARRAY;
@@ -52,6 +57,9 @@ enum abstract NeoByte(Int) from Int to Int
 	var CHECK_TYPE;
 	var CAST;
 	var PACKAGE;
+	var RS_IMPORT; // cpp does not allow `IMPORT` ident.
+	var USING;
+	var TYPE_VAR_PATH;
 
 	// VALUES
 	var NULL;
@@ -91,6 +99,8 @@ enum abstract NeoByte(Int) from Int to Int
 	var OP_NOT;
 	var OP_EQUALS;
 	var OP_NOT_EQUALS;
+	var OP_AND;
+	var OP_OR;
 
 	var OP_LT;
 	var OP_LT_EQUAL;
@@ -98,6 +108,13 @@ enum abstract NeoByte(Int) from Int to Int
 	var OP_GT_EQUAL;
 
 	var OP_DYNAMIC;
+
+	// Property
+	var PROP_DEFAULT;
+	var PROP_CALLBACK;
+	var PROP_DYNAMIC;
+	var PROP_NULL;
+	var PROP_NEVER;
 }
 
 enum NeoError
@@ -112,11 +129,12 @@ enum NeoError
 	ENullAccess;
 	EInvalidContinue;
 	EInvalidBreak;
+	MissingRequiredArgument(argsNum:Int, minArgs:Int);
 }
 
 enum LoopControl
 {
-	CReturn(v:Dynamic);
+	CReturn(v:NeoByte);
 	CContinue;
 	CBreak;
 }

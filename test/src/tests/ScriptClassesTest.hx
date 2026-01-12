@@ -1,9 +1,9 @@
 package tests;
 
 import example.ScriptedClassTest;
+import rulescript.RuleScript;
 import rulescript.parsers.HxParser;
 import rulescript.scriptedClass.RuleScriptedClass.Access;
-import rulescript.types.ScriptedTypeUtil;
 
 class ScriptClassesTest extends Test
 {
@@ -12,10 +12,12 @@ class ScriptClassesTest extends Test
 		script.getParser(HxParser).mode = MODULE;
 
 		// Get class
-		var cl = new Access(ScriptedTypeUtil.resolveScript('scriptedClass.RuleScriptedClass.ScriptedClassStrict'));
+		var cl:Access = RuleScript.resolveScriptedClass('scriptedClass.RuleScriptedClass.ScriptedClassStrict', context);
 
 		// Create Scripted class instance
 		var instance = cl.createInstance(['hello']);
+		// alternative method:
+		var instance = RuleScript.createScriptedInstance('scriptedClass.RuleScriptedClass.ScriptedClassStrict', ['hello'], context);
 
 		// Custom constructor can't have extra args, if it strict
 		new ScriptedClassTestStrict('scriptedClass.RuleScriptedClass.ScriptedClassStrict', 'Script');
