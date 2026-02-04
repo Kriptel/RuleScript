@@ -152,6 +152,135 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		return v;
 	}
 
+	override function evalAssignOp(op, fop, e1, e2)
+	{
+		var v;
+		switch (hscript.Tools.expr(e1))
+		{
+			case EIdent(id):
+				var l = locals.get(id);
+				v = fop(expr(e1), expr(e2));
+				if (l == null)
+					setVar(id, v);
+				else
+				{
+					if (l.r is Property)
+						cast(l.r, Property).value = v;
+					else
+						l.r = v;
+				}
+			case EField(e, f):
+				var obj = expr(e);
+				v = fop(get(obj, f), expr(e2));
+				v = set(expr(e), f, v);
+			case ETypeVarPath(_path):
+				final path:Array<String> = _path.copy();
+				final f:String = path.pop();
+
+				v = fop(expr(e1), expr(e2));
+				v = set(resolveTypeOrValue(path), f, v);
+			case EArray(e, index):
+				var arr:Dynamic = expr(e);
+				var index:Dynamic = expr(index);
+				if (isMap(arr))
+				{
+					v = fop(getMapValue(arr, index), expr(e2));
+					setMapValue(arr, index, v);
+				}
+				else
+				{
+					v = fop(arr[index], expr(e2));
+					arr[index] = v;
+				}
+			default:
+				return error(EInvalidOp(op));
+		}
+		return v;
+	}
+
+	override function increment(e:Expr, prefix:Bool, delta:Int):Dynamic
+	{
+		#if hscriptPos
+		curExpr = e;
+		var e = e.e;
+		#end
+		switch (e)
+		{
+			case EIdent(id):
+				var l = locals.get(id);
+				var v:Dynamic = (l == null) ? resolve(id) : (l.r is Property ? cast(l.r, Property).value : l.r);
+
+				if (prefix)
+				{
+					v += delta;
+					if (l == null)
+						setVar(id, v)
+					else
+					{
+						if (l.r is Property)
+							cast(l.r, Property).value = v;
+						else
+							l.r = v;
+					}
+				}
+				else
+				{
+					if (l == null)
+						setVar(id, v + delta)
+					else
+					{
+						if (l.r is Property)
+							cast(l.r, Property).value = v + delta;
+						else
+							l.r = v + delta;
+					}
+				}
+				return v;
+			case EField(e, f):
+				var obj = expr(e);
+				var v:Dynamic = get(obj, f);
+				if (prefix)
+				{
+					v += delta;
+					set(obj, f, v);
+				}
+				else
+					set(obj, f, v + delta);
+				return v;
+			case EArray(e, index):
+				var arr:Dynamic = expr(e);
+				var index:Dynamic = expr(index);
+				if (isMap(arr))
+				{
+					var v = getMapValue(arr, index);
+					if (prefix)
+					{
+						v += delta;
+						setMapValue(arr, index, v);
+					}
+					else
+					{
+						setMapValue(arr, index, v + delta);
+					}
+					return v;
+				}
+				else
+				{
+					var v = arr[index];
+					if (prefix)
+					{
+						v += delta;
+						arr[index] = v;
+					}
+					else
+						arr[index] = v + delta;
+					return v;
+				}
+			default:
+				return error(EInvalidOp((delta > 0) ? "++" : "--"));
+		}
+	}
+
 	override function setVar(name:String, v:Dynamic)
 	{
 		if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
