@@ -700,7 +700,7 @@ class Converter
 						addLink(STRING, name);
 					add(args.length);
 
-					final isRest = (args.length > 0 && args[args.length - 1].t.match(CTPath(["haxe", "Rest"], _)));
+					final isRest = args.length > 0 && Tools.isRest(args[args.length - 1].t);
 
 					add(isRest ? REST : NULL);
 
@@ -1222,7 +1222,6 @@ class Converter
 					throw 'Unsupported expression "${e.getExpr()}"';
 			}
 		}
-
 		ce(switch (e.getExpr())
 		{
 			case EBlock(_):

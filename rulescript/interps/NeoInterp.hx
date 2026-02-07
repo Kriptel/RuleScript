@@ -2,14 +2,13 @@ package rulescript.interps;
 
 import haxe.Constraints.IMap;
 import haxe.Exception;
-import haxe.display.Display.Package;
 import hscript.Expr;
 import rulescript.RuleScript.IInterp;
 import rulescript.Tools.TypePath;
 import rulescript.Tools.getScriptProp;
 import rulescript.interps.neo.NeoCompiler;
+import rulescript.interps.neo.NeoInterpAccess;
 import rulescript.interps.neo.NeoTypes;
-import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
 import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.types.IRuleScriptCustomAccessor;
 import rulescript.types.Property;

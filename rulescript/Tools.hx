@@ -136,6 +136,11 @@ class Tools
 		#end
 	}
 
+	inline public static function isRest(t:CType):Bool
+	{
+		return t.match(CTPath(["haxe", "Rest"], _));
+	}
+
 	inline public static function isEmptyClass(cl:Class<Dynamic>):Bool
 	{
 		#if interp
