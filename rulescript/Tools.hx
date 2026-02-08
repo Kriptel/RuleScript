@@ -138,6 +138,9 @@ class Tools
 
 	inline public static function isRest(t:CType):Bool
 	{
+		if (t == null)
+			return false;
+
 		return t.match(CTPath(["haxe", "Rest"], _));
 	}
 
