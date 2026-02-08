@@ -3,6 +3,8 @@ package rulescript.interps;
 import hscript.Expr;
 import rulescript.RuleScript.IInterp;
 import rulescript.Tools.getScriptProp;
+import rulescript.interps.interp.RSInterpAccess;
+import rulescript.interps.interp.RSInterpConstructor;
 import rulescript.scriptedClass.RuleScriptedClass;
 import rulescript.types.IRuleScriptCustomAccessor;
 import rulescript.types.Property;
@@ -43,7 +45,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	public function new()
 	{
-		access = new RuleScriptInterpAccess(this);
+		access ??= new RSInterpAccess(this);
 		super();
 	}
 
@@ -152,7 +154,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		return v;
 	}
 
-	override function evalAssignOp(op, fop, e1, e2)
+	override function evalAssignOp(op:String, fop:(Dynamic, Dynamic) -> Dynamic, e1:Expr, e2:Expr):Dynamic
 	{
 		var v;
 		switch (hscript.Tools.expr(e1))
@@ -464,27 +466,6 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case EUntyped(e):
 				switch (e.getExpr())
 				{
-					// For RuleScriptedClass
-					case ECall(c, params):
-						switch (c.getExpr())
-						{
-							case EFunction(args, e, '__super_start', _):
-								final params = [for (param in params) this.expr(param)];
-
-								__constructors[__constructors.length - 1]?.stashVars();
-
-								__constructors.push(makeSuperFunction(args, params));
-							case EIdent('__super_end'):
-								__constructors.pop().finish();
-								__constructors[__constructors.length - 1].restoreVars();
-
-								if (__constructors.length == 1)
-								{
-									__constructors.pop().restoreVars();
-								}
-							default:
-						}
-
 					case EIdent('__rulescript__interpType'):
 						return 'RuleScriptInterp';
 
@@ -504,14 +485,14 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 			case EFunction(params, fexpr, name, _):
 				if (name == 'new')
-					__constructor = expr;
+					__constructor = createConstructor(expr, __constructor);
 
 				var capturedLocals = duplicate(locals);
 				var me = this;
 				var hasOpt:Bool = false, hasRest:Bool = false, minParams = 0;
 				for (p in params)
 				{
-					if (p.t.match(CTPath(["haxe", "Rest"], _)))
+					if (Tools.isRest(p.t))
 					{
 						if (params.indexOf(p) == params.length - 1)
 							hasRest = true;
@@ -542,7 +523,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						var pos = 0;
 						for (p in params)
 						{
-							if (hasRest && p.t.match(CTPath(["haxe", "Rest"], _)))
+							if (hasRest && Tools.isRest(p.t))
 								args2.push([for (i in pos...args.length) args[i]]);
 							else
 							{
@@ -1007,91 +988,48 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	// for RuleScriptedClass
 	@:noCompletion
-	public var __constructor:Expr;
+	public var __constructor:RSInterpConstructor;
 
-	@:noCompletion public var __constructors:Array<SuperFunction> = [];
-
-	@:noCompletion
-	public function makeSuperFunction(params:Array<Argument>, args:Array<Dynamic>):SuperFunction
+	public function createConstructor(expr:Expr, superConstructor:RSInterpConstructor):Dynamic
 	{
-		var capturedLocals = duplicate(locals);
-		var me = this;
-		var hasOpt:Bool = false, hasRest:Bool = false, minParams = 0;
-		for (p in params)
+		return switch (rulescript.Tools.getExpr(expr))
 		{
-			if (p.t.match(CTPath(["haxe", "Rest"], _)))
-			{
-				if (params.indexOf(p) == params.length - 1)
-					hasRest = true;
-				else
-					error(ECustom("Rest should only be used for the last function argument"));
-			}
-			if (p.opt)
-				hasOpt = true;
-			else
-				minParams++;
-		}
-		if (((args == null) ? 0 : args.length) != params.length)
-		{
-			if (args.length < minParams && (!hasRest && args.length + 1 < minParams))
-			{
-				var str = "Invalid number of parameters. Got " + args.length + ", required " + minParams + " for function 'new'";
-				error(ECustom(str));
-			}
-			var args2 = [];
-			var extraParams = args.length - minParams;
-			var pos = 0;
-			for (p in params)
-			{
-				if (hasRest && p.t.match(CTPath(["haxe", "Rest"], _)))
-					args2.push([for (i in pos...args.length) args[i]]);
-				else
+			case EFunction(params, fexpr, name, _):
+				final exprs = switch (rulescript.Tools.getExpr(fexpr))
 				{
-					if (p.opt)
-					{
-						if (extraParams > 0)
-						{
-							args2.push(args[pos++]);
-							extraParams--;
-						}
-						else
-							args2.push(null);
-					}
-					else
-						args2.push(args[pos++]);
+					case EBlock(exprs):
+						exprs;
+					default:
+						null;
 				}
-			}
-			args = args2;
-		}
-		else if (hasRest)
-			args.push([args.pop()]);
-		var old = me.locals, depth = me.depth;
-		var curDepth = me.depth++;
-		var curLocals = me.locals = me.duplicate(capturedLocals);
-		for (i in 0...params.length)
-			me.locals.set(params[i].name, {r: args[i]});
-		var r:Dynamic = null;
-		var oldDecl = declared.length;
 
-		return {
-			f: (e:Expr) -> me.exprReturn(e),
-			stashVars: () ->
-			{
-				me.locals = old;
-				me.depth = depth;
-			},
-			restoreVars: () ->
-			{
-				me.locals = curLocals;
-				me.depth = curDepth;
-			},
-			finish: () ->
-			{
-				restore(oldDecl);
-				me.locals = old;
-				me.depth = depth;
-			}
-		};
+				var superID:Int = 0;
+
+				for (expr in exprs)
+				{
+					switch (rulescript.Tools.getExpr(expr))
+					{
+						case ECall(e, _) if (rulescript.Tools.getExpr(e).match(EIdent('super'))):
+							break;
+						default:
+							null;
+					}
+					superID++;
+				}
+
+				final preExpr = rulescript.Tools.toExpr(EBlock(exprs.slice(0, superID)));
+				final postExpr = rulescript.Tools.toExpr(EBlock(exprs.slice(superID + 1)));
+
+				final superCallArgs:Array<Expr> = superID == exprs.length ? null : switch (rulescript.Tools.getExpr(exprs[superID]))
+				{
+					case ECall(_, params): params;
+					default: null;
+				};
+
+				new RSInterpConstructor(superConstructor, this, params, preExpr, superCallArgs, postExpr);
+			default:
+				null;
+		}
 	}
 
 	@:noCompletion
@@ -1141,14 +1079,6 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	}
 }
 
-private typedef SuperFunction =
-{
-	var f:Expr->Dynamic;
-	var stashVars:Void->Void;
-	var restoreVars:Void->Void;
-	var finish:Void->Void;
-}
-
 private typedef EnumHandler =
 {
 	var obj:Dynamic;
@@ -1156,229 +1086,4 @@ private typedef EnumHandler =
 	var enumHasParams:String->Bool;
 	var getEnumConstructor:String->Dynamic;
 	var equals:Dynamic->Bool;
-}
-
-@:access(rulescript.interps.RuleScriptInterp)
-class RuleScriptInterpAccess extends RuleScriptAccess
-{
-	var interp:RuleScriptInterp;
-
-	public function new(interp:RuleScriptInterp)
-	{
-		this.interp = interp;
-	}
-
-	override function getVariables():Map<String, Dynamic>
-	{
-		return interp.variables;
-	}
-
-	override function setVariables(newVariables:Map<String, Dynamic>):Map<String, Dynamic>
-	{
-		return interp.variables = newVariables;
-	}
-
-	override function resetInterp():Void
-	{
-		interp.resetVariables();
-	}
-
-	override function variableExists(name:String):Bool
-	{
-		return interp.variables.exists(name);
-	}
-
-	override function getVariable(name:String):Dynamic
-	{
-		return interp.variables[name];
-	}
-
-	override function posInfos():haxe.PosInfos
-	{
-		return interp.posInfos();
-	}
-
-	override function setVariable(name:String, value:Dynamic):Dynamic
-	{
-		return interp.variables[name] = value;
-	}
-
-	override function removeVariable(name:String):Bool
-	{
-		return interp.variables.remove(name);
-	}
-
-	override function callFunction(name:String, args:Array<Dynamic>):Dynamic
-	{
-		return if (variableExists(name))
-		{
-			#if hl
-			Tools.__hl_callMethod(interp.variables[name], args);
-			#else
-			Reflect.callMethod(null, interp.variables[name], args);
-			#end
-		}
-		else
-			null;
-	}
-
-	override function callFunctionUnsafe(name:String, args:Array<Dynamic>):Dynamic
-	{
-		return #if hl
-			Tools.__hl_callMethod(interp.variables[name], args);
-		#else
-			Reflect.callMethod(null, interp.variables[name], args);
-		#end
-	}
-
-	override function execute(expr:Expr):Dynamic
-	{
-		return interp.execute(expr);
-	}
-
-	override function get_scriptName():String
-	{
-		return interp.scriptName;
-	}
-
-	override function set_scriptName(v:String):String
-	{
-		return interp.scriptName = v;
-	}
-
-	override function get_scriptPackage():String
-	{
-		return interp.scriptPackage;
-	}
-
-	override function set_scriptPackage(v:String):String
-	{
-		return interp.scriptPackage = v;
-	}
-
-	override function get_superInstance():Dynamic
-	{
-		return interp.superInstance;
-	}
-
-	override function set_superInstance(v:Dynamic):Dynamic
-	{
-		return interp.superInstance = v;
-	}
-
-	override function get_hasErrorHandler():Bool
-	{
-		return interp.hasErrorHandler;
-	}
-
-	override function set_hasErrorHandler(v:Bool):Bool
-	{
-		return interp.hasErrorHandler = v;
-	}
-
-	override function get_errorHandler():haxe.Exception->Void
-	{
-		return interp.errorHandler;
-	}
-
-	override function set_errorHandler(v:haxe.Exception->Void):haxe.Exception->Void
-	{
-		return interp.errorHandler = v;
-	}
-
-	override function get_context():Context
-	{
-		return interp.context;
-	}
-
-	override function set_context(v:Context):Context
-	{
-		return interp.context = v;
-	}
-
-	override function get_isSuperCall():Bool
-	{
-		return interp.isSuperCall;
-	}
-
-	override function set_isSuperCall(v:Bool):Bool
-	{
-		return interp.isSuperCall = v;
-	}
-
-	override function get_hasConstructor():Bool
-	{
-		return interp.__constructor != null;
-	}
-
-	override function createConstructor(args:Array<Dynamic>):rulescript.RuleScriptAccess.ConstructorAccess
-	{
-		return switch (rulescript.Tools.getExpr(interp.__constructor))
-		{
-			case EFunction(params, fexpr, name, _):
-				final c = interp.makeSuperFunction(params, args);
-
-				interp.__constructors.push(c);
-
-				final exprs = switch (rulescript.Tools.getExpr(fexpr))
-				{
-					case EBlock(exprs):
-						exprs;
-					default:
-						null;
-				}
-
-				var superID:Int = 0;
-
-				for (expr in exprs)
-				{
-					switch (rulescript.Tools.getExpr(expr))
-					{
-						case ECall(e, _):
-							if (rulescript.Tools.getExpr(e).match(EIdent('super')))
-								break;
-						default:
-							null;
-					}
-					superID++;
-				}
-
-				{
-					pre: () ->
-					{
-						// Pre exprs
-						c.f(rulescript.Tools.toExpr(EBlock(exprs.slice(0, superID))));
-					},
-					getSuperArgs: () ->
-					{
-						final superCallArgs:Array<Expr> = switch (rulescript.Tools.getExpr(exprs[superID]))
-						{
-							case ECall(_, params): params;
-							default: null;
-						};
-
-						return superCallArgs.map(e -> interp.argExpr(e));
-					},
-					post: () ->
-					{
-						// Post exprs
-						c.f(rulescript.Tools.toExpr(EBlock(exprs.slice(superID + 1))));
-
-						c.finish();
-					}
-				}
-			default:
-				null;
-		}
-	}
-
-	override function __resolve(path:String):Dynamic
-	{
-		return interp.resolve(path);
-	}
-
-	override function __resolveType(path:String):Dynamic
-	{
-		return interp.resolveType(path);
-	}
 }
