@@ -722,10 +722,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	#if (hscript >= "2.7.0")
 	override function makeKeyValueIterator(v:Dynamic):KeyValueIterator<Dynamic, Dynamic>
 	{
-		#if hl
-		if (v is StringMap)
+		if (#if hl v is StringMap || #end v is haxe.Constraints.IMap)
 			return new haxe.iterators.MapKeyValueIterator(v);
-		#end
 
 		return super.makeKeyValueIterator(v);
 	}
@@ -850,6 +848,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	override function cnew(cl:String, args:Array<Dynamic>):Dynamic
 	{
+		if (cl == "Map" || cl == "haxe.ds.Map")
+        	return new Map<Dynamic, Dynamic>();
+
 		var c:Dynamic = Type.resolveClass(cl);
 
 		c ??= ScriptedTypeUtil.resolveScript(cl);
