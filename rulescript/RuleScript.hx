@@ -101,7 +101,7 @@ class RuleScript
 	 * 
 	 * Structure: Package => Types.
 	 * 
-	 * @see https://haxe.org/manual/type-system-import-defaults.html/
+	 * @see https://haxe.org/documentation/introduction/stdlib-introduction.html#general-purpose-api
 	 */
 	public static var defaultImports:Map<String, Map<String, Dynamic>> = [
 		'' => [
@@ -118,8 +118,12 @@ class RuleScript
 			'Xml' => Xml,
 			'Int' => Int,
 			'String' => String,
+			'StringBuf' => StringBuf,
 			'Float' => Float,
-			'Bool' => Bool
+			'Bool' => Bool,
+			'Array' => Array,
+			'Lambda' => Lambda,
+			'EReg' => EReg
 		]
 	];
 
