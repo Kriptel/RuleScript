@@ -31,7 +31,7 @@ class RSInterpConstructor extends ScriptedConstructor
 
 	function initCall(callArgs:Array<Dynamic>)
 	{
-		this.args = callArgs;
+		this.args = callArgs ?? [];
 
 		var hasOpt:Bool = false;
 		var hasRest:Bool = false;
@@ -39,21 +39,27 @@ class RSInterpConstructor extends ScriptedConstructor
 
 		for (p in params)
 		{
-			if (Tools.isRest(p.t))
+			final isRest = Tools.isRest(p.t);
+			if (isRest)
 			{
 				if (params.indexOf(p) == params.length - 1)
-					hasRest = true;
+				{
+					if (p.opt)
+						interp.error(ECustom('Rest argument cannot be optional'));
+					else
+						hasRest = true;
+				}
 				else
 					interp.error(ECustom("Rest should only be used for the last function argument"));
 			}
 
 			if (p.opt)
 				hasOpt = true;
-			else
+			else if (!isRest)
 				minParams++;
 		}
 
-		if (((args == null) ? 0 : args.length) != params.length)
+		if (args.length != params.length)
 		{
 			if (args.length < minParams && (!hasRest && args.length + 1 < minParams))
 			{
