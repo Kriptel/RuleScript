@@ -1143,7 +1143,7 @@ class BytecodeInterp implements IInterp
 					}
 				}
 
-				#if hl
+				#if rulescript_use_hl_fixes
 				dynamicBuffer[id] = Tools.__hl_callMethod(func, args);
 				#else
 				dynamicBuffer[id] = Reflect.callMethod(null, func, args);
@@ -1366,7 +1366,7 @@ class BytecodeInterp implements IInterp
 					}
 					else
 					{
-						#if hl
+						#if rulescript_use_hl_fixes
 						Tools.__hl_makeVarArgs(f, argNum);
 						#else
 						Reflect.makeVarArgs(f);
@@ -1418,7 +1418,7 @@ class BytecodeInterp implements IInterp
 				}
 				else
 				{
-					#if hl
+					#if rulescript_use_hl_fixes
 					Tools.__hl_makeVarArgs(f, argNum);
 					#else
 					Reflect.makeVarArgs(f);
@@ -1470,7 +1470,7 @@ class BytecodeInterp implements IInterp
 				}
 				else
 				{
-					#if hl
+					#if rulescript_use_hl_fixes
 					Tools.__hl_makeVarArgs(f, argNum);
 					#else
 					Reflect.makeVarArgs(f);
@@ -1519,7 +1519,7 @@ class BytecodeInterp implements IInterp
 				}
 				else
 				{
-					#if hl
+					#if rulescript_use_hl_fixes
 					Tools.__hl_makeVarArgs(f, argNum);
 					#else
 					Reflect.makeVarArgs(f);
@@ -1622,7 +1622,7 @@ class BytecodeInterp implements IInterp
 			obj = obj.keyValueIterator();
 		#end
 
-		#if hl
+		#if rulescript_use_hl_fixes
 		if (obj is haxe.ds.StringMap)
 			obj = cast(obj, haxe.ds.StringMap<Dynamic>).keyValueIterator();
 		#end
@@ -1652,7 +1652,7 @@ class BytecodeInterp implements IInterp
 				default:
 			}
 
-		#if hl
+		#if rulescript_use_hl_fixes
 		return Reflect.isFunction(c) ? Tools.__hl_callMethod(c, args) : Tools.isClass(c) ? Tools.__hl_createInstance(c, args) : c;
 		#else
 		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : Tools.isClass(c) ? Type.createInstance(c, args) : c;
@@ -1782,7 +1782,7 @@ class InterpAccess extends RuleScriptAccess
 	{
 		return if (variableExists(name))
 		{
-			#if hl
+			#if rulescript_use_hl_fixes
 			Tools.__hl_callMethod(interp.variables[name], args);
 			#else
 			Reflect.callMethod(null, interp.variables[name], args);
@@ -1794,7 +1794,7 @@ class InterpAccess extends RuleScriptAccess
 
 	function callFunctionUnsafe(name:String, args:Array<Dynamic>):Dynamic
 	{
-		return #if hl
+		return #if rulescript_use_hl_fixes
 			Tools.__hl_callMethod(interp.variables[name], args);
 		#else
 			Reflect.callMethod(null, interp.variables[name], args);

@@ -11,7 +11,7 @@ import rulescript.types.ScriptedTypeUtil;
 import rulescript.types.Typedefs;
 #end
 
-#if hl
+#if (hl && rulescript_use_hl_fixes)
 @:build(rulescript.macro.CallMethodMacro.build())
 #end
 class Tools
@@ -56,7 +56,7 @@ class Tools
 			i--;
 		}
 		return Reflect.callMethod(o, f, args);
-		#elseif hl
+		#elseif rulescript_use_hl_fixes
 		return __hl_callMethod(f, [o, a1, a2, a3, a4, a5, a6, a7, a8]);
 		#else
 		return Reflect.callMethod(o, f, [o, a1, a2, a3, a4, a5, a6, a7, a8]);
@@ -386,7 +386,7 @@ class Tools
 		return true;
 	}
 
-	#if hl
+	#if rulescript_use_hl_fixes
 	@:noCompletion public inline static function __hl_makeVarArgs(f:Array<Dynamic>->Dynamic, numArgs:Int):Dynamic
 	{
 		return switch (numArgs)

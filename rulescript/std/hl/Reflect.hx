@@ -32,7 +32,11 @@ class Reflect
 
 	static function callMethod(o:Dynamic, func:haxe.Constraints.Function, args:Array<Dynamic>):Dynamic
 	{
+		#if rulescript_use_hl_fixes
 		return Tools.__hl_callMethod(func, args);
+		#else
+		return HlReflect.callMethod(o, func, args);
+		#end
 	}
 
 	static function fields(o:Dynamic):Array<String>

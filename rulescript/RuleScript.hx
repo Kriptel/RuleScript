@@ -11,6 +11,9 @@ import rulescript.types.ScriptedTypeUtil;
 #if (hscript < "2.6.0")
 #error "Error: HScript version is outdated. RuleScript requires version 2.6.0 or higher."
 #end
+#if (rulescript_use_hl_fixes && !hl)
+#error "Error: The flag 'rulescript_use_hl_fixes' can only be used when targeting HashLink"
+#end
 
 /**
  * This class serves as a wrapper/container(?) for executing code and managing the interpreter, 
