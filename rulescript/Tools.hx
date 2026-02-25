@@ -40,14 +40,14 @@ class Tools
 		return _printer.typeToString(type);
 	}
 
-	@:noCompletion public static function usingFunction(?o:Dynamic, f:Function, ?a1:Dynamic, ?a2:Dynamic, ?a3:Dynamic, ?a4:Dynamic, ?a5:Dynamic, ?a6:Dynamic,
-			?a7:Dynamic, ?a8:Dynamic)
+	@:noCompletion public static function usingFunction(?o:Dynamic, f:Function, ?args:Array<Dynamic>)
 	{
 		#if interp
-		var args:Array<Dynamic> = [o, a1, a2, a3, a4, a5, a6, a7, a8];
-		var i:Int = 8;
+		var args:Array<Dynamic> = [o].concat(args);
+		var i:Int = 0;
+		i = args.length;
 
-		while (i >= 0)
+		while (i != 1)
 		{
 			if (args[i] == null)
 				args.pop();
@@ -57,9 +57,9 @@ class Tools
 		}
 		return Reflect.callMethod(o, f, args);
 		#elseif hl
-		return __hl_callMethod(f, [o, a1, a2, a3, a4, a5, a6, a7, a8]);
+		return __hl_callMethod(f, [o].concat(args));
 		#else
-		return Reflect.callMethod(o, f, [o, a1, a2, a3, a4, a5, a6, a7, a8]);
+		return Reflect.callMethod(o, f, [o].concat(args));
 		#end
 	}
 

@@ -367,6 +367,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				}
 			case EUsing(path):
 				var t:Dynamic = resolveType(path);
+				trace(path);
 
 				if (t == null)
 					error(ECustom('Type not found : $path'));
@@ -773,16 +774,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		}
 
 		var prop:Dynamic = super.get(o, f);
-
 		if (prop != null)
 			return getScriptProp(prop);
-
-		for (cl in usings)
-		{
-			var prop:Dynamic = Reflect.getProperty(cl, f);
-			if (prop != null)
-				return Tools.usingFunction.bind(o, prop, _, _, _, _, _, _, _, _);
-		}
 
 		return null;
 	}
@@ -844,7 +837,27 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	{
 		var func = ((o == superInstance
 			&& (locals.exists('__super_$f') || variables.exists('__super_$f'))) ? (resolve('__super_$f')) : get(o, f));
-		return call(o, func, args);
+		if (func != null)
+			return call(o, func, args);
+
+		// var prop = get(o, f);
+		// try
+		// {
+		// 	for (cl in usings)
+		// 	{
+		// 		var prop:Dynamic = Reflect.getProperty(cl, f);
+		// 		if (prop != null)
+		// 			return Tools.usingFunction(o, prop, args);
+		// 	}
+
+		// 	for (cl in usings) {
+
+		// 	}
+		// }
+		// catch(e:Dynamic) {
+		// 	prop = o;
+		// }
+		return null;
 	}
 
 	override function cnew(cl:String, args:Array<Dynamic>):Dynamic
