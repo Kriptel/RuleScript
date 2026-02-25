@@ -6,8 +6,8 @@ import rulescript.RuleScript.IInterp;
 import rulescript.Tools.getScriptProp;
 import rulescript.interps.bytecode.Command;
 import rulescript.interps.bytecode.Converter;
-import rulescript.scriptedClass.RuleScriptedClass.ScriptedClass;
 import rulescript.scriptedClass.RuleScriptedClass;
+import rulescript.scriptedClass.ScriptedConstructor;
 import rulescript.types.Property;
 import rulescript.types.ScriptedAbstract;
 import rulescript.types.ScriptedType;
@@ -1294,8 +1294,7 @@ class BytecodeInterp implements IInterp
 				linkID = id;
 
 				if (superCall)
-					variables['__constructor'] = dynamicBuffer[id] = function(args:Array<Dynamic>):rulescript.RuleScriptAccess.ConstructorAccess
-
+					variables['__constructor'] = dynamicBuffer[id] = function(args:Array<Dynamic>):ScriptedConstructor
 					{
 						final lastPos = this.pos;
 
@@ -1312,7 +1311,8 @@ class BytecodeInterp implements IInterp
 							while (i++ <= argNum);
 						}
 
-						return {
+						return null;
+						/*{
 							pre: () -> command(),
 
 							getSuperArgs: () ->
@@ -1332,8 +1332,8 @@ class BytecodeInterp implements IInterp
 								command();
 								this.pos = lastPos;
 							}
-						};
-					};
+						};*/
+					}
 				else
 				{
 					var f:Dynamic = function(args:Array<Dynamic>):Dynamic
@@ -1738,47 +1738,47 @@ class InterpAccess extends RuleScriptAccess
 		this.interp = interp;
 	}
 
-	override function getVariables():Map<String, Dynamic>
+	function getVariables():Map<String, Dynamic>
 	{
 		return interp.variables;
 	}
 
-	override function setVariables(newVariables:Map<String, Dynamic>):Map<String, Dynamic>
+	function setVariables(newVariables:Map<String, Dynamic>):Map<String, Dynamic>
 	{
 		return interp.variables = newVariables;
 	}
 
-	override function resetInterp():Void
+	function resetInterp():Void
 	{
 		interp.reset();
 	}
 
-	override function variableExists(name:String):Bool
+	function variableExists(name:String):Bool
 	{
 		return interp.variables.exists(name);
 	}
 
-	override function getVariable(name:String):Dynamic
+	function getVariable(name:String):Dynamic
 	{
 		return interp.variables[name];
 	}
 
-	override function setVariable(name:String, value:Dynamic):Dynamic
+	function setVariable(name:String, value:Dynamic):Dynamic
 	{
 		return interp.variables[name] = value;
 	}
 
-	override function removeVariable(name:String):Bool
+	function removeVariable(name:String):Bool
 	{
 		return interp.variables.remove(name);
 	}
 
-	override function posInfos():haxe.PosInfos
+	function posInfos():haxe.PosInfos
 	{
 		return interp.posInfos();
 	}
 
-	override function callFunction(name:String, args:Array<Dynamic>):Dynamic
+	function callFunction(name:String, args:Array<Dynamic>):Dynamic
 	{
 		return if (variableExists(name))
 		{
@@ -1792,7 +1792,7 @@ class InterpAccess extends RuleScriptAccess
 			null;
 	}
 
-	override function callFunctionUnsafe(name:String, args:Array<Dynamic>):Dynamic
+	function callFunctionUnsafe(name:String, args:Array<Dynamic>):Dynamic
 	{
 		return #if hl
 			Tools.__hl_callMethod(interp.variables[name], args);
@@ -1801,77 +1801,77 @@ class InterpAccess extends RuleScriptAccess
 		#end
 	}
 
-	override function execute(expr:Expr):Dynamic
+	function execute(expr:Expr):Dynamic
 	{
 		return interp.execute(expr);
 	}
 
-	override function get_scriptName():String
+	function get_scriptName():String
 	{
 		return interp.scriptName;
 	}
 
-	override function set_scriptName(v:String):String
+	function set_scriptName(v:String):String
 	{
 		return interp.scriptName = v;
 	}
 
-	override function get_scriptPackage():String
+	function get_scriptPackage():String
 	{
 		return interp.scriptPackage;
 	}
 
-	override function set_scriptPackage(v:String):String
+	function set_scriptPackage(v:String):String
 	{
 		return interp.scriptPackage = v;
 	}
 
-	override function get_superInstance():Dynamic
+	function get_superInstance():Dynamic
 	{
 		return interp.superInstance;
 	}
 
-	override function set_superInstance(v:Dynamic):Dynamic
+	function set_superInstance(v:Dynamic):Dynamic
 	{
 		return interp.superInstance = v;
 	}
 
-	override function get_hasErrorHandler():Bool
+	function get_hasErrorHandler():Bool
 	{
 		return interp.hasErrorHandler;
 	}
 
-	override function set_hasErrorHandler(v:Bool):Bool
+	function set_hasErrorHandler(v:Bool):Bool
 	{
 		return interp.hasErrorHandler = v;
 	}
 
-	override function get_errorHandler():haxe.Exception->Void
+	function get_errorHandler():haxe.Exception->Void
 	{
 		return interp.errorHandler;
 	}
 
-	override function set_errorHandler(v:haxe.Exception->Void):haxe.Exception->Void
+	function set_errorHandler(v:haxe.Exception->Void):haxe.Exception->Void
 	{
 		return interp.errorHandler = v;
 	}
 
-	override function get_context():Context
+	function get_context():Context
 	{
 		return interp.context;
 	}
 
-	override function set_context(v:Context):Context
+	function set_context(v:Context):Context
 	{
 		return interp.context = v;
 	}
 
-	override function get_isSuperCall():Bool
+	function get_isSuperCall():Bool
 	{
 		return interp.isSuperCall;
 	}
 
-	override function set_isSuperCall(v:Bool):Bool
+	function set_isSuperCall(v:Bool):Bool
 	{
 		return interp.isSuperCall = v;
 	}
@@ -1881,7 +1881,7 @@ class InterpAccess extends RuleScriptAccess
 		return variableExists('__constructor');
 	}
 
-	override function createConstructor(args:Array<Dynamic>):rulescript.RuleScriptAccess.ConstructorAccess
+	override function createConstructor(args:Array<Dynamic>):ScriptedConstructor
 	{
 		return getVariable('__constructor')(args);
 	}

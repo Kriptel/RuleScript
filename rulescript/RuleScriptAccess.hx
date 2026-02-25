@@ -1,73 +1,57 @@
 package rulescript;
 
+import haxe.exceptions.NotImplementedException;
 import hscript.Expr;
+import rulescript.scriptedClass.ScriptedConstructor;
 
 /**
  * Implements a single API for all interpreters.
  */
 @:allow(rulescript.RuleScript)
-class RuleScriptAccess
+abstract class RuleScriptAccess
 {
 	/**
 	 * Returns interp globals.
 	 */
-	public function getVariables():Map<String, Dynamic>
-	{
-		return null;
-	}
+	abstract public function getVariables():Map<String, Dynamic>;
 
 	/**
 	 * Sets interpreter globals
 	 */
-	public function setVariables(newVariables:Map<String, Dynamic>):Map<String, Dynamic>
-	{
-		return null;
-	}
+	abstract public function setVariables(newVariables:Map<String, Dynamic>):Map<String, Dynamic>;
 
 	/**
 	 * Resets the interp.
 	 */
-	public function resetInterp():Void {}
+	abstract public function resetInterp():Void;
 
 	/**
 	 * Returns `true` if variable with identifier `name` exists.
 	 * 
 	 * if `name` is null, the result is unspecified.
 	 */
-	public function variableExists(name:String):Bool
-	{
-		return false;
-	}
+	abstract public function variableExists(name:String):Bool;
 
 	/**
 	 * Returns variable with identifier `name`.
 	 * 
 	 * if `name` is null, the result is unspecified.
 	 */
-	public function getVariable(name:String):Dynamic
-	{
-		return null;
-	}
+	abstract public function getVariable(name:String):Dynamic;
 
 	/**
 	 * Sets variables `name` key to `value`.
 	 * 
 	 * if `name` is null, the result is unspecified.
 	 */
-	public function setVariable(name:String, value:Dynamic):Dynamic
-	{
-		return null;
-	}
+	abstract public function setVariable(name:String, value:Dynamic):Dynamic;
 
 	/**
 	 * Removes variable `name`.
 	 * 
 	 * if `name` is null, the result is unspecified.
 	 */
-	public function removeVariable(name:String):Bool
-	{
-		return false;
-	}
+	abstract public function removeVariable(name:String):Bool;
 
 	/**
 	 * Calls function `name` with arguments `args`
@@ -76,30 +60,18 @@ class RuleScriptAccess
 	 * 
 	 * if `name` or `args` are null, the result is unspecified.
 	 */
-	public function callFunction(name:String, args:Array<Dynamic>):Dynamic
-	{
-		return null;
-	}
+	abstract public function callFunction(name:String, args:Array<Dynamic>):Dynamic;
 
 	/**
 	 * Calls function `name` with arguments `args`
 	 * 
 	 * if function `name`, `name` or `args` are null, the result is unspecified.
 	 */
-	public function callFunctionUnsafe(name:String, args:Array<Dynamic>):Dynamic
-	{
-		return null;
-	}
+	abstract public function callFunctionUnsafe(name:String, args:Array<Dynamic>):Dynamic;
 
-	public function execute(expr:Expr):Dynamic
-	{
-		return null;
-	}
+	abstract public function execute(expr:Expr):Dynamic;
 
-	public function posInfos():haxe.PosInfos
-	{
-		return null;
-	}
+	abstract public function posInfos():haxe.PosInfos;
 
 	// Backend
 	var scriptName(get, set):String;
@@ -113,88 +85,46 @@ class RuleScriptAccess
 
 	var context(get, set):Context;
 
-	function get_scriptName():String
-	{
-		return null;
-	}
+	abstract function get_scriptName():String;
 
-	function set_scriptName(v:String):String
-	{
-		return null;
-	}
+	abstract function set_scriptName(v:String):String;
 
-	function get_scriptPackage():String
-	{
-		return null;
-	}
+	abstract function get_scriptPackage():String;
 
-	function set_scriptPackage(v:String):String
-	{
-		return null;
-	}
+	abstract function set_scriptPackage(v:String):String;
 
-	function get_superInstance():Dynamic
-	{
-		return null;
-	}
+	abstract function get_superInstance():Dynamic;
 
-	function set_superInstance(v:Dynamic):Dynamic
-	{
-		return null;
-	}
+	abstract function set_superInstance(v:Dynamic):Dynamic;
 
-	function get_hasErrorHandler():Bool
-	{
-		return false;
-	}
+	abstract function get_hasErrorHandler():Bool;
 
-	function set_hasErrorHandler(v:Bool):Bool
-	{
-		return false;
-	}
+	abstract function set_hasErrorHandler(v:Bool):Bool;
 
-	function get_errorHandler():haxe.Exception->Void
-	{
-		return null;
-	}
+	abstract function get_errorHandler():haxe.Exception->Void;
 
-	function set_errorHandler(v:haxe.Exception->Void):haxe.Exception->Void
-	{
-		return null;
-	}
+	abstract function set_errorHandler(v:haxe.Exception->Void):haxe.Exception->Void;
 
-	function get_context():Context
-	{
-		return null;
-	}
+	abstract function get_context():Context;
 
-	function set_context(v:Context):Context
-	{
-		return null;
-	}
+	abstract function set_context(v:Context):Context;
 
 	@:noCompletion public var isSuperCall(get, set):Bool;
 
-	function get_isSuperCall():Bool
-	{
-		return false;
-	}
+	abstract function get_isSuperCall():Bool;
 
-	function set_isSuperCall(v:Bool):Bool
-	{
-		return false;
-	}
+	abstract function set_isSuperCall(v:Bool):Bool;
 
 	@:noCompletion public var hasConstructor(get, never):Bool;
 
 	function get_hasConstructor():Bool
 	{
-		return false;
+		throw NotImplementedException;
 	}
 
-	@:noCompletion public function createConstructor(args:Array<Dynamic>):ConstructorAccess
+	@:noCompletion public function createConstructor(args:Array<Dynamic>):ScriptedConstructor
 	{
-		return null;
+		throw NotImplementedException;
 	}
 
 	@:noCompletion private function __resolve(path:String):Dynamic
@@ -206,11 +136,4 @@ class RuleScriptAccess
 	{
 		return null;
 	}
-}
-
-typedef ConstructorAccess =
-{
-	pre:() -> Void,
-	getSuperArgs:() -> Array<Dynamic>,
-	post:() -> Void
 }

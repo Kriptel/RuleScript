@@ -238,12 +238,12 @@ class RuleScriptedClassMacro
 									macro args
 							});
 
-						c.pre();
+						c.preCall();
 
-						final superCallArgs:Array<Dynamic> = c.getSuperArgs();
+						final superCallArgs:Array<Dynamic> = c.lastSuperConstructor.getSuperArgs();
 
 						super($a{scriptSuperCall});
-						c.post();
+						c.postCall();
 					}
 					else
 					{
