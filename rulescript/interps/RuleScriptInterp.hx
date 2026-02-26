@@ -20,6 +20,12 @@ using rulescript.Tools;
 import haxe.ds.StringMap;
 #end
 
+@:publicFields
+typedef Using = {
+	var cls:Class<Dynamic>;
+	var val:Dynamic;
+}
+
 class RuleScriptInterp extends hscript.Interp implements IInterp
 {
 	public var scriptName:String;
@@ -28,7 +34,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	public var access:RuleScriptAccess;
 
 	public var imports:Map<String, Dynamic> = [];
-	public var usings:Map<String, Dynamic> = [];
+	public var usings:Map<String, Using> = [];
 
 	public var superInstance(default, set):Dynamic;
 
@@ -57,6 +63,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 		imports = [];
 		usings = [];
+		usingsCache = [];
 		typePaths = [];
 	}
 
@@ -372,7 +379,23 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				if (t == null)
 					error(ECustom('Type not found : $path'));
 
-				usings.set(path, t);
+				usings.set(path, {val: t, cls: Type.resolveClass(path)});
+
+				var fields = Type.getClassFields(usings.get(path).cls);
+				if (fields.length == 0) continue;
+
+				for (fld in fields)
+				{
+					var field:Dynamic = Reflect.getProperty(usings.get(path).cls, fld);
+					if (!Reflect.isFunction(field)) continue;
+
+					var func:Dynamic = function(params:Array<Dynamic>) {
+						return Reflect.callMethod(usings.get(path).cls, field, params);
+					}
+
+					usingCache.set(fld, func);
+				}
+				
 			case ETypeVarPath(path):
 				return resolveTypeOrValue(path);
 			case EMeta(n, args, e):
@@ -833,6 +856,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		return result;
 	}
 
+
+	
+	public var usingsCache:Map<String, Array<Dynamic>->Dynamic> = [];
+
 	override function fcall(o:Dynamic, f:String, args:Array<Dynamic>):Dynamic
 	{
 		var func = ((o == superInstance
@@ -840,23 +867,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		if (func != null)
 			return call(o, func, args);
 
-		// var prop = get(o, f);
-		// try
-		// {
-		// 	for (cl in usings)
-		// 	{
-		// 		var prop:Dynamic = Reflect.getProperty(cl, f);
-		// 		if (prop != null)
-		// 			return Tools.usingFunction(o, prop, args);
-		// 	}
-
-		// 	for (cl in usings) {
-
-		// 	}
-		// }
-		// catch(e:Dynamic) {
-		// 	prop = o;
-		// }
+		if (usingsCache.exists(f)) {
+			trace(f, o, args,  usingsCache[f]([o].concat(args)));
+			return usingsCache[f]([o].concat(args));
+		}
 		return null;
 	}
 
