@@ -382,18 +382,18 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				usings.set(path, {val: t, cls: Type.resolveClass(path)});
 
 				var fields = Type.getClassFields(usings.get(path).cls);
-				if (fields.length == 0) continue;
+				if (fields.length > 0) {
+					for (fld in fields)
+					{
+						var field:Dynamic = Reflect.getProperty(usings.get(path).cls, fld);
+						if (!Reflect.isFunction(field)) continue;
 
-				for (fld in fields)
-				{
-					var field:Dynamic = Reflect.getProperty(usings.get(path).cls, fld);
-					if (!Reflect.isFunction(field)) continue;
+						var func:Dynamic = function(params:Array<Dynamic>) {
+							return Reflect.callMethod(usings.get(path).cls, field, params);
+						}
 
-					var func:Dynamic = function(params:Array<Dynamic>) {
-						return Reflect.callMethod(usings.get(path).cls, field, params);
+						usingsCache.set(fld, func);
 					}
-
-					usingCache.set(fld, func);
 				}
 				
 			case ETypeVarPath(path):
