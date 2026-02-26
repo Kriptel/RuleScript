@@ -4,7 +4,7 @@ import haxe.Constraints.IMap;
 import haxe.Exception;
 import hscript.Expr;
 import rulescript.RuleScript.IInterp;
-import rulescript.Tools.TypePath;
+import rulescript.Tools.ImportPath;
 import rulescript.Tools.getScriptProp;
 import rulescript.interps.neo.NeoCompiler;
 import rulescript.interps.neo.NeoInterpAccess;
@@ -538,14 +538,14 @@ class NeoInterp implements IInterp
 					{
 						if (!variables.exists(typeName))
 						{
-							final type:Dynamic = resolveType(TypePath.createString(path.split('.'), typeName));
+							final type:Dynamic = resolveType(ImportPath.createString(path.split('.'), typeName));
 							variables.set(typeName, type);
 						}
 					}
 				}
 				else
 				{
-					var name:String = alias ?? func ?? TypePath.getTypeName(path);
+					var name:String = alias ?? func ?? ImportPath.getTypeName(path);
 					var type:Dynamic = resolveType(path);
 
 					final value = if (func != null)

@@ -1,7 +1,7 @@
 package rulescript.types;
 
 import rulescript.Tools.EnumPattern;
-import rulescript.Tools.TypePath;
+import rulescript.Tools.ImportPath;
 import rulescript.types.ScriptedType.TypeID;
 import rulescript.types.decl.EnumDecl;
 
@@ -74,7 +74,7 @@ class ScriptedEnum implements ScriptedType
 
 	public function toString():String
 	{
-		return TypePath.createString(module.pack.split('.'), module.name, impl.name);
+		return ImportPath.createString(module.pack.split('.'), module.name, impl.name);
 	}
 }
 

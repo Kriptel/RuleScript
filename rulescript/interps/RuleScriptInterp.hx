@@ -20,12 +20,6 @@ using rulescript.Tools;
 import haxe.ds.StringMap;
 #end
 
-@:publicFields
-typedef Using = {
-	var cls:Class<Dynamic>;
-	var val:Dynamic;
-}
-
 class RuleScriptInterp extends hscript.Interp implements IInterp
 {
 	public var scriptName:String;
@@ -33,8 +27,11 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	public var access:RuleScriptAccess;
 
-	public var imports:Map<String, Dynamic> = [];
-	public var usings:Map<String, Using> = [];
+	public var imports:Map<String, ImportPath> = [];
+	public var importsCache:Map<String, Dynamic> = [];
+
+	public var usings:Map<String, ImportPath> = [];
+	public var usingsCache:Map<String, Array<Dynamic>->Dynamic> = [];
 
 	public var superInstance(default, set):Dynamic;
 
@@ -356,8 +353,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					else
 						t;
 
-					imports.set(name, value);
-
+					imports.set(name, new ImportPath(path));
+					importsCache.set(name, value);
 					variables.set(name, value);
 				}
 				else
@@ -366,32 +363,31 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					{
 						if (!variables.exists(typeName))
 						{
-							final type:Dynamic = resolveType(TypePath.createString(path.split('.'), typeName));
-							imports.set(typeName, type);
+							final type:Dynamic = resolveType(ImportPath.createString(path.split('.'), typeName));
+							imports.set(typeName, new ImportPath(path));
+							importscache.set(name, type);
 							variables.set(typeName, type);
 						}
 					}
 				}
 			case EUsing(path):
 				var t:Dynamic = resolveType(path);
-				trace(path);
 
 				if (t == null)
 					error(ECustom('Type not found : $path'));
 
-				usings.set(path, {val: t, cls: Type.resolveClass(path)});
+				usings.set(path, new ImportPath(path));
 
-				var fields = Type.getClassFields(usings.get(path).cls);
-				if (fields.length > 0) {
+				// Obtain the using's function fields
+				final fields = Type.getClassFields(usings.get(path).cls);
+				if (fields.length > 0) 
+				{
 					for (fld in fields)
 					{
-						var field:Dynamic = Reflect.getProperty(usings.get(path).cls, fld);
+						final field:Dynamic = Reflect.getProperty(usings.get(path).cls, fld);
 						if (!Reflect.isFunction(field)) continue;
 
-						var func:Dynamic = function(params:Array<Dynamic>) {
-							return Reflect.callMethod(usings.get(path).cls, field, params);
-						}
-
+						final func:Dynamic = function(params:Array<Dynamic>) return Tools.usingFunction(usings.get(path).cls, field, params);
 						usingsCache.set(fld, func);
 					}
 				}
@@ -856,10 +852,6 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		return result;
 	}
 
-
-	
-	public var usingsCache:Map<String, Array<Dynamic>->Dynamic> = [];
-
 	override function fcall(o:Dynamic, f:String, args:Array<Dynamic>):Dynamic
 	{
 		var func = ((o == superInstance
@@ -867,10 +859,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		if (func != null)
 			return call(o, func, args);
 
-		if (usingsCache.exists(f)) {
-			trace(f, o, args,  usingsCache[f]([o].concat(args)));
+		if (usingsCache.exists(f)) 
 			return usingsCache[f]([o].concat(args));
-		}
 		return null;
 	}
 

@@ -2,7 +2,7 @@ package rulescript.scriptedClass;
 
 import hscript.Expr.ClassDecl;
 import rulescript.RuleScript.IInterp;
-import rulescript.Tools.TypePath;
+import rulescript.Tools.ImportPath;
 import rulescript.types.ScriptedModule;
 import rulescript.types.ScriptedType;
 
@@ -241,7 +241,7 @@ abstract Access(RuleScriptedClass)
 			getVariable('toString')();
 		else
 		{
-			TypePath.createString(interp.access.scriptPackage.split('.'), module.name, impl.name);
+			ImportPath.createString(interp.access.scriptPackage.split('.'), module.name, impl.name);
 		}
 	}
 }
