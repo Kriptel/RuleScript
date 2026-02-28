@@ -4,7 +4,7 @@ import haxe.Constraints.IMap;
 import haxe.Exception;
 import hscript.Expr;
 import rulescript.RuleScript.IInterp;
-import rulescript.Tools.TypePath;
+import rulescript.Tools.ImportPath;
 import rulescript.Tools.getScriptProp;
 import rulescript.interps.neo.NeoCompiler;
 import rulescript.interps.neo.NeoInterpAccess;
@@ -38,7 +38,8 @@ class NeoInterp implements IInterp
 
 	public var variables:Map<String, Dynamic>;
 
-	public var usings:Array<Dynamic>;
+	public var usings:Map<String, ImportPath>;
+	public var usingsCache:Map<String, Array<Dynamic>->Dynamic>;
 
 	var bytes:Array<NeoByte>;
 	var pos:Int = 0;
@@ -74,6 +75,7 @@ class NeoInterp implements IInterp
 		}));
 
 		usings = [];
+		usingsCache = [];
 
 		bytes = [];
 
@@ -263,8 +265,11 @@ class NeoInterp implements IInterp
 				v;
 
 			case CALL:
-				final f:Dynamic = getValue(command());
+				final prevCommand:Null<NeoByte> = command();
+				final f:Dynamic = getValue(prevCommand);
+				final str:String = stringBuffer[current()];
 
+				trace(f, prevCommand, str);
 				if (f == null)
 					error(ENullAccess);
 
@@ -272,6 +277,14 @@ class NeoInterp implements IInterp
 					for (_ in 0...next())
 						getValue(command())
 				];
+
+				if (prevCommand == FIELD && usingsCache.exists(str)) 
+				{
+					trace(str, f, args);
+					setValue(usingsCache[str]([f].concat(args)));
+					trace(dyn);
+					return DYNAMIC;
+				}
 
 				setValue(call(f, args));
 
@@ -538,14 +551,14 @@ class NeoInterp implements IInterp
 					{
 						if (!variables.exists(typeName))
 						{
-							final type:Dynamic = resolveType(TypePath.createString(path.split('.'), typeName));
+							final type:Dynamic = resolveType(ImportPath.createString(path.split('.'), typeName));
 							variables.set(typeName, type);
 						}
 					}
 				}
 				else
 				{
-					var name:String = alias ?? func ?? TypePath.getTypeName(path);
+					var name:String = alias ?? func ?? ImportPath.getTypeName(path);
 					var type:Dynamic = resolveType(path);
 
 					final value = if (func != null)
@@ -563,8 +576,25 @@ class NeoInterp implements IInterp
 				final path:String = nextString();
 				final type:Dynamic = resolveType(path);
 
-				if (!usings.contains(type))
-					usings.push(type);
+				trace(path, type);
+				if (!usings.exists(path)) 
+				{
+					usings.set(path, new ImportPath(path));
+
+					// Obtain the using's function fields
+					final fields = Type.getClassFields(usings.get(path).cls);
+					if (fields.length > 0) 
+					{
+						for (fld in fields)
+						{
+							final field:Dynamic = Reflect.getProperty(usings.get(path).cls, fld);
+							if (!Reflect.isFunction(field)) continue;
+
+							final func:Dynamic = function(params:Array<Dynamic>) return Tools.usingFunction(usings.get(path).cls, field, params);
+							usingsCache.set(fld, func);
+						}
+					}
+				}
 
 				VOID;
 			case FUNCTION:
@@ -723,7 +753,6 @@ class NeoInterp implements IInterp
 		#else
 		final result:Dynamic = Reflect.callMethod(null, f, args);
 		#end
-
 		return result;
 	}
 
@@ -768,20 +797,9 @@ class NeoInterp implements IInterp
 		}
 
 		var prop:Dynamic = Reflect.getProperty(o, f);
-
 		if (prop != null)
 			return getScriptProp(prop);
-
-		if (usings.length > 0)
-		{
-			for (cl in usings)
-			{
-				var prop:Dynamic = Reflect.getProperty(cl, f);
-				if (prop != null)
-					return Tools.usingFunction.bind(o, prop, _, _, _, _, _, _, _, _);
-			}
-		}
-
+		
 		return null;
 	}
 

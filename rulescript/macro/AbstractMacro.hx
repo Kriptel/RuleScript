@@ -4,7 +4,7 @@ package rulescript.macro;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 import haxe.macro.ExprTools;
-import rulescript.Tools.TypePath;
+import rulescript.Tools.ImportPath;
 import sys.FileSystem;
 import sys.io.File;
 
@@ -38,7 +38,7 @@ class AbstractMacro
 			for (abstractType in abstractsList)
 			{
 				if (!ignoreList.contains('-#$abstractType'))
-					buildAbstract(new TypePath(abstractType));
+					buildAbstract(new ImportPath(abstractType));
 			}
 		];
 
@@ -369,7 +369,7 @@ class AbstractMacro
 		return tokens;
 	}
 
-	static function buildAbstract(typePath:TypePath):Expr
+	static function buildAbstract(typePath:ImportPath):Expr
 	{
 		var type = switch (Context.getType(typePath.fullPath))
 		{

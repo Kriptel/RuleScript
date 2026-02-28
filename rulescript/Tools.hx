@@ -11,14 +11,11 @@ import rulescript.types.ScriptedTypeUtil;
 import rulescript.types.Typedefs;
 #end
 
-#if hl
-@:build(rulescript.macro.CallMethodMacro.build())
-#end
 class Tools
 {
-	public static function parseTypePath(typePath:String):TypePath
+	public static function parseTypePath(typePath:String):ImportPath
 	{
-		return new TypePath(typePath);
+		return new ImportPath(typePath);
 	}
 
 	inline public static function startsWithLowerCase(s:String):Bool
@@ -40,14 +37,14 @@ class Tools
 		return _printer.typeToString(type);
 	}
 
-	@:noCompletion public static function usingFunction(?o:Dynamic, f:Function, ?a1:Dynamic, ?a2:Dynamic, ?a3:Dynamic, ?a4:Dynamic, ?a5:Dynamic, ?a6:Dynamic,
-			?a7:Dynamic, ?a8:Dynamic)
+	@:noCompletion public static function usingFunction(?o:Dynamic, f:Function, ?args:Array<Dynamic>)
 	{
 		#if interp
-		var args:Array<Dynamic> = [o, a1, a2, a3, a4, a5, a6, a7, a8];
-		var i:Int = 8;
+		var args:Array<Dynamic> = [o].concat(args);
+		var i:Int = 0;
+		i = args.length;
 
-		while (i >= 0)
+		while (i != 1)
 		{
 			if (args[i] == null)
 				args.pop();
@@ -57,9 +54,9 @@ class Tools
 		}
 		return Reflect.callMethod(o, f, args);
 		#elseif hl
-		return __hl_callMethod(f, [o, a1, a2, a3, a4, a5, a6, a7, a8]);
+		return __hl_callMethod(f, [o].concat(args));
 		#else
-		return Reflect.callMethod(o, f, [o, a1, a2, a3, a4, a5, a6, a7, a8]);
+		return Reflect.callMethod(o, f, [o].concat(args));
 		#end
 	}
 
@@ -393,20 +390,6 @@ class Tools
 		{
 			case 0:
 				() -> f([]);
-			case 1:
-				Tools.callMethod1.bind(f, _);
-			case 2:
-				Tools.callMethod2.bind(f, _, _);
-			case 3:
-				Tools.callMethod3.bind(f, _, _, _);
-			case 4:
-				Tools.callMethod4.bind(f, _, _, _, _);
-			case 5, 6:
-				Tools.callMethod6.bind(f, _, _, _, _, _, _);
-			case 7, 8:
-				Tools.callMethod8.bind(f, _, _, _, _, _, _, _, _);
-			case 9, 10, 11, 12:
-				Tools.callMethod12.bind(f, _, _, _, _, _, _, _, _, _, _, _, _);
 			default:
 				Reflect.makeVarArgs(f);
 		}
@@ -419,10 +402,6 @@ class Tools
 			throw "Invalid function " + func;
 
 		final need = ft.getArgsCount();
-
-		if (need > 8)
-			return rulescript.macro.CallMethodMacro.__hl_callMethod();
-
 		final args:hl.types.ArrayDyn = cast args;
 
 		final count = args.length;
@@ -482,7 +461,7 @@ enum EnumPattern
 #end
 
 @:forward
-abstract TypePath(_TypePath)
+abstract ImportPath(_ImportPath)
 {
 	public var typeName(get, never):String;
 
@@ -506,7 +485,8 @@ abstract TypePath(_TypePath)
 			pack: pack,
 			name: name,
 			sub: typeName,
-			fullPath: typePath
+			fullPath: typePath,
+			cls: Type.resolveClass(typePath)
 		}
 	}
 
@@ -529,9 +509,9 @@ abstract TypePath(_TypePath)
 		return this.sub ?? this.name;
 	}
 
-	public static function create(pack:Array<String>, name:String, sub:String):TypePath
+	public static function create(pack:Array<String>, name:String, sub:String):ImportPath
 	{
-		return new TypePath(createString(pack, name, sub));
+		return new ImportPath(createString(pack, name, sub));
 	}
 
 	public static function createString(pack:Array<String>, name:String, ?sub:String):String
@@ -560,10 +540,11 @@ abstract TypePath(_TypePath)
 	}
 }
 
-private typedef _TypePath =
+private typedef _ImportPath =
 {
 	var pack:Array<String>;
 	var name:String;
 	var ?sub:String;
+	var ?cls:Class<Dynamic>;
 	var fullPath:String;
 }
