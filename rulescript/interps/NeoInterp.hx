@@ -269,6 +269,7 @@ class NeoInterp implements IInterp
 				final f:Dynamic = getValue(prevCommand);
 				final str:String = stringBuffer[current()];
 
+				trace(f, prevCommand, str);
 				if (f == null)
 					error(ENullAccess);
 
@@ -575,6 +576,7 @@ class NeoInterp implements IInterp
 				final path:String = nextString();
 				final type:Dynamic = resolveType(path);
 
+				trace(path, type);
 				if (!usings.exists(path)) 
 				{
 					usings.set(path, new ImportPath(path));
