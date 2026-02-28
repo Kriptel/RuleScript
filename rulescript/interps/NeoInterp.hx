@@ -265,7 +265,7 @@ class NeoInterp implements IInterp
 				v;
 
 			case CALL:
-				final prevCommand:Null<NeoByte> = nextCommaned = command();
+				final prevCommand:Null<NeoByte> = command();
 				final f:Dynamic = getValue(prevCommand);
 				final str:String = stringBuffer[current()];
 
@@ -280,10 +280,9 @@ class NeoInterp implements IInterp
 				if (prevCommand == FIELD && usingsCache.exists(str)) 
 				{
 					trace(str, f, args);
-					setValue(usingsCache[str].concat([f].concat(args)));
+					setValue(usingsCache[str]([f].concat(args)));
 					trace(dyn);
-					DYNAMIC;
-					return;
+					return DYNAMIC;
 				}
 
 				setValue(call(f, args));
