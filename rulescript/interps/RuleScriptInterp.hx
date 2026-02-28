@@ -841,14 +841,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		if (f == superInstance)
 			return call(o, resolve('__super_new'), args);
 
-		#if hl
-		final result:Dynamic = Tools.__hl_callMethod(f, args);
-		#else
 		final result:Dynamic = super.call(o, f, args);
-		#end
-
 		isSuperCall = false;
-
 		return result;
 	}
 
