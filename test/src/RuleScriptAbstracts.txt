@@ -1,7 +1,0 @@
-example.HelloWorldAbstract.LocalAbstract
-example.TestAbstract
-example.HelloWorldAbstract
-
-// `-#` excludes `haxe.Int64`
-
-// -# haxe.Int64
