@@ -492,59 +492,81 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				var hasOpt:Bool = false, hasRest:Bool = false, minParams = 0;
 				for (p in params)
 				{
-					if (Tools.isRest(p.t))
+					final isRest = Tools.isRest(p.t);
+					if (isRest)
 					{
 						if (params.indexOf(p) == params.length - 1)
-							hasRest = true;
+						{
+							if (p.opt)
+								error(ECustom('Rest argument cannot be optional'));
+							else
+								hasRest = true;
+						}
 						else
 							error(ECustom("Rest should only be used for the last function argument"));
 					}
 
 					if (p.opt)
 						hasOpt = true;
-					else
+					else if (!isRest)
 						minParams++;
 				}
 
 				var f = function(args:Array<Dynamic>)
 				{
-					if (((args == null) ? 0 : args.length) != params.length)
+					if (args == null)
+						args = [];
+
+					if (args.length < minParams)
 					{
-						if (args.length < minParams && (!hasRest && args.length + 1 < minParams))
-						{
-							var str = "Invalid number of parameters. Got " + args.length + ", required " + minParams;
-							if (name != null)
-								str += " for function '" + name + "'";
-							error(ECustom(str));
-						}
-						// make sure mandatory args are forced
-						var args2 = [];
+						var str = "Invalid number of parameters. Got " + args.length + ", required " + minParams;
+						if (name != null)
+							str += " for function '" + name + "'";
+						error(ECustom(str));
+					}
+
+					if (params.length != args.length || hasRest)
+					{
+						final args2:Array<Dynamic> = [];
+
+						var argId = 0;
 						var extraParams = args.length - minParams;
-						var pos = 0;
-						for (p in params)
+
+						for (id => param in params)
 						{
-							if (hasRest && Tools.isRest(p.t))
-								args2.push([for (i in pos...args.length) args[i]]);
-							else
+							var isRest = hasRest && id == params.length - 1 && Tools.isRest(param.t);
+
+							var arg:Dynamic = null;
+
+							if (isRest)
 							{
-								if (p.opt)
+								arg = args.slice(argId);
+								argId = args.length;
+							}
+							else if (param.opt)
+							{
+								if (extraParams > 0 && argId < args.length)
 								{
-									if (extraParams > 0)
-									{
-										args2.push(args[pos++]);
-										extraParams--;
-									}
-									else
-										args2.push(null);
+									arg = args[argId++];
+									extraParams--;
 								}
 								else
-									args2.push(args[pos++]);
+								{
+									arg = null;
+								}
 							}
+							else
+							{
+								arg = args[argId++];
+							}
+
+							if (arg == null && param.value != null)
+								arg = this.expr(param.value);
+
+							args2.push(arg);
 						}
 						args = args2;
 					}
-					else if (hasRest)
-						args.push([args.pop()]);
 
 					var old = me.locals, depth = me.depth;
 					me.depth++;
@@ -576,8 +598,11 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					me.depth = depth;
 					return r;
 				};
-				#if hl
-				var f = Tools.__hl_makeVarArgs(f, params.length);
+				#if rulescript_use_hl_fixes
+				var f = if (hasRest)
+					Reflect.makeVarArgs(f);
+				else
+					Tools.__hl_makeVarArgs(f, params.length);
 				#else
 				var f = Reflect.makeVarArgs(f);
 				#end
@@ -829,7 +854,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		if (f == superInstance)
 			return call(o, resolve('__super_new'), args);
 
-		#if hl
+		#if rulescript_use_hl_fixes
 		final result:Dynamic = Tools.__hl_callMethod(f, args);
 		#else
 		final result:Dynamic = super.call(o, f, args);
@@ -871,7 +896,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				default:
 			}
 
-		#if hl
+		#if rulescript_use_hl_fixes
 		return Reflect.isFunction(c) ? Tools.__hl_callMethod(c, args) : Tools.isClass(c) ? Tools.__hl_createInstance(c, args) : c;
 		#else
 		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : Tools.isClass(c) ? Type.createInstance(c, args) : c;

@@ -718,7 +718,7 @@ class NeoInterp implements IInterp
 
 	function call(f:Dynamic, args:Array<Dynamic>):Dynamic
 	{
-		#if hl
+		#if rulescript_use_hl_fixes
 		final result:Dynamic = Tools.__hl_callMethod(f, args);
 		#else
 		final result:Dynamic = Reflect.callMethod(null, f, args);
@@ -842,7 +842,7 @@ class NeoInterp implements IInterp
 				default:
 			}
 
-		#if hl
+		#if rulescript_use_hl_fixes
 		return Reflect.isFunction(c) ? Tools.__hl_callMethod(c, args) : Tools.isClass(c) ? Tools.__hl_createInstance(c, args) : c;
 		#else
 		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : Tools.isClass(c) ? Type.createInstance(c, args) : c;
@@ -1031,7 +1031,7 @@ class NeoInterp implements IInterp
 		}
 		else
 		{
-			#if hl
+			#if rulescript_use_hl_fixes
 			Tools.__hl_makeVarArgs(func, argsNum);
 			#else
 			Reflect.makeVarArgs(func);

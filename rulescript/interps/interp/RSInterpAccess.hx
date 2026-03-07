@@ -57,7 +57,7 @@ class RSInterpAccess extends RuleScriptAccess
 	{
 		return if (variableExists(name))
 		{
-			#if hl
+			#if rulescript_use_hl_fixes
 			Tools.__hl_callMethod(interp.variables[name], args);
 			#else
 			Reflect.callMethod(null, interp.variables[name], args);
@@ -69,7 +69,7 @@ class RSInterpAccess extends RuleScriptAccess
 
 	function callFunctionUnsafe(name:String, args:Array<Dynamic>):Dynamic
 	{
-		return #if hl
+		return #if rulescript_use_hl_fixes
 			Tools.__hl_callMethod(interp.variables[name], args);
 		#else
 			Reflect.callMethod(null, interp.variables[name], args);

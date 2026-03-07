@@ -19,6 +19,7 @@ typedef HxParserParams =
 	var ?allowTypePath:Bool;
 	var ?allowStaticVariables:Bool;
 	var ?allowPublicVariables:Bool;
+	var ?allowRest:Bool;
 }
 
 enum HxParserMode
@@ -33,7 +34,10 @@ class HxParser extends Parser
 
 	public var mode(get, set):HxParserMode;
 
-	public static var defaultPreprocesorValues:Map<String, Dynamic> = [
+	@:deprecated("`HxParser.defaultPreprocesorValues` is deprecated. Use `HxParser.defaultPreprocessorValues`")
+	public static var defaultPreprocesorValues(get, never):Map<String, Dynamic>;
+
+	public static var defaultPreprocessorValues:Map<String, Dynamic> = [
 		#if eval 'eval' => 1, #end
 		#if interp 'interp' => 1, #end
 		#if cpp 'cpp' => 1, #end
@@ -57,15 +61,18 @@ class HxParser extends Parser
 		'haxe4' => 1
 	];
 
+	@:deprecated("`preprocesorValues` is deprecated. Use `preprocessorValues`")
 	public var preprocesorValues(get, set):Map<String, Dynamic>;
+
+	public var preprocessorValues(get, set):Map<String, Dynamic>;
 
 	public function new()
 	{
 		parser ??= new HScriptParser();
 		mode = DEFAULT;
 
-		for (key => value in defaultPreprocesorValues)
-			preprocesorValues.set(key, value);
+		for (key => value in defaultPreprocessorValues)
+			preprocessorValues.set(key, value);
 
 		super();
 	}
@@ -82,7 +89,8 @@ class HxParser extends Parser
 			allowStringInterpolation: true,
 			allowPublicVariables: true,
 			allowStaticVariables: true,
-			allowTypePath: true
+			allowTypePath: true,
+			allowRest: true
 		});
 	}
 
@@ -127,6 +135,9 @@ class HxParser extends Parser
 
 		if (parameters.allowPublicVariables != null)
 			parser.allowPublicVariables = parameters.allowPublicVariables;
+
+		if (parameters.allowRest != null)
+			parser.allowRest = parameters.allowRest;
 	}
 
 	override public function parse(code:String):Expr
@@ -141,12 +152,22 @@ class HxParser extends Parser
 		return parser.parseModule(code, 'rulescript', 0);
 	}
 
-	function get_preprocesorValues():Map<String, Dynamic>
+	@:deprecated function get_preprocesorValues():Map<String, Dynamic>
 	{
 		return parser.preprocesorValues;
 	}
 
-	function set_preprocesorValues(value:Map<String, Dynamic>):Map<String, Dynamic>
+	@:deprecated function set_preprocesorValues(value:Map<String, Dynamic>):Map<String, Dynamic>
+	{
+		return parser.preprocesorValues = value;
+	}
+
+	function get_preprocessorValues():Map<String, Dynamic>
+	{
+		return parser.preprocesorValues;
+	}
+
+	function set_preprocessorValues(value:Map<String, Dynamic>):Map<String, Dynamic>
 	{
 		return parser.preprocesorValues = value;
 	}
@@ -159,6 +180,11 @@ class HxParser extends Parser
 	function set_mode(value:HxParserMode):HxParserMode
 	{
 		return parser.mode = value;
+	}
+
+	private static function get_defaultPreprocesorValues():Map<String, Dynamic>
+	{
+		return defaultPreprocessorValues;
 	}
 }
 
@@ -178,6 +204,7 @@ class HScriptParser extends hscript.Parser
 
 	public var allowStringInterpolation:Bool = true;
 	public var allowTypePath:Bool = true;
+	public var allowRest:Bool = true;
 
 	#if !hscriptPos
 	static inline final p1:Int = 0;
@@ -914,7 +941,7 @@ class HScriptParser extends hscript.Parser
 
 				switch (tk)
 				{
-					case TOp("..."):
+					case TOp("...") if (allowRest):
 						isRest = true;
 						tk = token();
 					case TQuestion:
@@ -938,10 +965,14 @@ class HScriptParser extends hscript.Parser
 				if (allowTypes)
 				{
 					if (maybe(TDoubleDot))
-						arg.t = isRest ? CTPath(["haxe", "Rest"], [parseType()]) : parseType();
+						arg.t = parseType();
 					if (maybe(TOp("=")))
 						arg.value = parseExpr();
 				}
+
+				if (isRest)
+					arg.t = CTPath(["haxe", "Rest"], arg.t != null ? [arg.t] : []);
+
 				tk = token();
 				switch (tk)
 				{

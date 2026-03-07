@@ -182,7 +182,7 @@ abstract Access(RuleScriptedClass)
 					for (arg in args)
 						strictArgs.push(arg);
 
-					#if hl
+					#if rulescript_use_hl_fixes
 					Tools.__hl_createInstance(nativeClass, strictArgs);
 					#else
 					Type.createInstance(nativeClass, strictArgs);
@@ -190,7 +190,7 @@ abstract Access(RuleScriptedClass)
 				}
 			else
 				args ->
-					#if hl
+					#if rulescript_use_hl_fixes
 					Tools.__hl_createInstance(nativeClass, [type, args]);
 					#else
 					Type.createInstance(nativeClass, [type, args]);

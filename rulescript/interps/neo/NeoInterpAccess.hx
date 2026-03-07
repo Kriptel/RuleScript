@@ -51,7 +51,7 @@ class NeoInterpAccess extends RuleScriptAccess
 	{
 		return if (variableExists(name))
 		{
-			#if hl
+			#if rulescript_use_hl_fixes
 			Tools.__hl_callMethod(getVariable(name), args);
 			#else
 			Reflect.callMethod(null, getVariable(name), args);
@@ -63,7 +63,7 @@ class NeoInterpAccess extends RuleScriptAccess
 
 	function callFunctionUnsafe(name:String, args:Array<Dynamic>):Dynamic
 	{
-		return #if hl
+		return #if rulescript_use_hl_fixes
 			Tools.__hl_callMethod(getVariable(name), args);
 		#else
 			Reflect.callMethod(null, getVariable(name), args);
