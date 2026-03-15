@@ -874,7 +874,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	override function cnew(cl:String, args:Array<Dynamic>):Dynamic
 	{
 		if (cl == "Map" || cl == "haxe.ds.Map")
-        	return new Map<Dynamic, Dynamic>();
+			return new Map<Dynamic, Dynamic>();
 
 		var c:Dynamic = Type.resolveClass(cl);
 
@@ -1021,7 +1021,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		return switch (rulescript.Tools.getExpr(expr))
 		{
 			case EFunction(params, fexpr, name, _):
-				final exprs = switch (rulescript.Tools.getExpr(fexpr))
+				final exprs:Array<Expr> = switch (rulescript.Tools.getExpr(fexpr))
 				{
 					case EBlock(exprs):
 						exprs;
@@ -1029,28 +1029,38 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						null;
 				}
 
-				var superID:Int = 0;
+				var preExpr:Expr = fexpr;
+				var postExpr:Expr = null;
+				var superCallArgs:Array<Expr> = null;
 
-				for (expr in exprs)
+				if (exprs != null)
 				{
-					switch (rulescript.Tools.getExpr(expr))
+					var superID:Int = 0;
+
+					for (expr in exprs)
 					{
-						case ECall(e, _) if (rulescript.Tools.getExpr(e).match(EIdent('super'))):
-							break;
-						default:
-							null;
+						switch (rulescript.Tools.getExpr(expr))
+						{
+							case ECall(e, _) if (rulescript.Tools.getExpr(e).match(EIdent('super'))):
+								break;
+							default:
+								null;
+						}
+						superID++;
 					}
-					superID++;
+
+					if (superID != exprs.length)
+					{
+						preExpr = rulescript.Tools.toExpr(EBlock(exprs.slice(0, superID)));
+						postExpr = rulescript.Tools.toExpr(EBlock(exprs.slice(superID + 1)));
+
+						superCallArgs = superID == exprs.length ? null : switch (rulescript.Tools.getExpr(exprs[superID]))
+						{
+							case ECall(_, params): params;
+							default: null;
+						};
+					}
 				}
-
-				final preExpr = rulescript.Tools.toExpr(EBlock(exprs.slice(0, superID)));
-				final postExpr = rulescript.Tools.toExpr(EBlock(exprs.slice(superID + 1)));
-
-				final superCallArgs:Array<Expr> = superID == exprs.length ? null : switch (rulescript.Tools.getExpr(exprs[superID]))
-				{
-					case ECall(_, params): params;
-					default: null;
-				};
 
 				new RSInterpConstructor(superConstructor, this, params, preExpr, superCallArgs, postExpr);
 			default:
