@@ -1732,4 +1732,23 @@ class HScriptParser extends hscript.Parser
 				return false;
 		}
 	}
+
+	override function skipTokens()
+	{
+		var spos = preprocStack.length - 1;
+		var obj = preprocStack[spos];
+		var pos = currentPos;
+		while (true)
+		{
+			var tk = token();
+			if (preprocStack[spos] != obj)
+			{
+				push(tk);
+				break;
+			}
+
+			if (tk == TEof)
+				error(EInvalidPreprocessor("Unclosed"), pos, pos);
+		}
+	}
 }
