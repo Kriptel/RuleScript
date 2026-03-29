@@ -22,6 +22,10 @@ class PreprocessTest extends Test
         a -= 1;
         #end
 
+        #if test3
+        a += 1; 
+        #end
+
         a;
         ', 2);
 	}
