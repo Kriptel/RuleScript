@@ -1,10 +1,10 @@
 package rulescript.internal.macros;
 
-import rulescript.internal.utils.MacroTools;
 #if macro
 import haxe.macro.Compiler;
 import haxe.macro.Context;
 import haxe.macro.Expr;
+import rulescript.internal.utils.MacroTools;
 
 class ExprMacro
 {

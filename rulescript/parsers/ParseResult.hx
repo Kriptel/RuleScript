@@ -1,10 +1,10 @@
 package rulescript.parsers;
 
-import hscript.Expr.ModuleDecl;
+import hscript.Expr;
 
-enum ParseOutput
+enum ParseResult
 {
-	Expr(e:hscript.Expr);
+	Expression(e:Expr);
 	Module(m:Array<ModuleDecl>);
 	Custom<T>(o:T);
 }

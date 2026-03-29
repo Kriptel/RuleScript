@@ -1,6 +1,8 @@
 package;
 
+import rulescript.Context;
 import rulescript.RuleScript;
+import tests.*;
 
 class Main
 {
@@ -12,7 +14,15 @@ class Main
 		print('========\nCurrent target: ' + #if cpp 'cpp' #elseif hl 'hl' #elseif eval 'eval' #else 'other' #end
 			+ '\n========');
 
-		new RuleScript();
+		final tests:Array<Test> = [new MathTest(), new PreprocessTest()];
+
+		final script = new RuleScript();
+
+		for (test in tests)
+		{
+			test.script = script;
+			test.test();
+		}
 	}
 
 	public static function print(v:Dynamic)

@@ -1,8 +1,8 @@
-package rulescript;
+package rulescript.interps;
 
 import hscript.Expr;
 
-abstract class RuleScriptAccess
+abstract class InterpAccess
 {
 	abstract public function getVariables():Map<String, Dynamic>;
 

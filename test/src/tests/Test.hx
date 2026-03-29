@@ -1,6 +1,5 @@
 package tests;
 
-import rulescript.Context;
 import rulescript.RuleScript;
 
 class Test
@@ -10,20 +9,19 @@ class Test
 	public static var errorsNum:Int = 0;
 
 	public var script:RuleScript;
-	public var context(get, never):Context;
 
 	public function new() {}
 
 	public function test():Void {}
 
-	function runScript(code:String, ?value:Dynamic):Dynamic
+	function assert(code:String, ?value:Dynamic):Dynamic
 	{
 		// Reset package, for reusing package keyword
 		Main.print('\n[Test #$interpNum/${++callNum}]: "$code"');
 
-		script.scriptPackage = '';
+		// script.scriptPackage = '';
 
-		final result:Dynamic = script.execute(script.parser.parse(code));
+		final result:Dynamic = script.execute(code);
 
 		if (result != null)
 			Main.print('\t[Result]: ${Std.string(result)}');
@@ -37,14 +35,9 @@ class Test
 	inline function runFileScript(path:String, ?value:Dynamic)
 	{
 		#if sys
-		runScript(sys.io.File.getContent('scripts/' + path), value);
+		assert(sys.io.File.getContent('scripts/' + path), value);
 		#else
 		Main.print('Skipped script: sys not available');
 		#end
-	}
-
-	inline function get_context():Context
-	{
-		return script.context;
 	}
 }

@@ -1,3 +1,0 @@
-package exceptions;
-
-enum Error {}

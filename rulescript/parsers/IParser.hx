@@ -2,5 +2,5 @@ package rulescript.parsers;
 
 interface IParser
 {
-	function parse():ParseOutput;
+	function parse(input:String):ParseResult;
 }

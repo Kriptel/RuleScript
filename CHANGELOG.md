@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed missing static modifier for the HxParser.defaultPreprocesorValues ​​field.
 
 ### Changed
+- Improved preprocessors.
 - Improved `RuleScriptAbstracts.txt`: Added ignore and comment syntax, and empty lines are automatically ignored.
 - `rulescript.Abstracts` moved to `rulescript.types.Abstracts`.
 - `rulescript.RuleScriptProperty` moved to `rulescript.types.Property`.
@@ -142,7 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial Release.
 
-[unreleased]: https://github.com/Kriptel/RuleScript/compare/0.2.0...master
+[unreleased]: https://github.com/Kriptel/RuleScript/compare/0.2.0...refactor/0.3.0-beta
 [0.2.0]: https://github.com/Kriptel/RuleScript/compare/0.2.0-rc...0.2.0
 [0.2.0-rc]: https://github.com/Kriptel/RuleScript/compare/285a17e13b45c9b04fcf12c7590f369e39f119e3...0.2.0-rc
 [0.2.0-beta]: https://github.com/Kriptel/RuleScript/compare/0.1.1...285a17e13b45c9b04fcf12c7590f369e39f119e3

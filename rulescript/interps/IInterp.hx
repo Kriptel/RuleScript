@@ -1,3 +1,6 @@
 package rulescript.interps;
 
-interface IInterp {}
+interface IInterp
+{
+	var access:InterpAccess;
+}
