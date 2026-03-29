@@ -1689,7 +1689,8 @@ class HScriptParser extends hscript.Parser
 
 	override function evalPreproCond(e:Expr)
 	{
-		return evalPreprocessor(e) != false;
+		final v:Dynamic = evalPreprocessor(e);
+		return v != false && v != null;
 	}
 
 	function evalPreprocessor(e:Expr):Dynamic
