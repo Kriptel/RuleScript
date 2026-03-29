@@ -1686,4 +1686,49 @@ class HScriptParser extends hscript.Parser
 			case TApostr: "<apostrophe>";
 		}
 	}
+
+	override function evalPreproCond(e:Expr)
+	{
+		return evalPreprocessor(e) != false;
+	}
+
+	function evalPreprocessor(e:Expr):Dynamic
+	{
+		switch (expr(e))
+		{
+			case EIdent(id):
+				return preprocValue(id);
+			case EConst(c):
+				return switch (c)
+				{
+					case CInt(v): Std.string(v);
+					case CFloat(v): Std.string(v);
+					case CString(s): s;
+				}
+			case EUnop("!", _, e):
+				return !evalPreprocessor(e);
+			case EParent(e):
+				return evalPreprocessor(e);
+			case EBinop(op, e1, e2):
+				var v1:Dynamic = evalPreprocessor(e1),
+					v2:Dynamic = evalPreprocessor(e2);
+
+				return switch (op)
+				{
+					case "&&": v1 && v2;
+					case "||": v1 || v2;
+					case "==": v1 == v2;
+					case ">": v1 > v2;
+					case ">=": v1 >= v2;
+					case "<": v1 < v2;
+					case "<=": v1 <= v2;
+					default:
+						error(EInvalidPreprocessor("Unsupported operation '" + op + "'"), currentPos, currentPos);
+						false;
+				}
+			default:
+				error(EInvalidPreprocessor("Can't eval " + expr(e).getName()), currentPos, currentPos);
+				return false;
+		}
+	}
 }
