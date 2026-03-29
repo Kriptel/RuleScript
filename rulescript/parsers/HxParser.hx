@@ -344,6 +344,27 @@ class HScriptParser extends hscript.Parser
 		return null;
 	}
 
+	// Preprocessors
+
+	override function skipTokens()
+	{
+		var spos = preprocStack.length - 1;
+		var obj = preprocStack[spos];
+		var pos = currentPos;
+		while (true)
+		{
+			var tk = token();
+			if (preprocStack[spos] != obj)
+			{
+				push(tk);
+				break;
+			}
+
+			if (tk == TEof)
+				error(EInvalidPreprocessor("Unclosed"), pos, pos);
+		}
+	}
+
 	override function evalPreproCond(e:Expr)
 	{
 		final v:Dynamic = evalPreprocessor(e);
