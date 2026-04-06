@@ -37,29 +37,7 @@ class HxParser extends Parser
 	@:deprecated("`HxParser.defaultPreprocesorValues` is deprecated. Use `HxParser.defaultPreprocessorValues`")
 	public static var defaultPreprocesorValues(get, never):Map<String, Dynamic>;
 
-	public static var defaultPreprocessorValues:Map<String, Dynamic> = [
-		#if eval 'eval' => 1, #end
-		#if interp 'interp' => 1, #end
-		#if cpp 'cpp' => 1, #end
-		#if hl 'hl' => 1, #end
-		#if hlc 'hlc' => 1, #end
-		#if cppia 'cppia' => 1, #end
-		#if js 'js' => 1, #end
-		#if java 'java' => 1, #end
-		#if neko 'neko' => 1, #end
-		#if lua 'lua' => 1, #end
-		#if php 'php' => 1, #end
-		#if python 'python' => 1, #end
-		#if swf 'swf' => 1, #end
-		#if display 'display' => 1, #end
-		#if macro 'macro' => 1, #end
-		#if sys 'sys' => 1, #end
-		#if static 'static' => 1, #end
-		#if unsafe 'unsafe' => 1, #end
-		#if debug 'debug' => 1, #end
-		'haxe3' => 1,
-		'haxe4' => 1
-	];
+	public static var defaultPreprocessorValues:Map<String, Dynamic> = rulescript.macro.DefineMacro.get();
 
 	@:deprecated("`preprocesorValues` is deprecated. Use `preprocessorValues`")
 	public var preprocesorValues(get, set):Map<String, Dynamic>;
