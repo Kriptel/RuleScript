@@ -37,29 +37,7 @@ class HxParser extends Parser
 	@:deprecated("`HxParser.defaultPreprocesorValues` is deprecated. Use `HxParser.defaultPreprocessorValues`")
 	public static var defaultPreprocesorValues(get, never):Map<String, Dynamic>;
 
-	public static var defaultPreprocessorValues:Map<String, Dynamic> = [
-		#if eval 'eval' => 1, #end
-		#if interp 'interp' => 1, #end
-		#if cpp 'cpp' => 1, #end
-		#if hl 'hl' => 1, #end
-		#if hlc 'hlc' => 1, #end
-		#if cppia 'cppia' => 1, #end
-		#if js 'js' => 1, #end
-		#if java 'java' => 1, #end
-		#if neko 'neko' => 1, #end
-		#if lua 'lua' => 1, #end
-		#if php 'php' => 1, #end
-		#if python 'python' => 1, #end
-		#if swf 'swf' => 1, #end
-		#if display 'display' => 1, #end
-		#if macro 'macro' => 1, #end
-		#if sys 'sys' => 1, #end
-		#if static 'static' => 1, #end
-		#if unsafe 'unsafe' => 1, #end
-		#if debug 'debug' => 1, #end
-		'haxe3' => 1,
-		'haxe4' => 1
-	];
+	public static var defaultPreprocessorValues:Map<String, Dynamic> = rulescript.macro.DefineMacro.get();
 
 	@:deprecated("`preprocesorValues` is deprecated. Use `preprocessorValues`")
 	public var preprocesorValues(get, set):Map<String, Dynamic>;
@@ -1684,6 +1662,71 @@ class HScriptParser extends hscript.Parser
 			case TMeta(id): "@" + id;
 			case TPrepro(id): "#" + id;
 			case TApostr: "<apostrophe>";
+		}
+	}
+
+	override function evalPreproCond(e:Expr)
+	{
+		final v:Dynamic = evalPreprocessor(e);
+		return v != false && v != null;
+	}
+
+	function evalPreprocessor(e:Expr):Dynamic
+	{
+		switch (expr(e))
+		{
+			case EIdent(id):
+				return preprocValue(id);
+			case EConst(c):
+				return switch (c)
+				{
+					case CInt(v): Std.string(v);
+					case CFloat(v): Std.string(v);
+					case CString(s): s;
+				}
+			case EUnop("!", _, e):
+				return !evalPreprocessor(e);
+			case EParent(e):
+				return evalPreprocessor(e);
+			case EBinop(op, e1, e2):
+				var v1:Dynamic = evalPreprocessor(e1),
+					v2:Dynamic = evalPreprocessor(e2);
+
+				return switch (op)
+				{
+					case "&&": v1 && v2;
+					case "||": v1 || v2;
+					case "==": v1 == v2;
+					case ">": v1 > v2;
+					case ">=": v1 >= v2;
+					case "<": v1 < v2;
+					case "<=": v1 <= v2;
+					default:
+						error(EInvalidPreprocessor("Unsupported operation '" + op + "'"), currentPos, currentPos);
+						false;
+				}
+			default:
+				error(EInvalidPreprocessor("Can't eval " + expr(e).getName()), currentPos, currentPos);
+				return false;
+		}
+	}
+
+	override function skipTokens()
+	{
+		var spos = preprocStack.length - 1;
+		var obj = preprocStack[spos];
+		var pos = currentPos;
+		while (true)
+		{
+			var tk = token();
+			if (preprocStack[spos] != obj)
+			{
+				push(tk);
+				break;
+			}
+
+			if (tk == TEof)
+				error(EInvalidPreprocessor("Unclosed"), pos, pos);
 		}
 	}
 }
