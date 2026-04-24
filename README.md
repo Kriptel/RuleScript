@@ -71,6 +71,13 @@ The following HScript versions are currently compatible:
 - HScript 2.7.0
 - HScript git [0c7f99d](https://github.com/HaxeFoundation/hscript/tree/0c7f99dbacd5382d9266cf8dfa6192ef80e58ea4)
 
+## Additional tools
+
+The following supplementary tools are also available to extend RuleScript:
+- [ALE-RuleScript-Wrapper](https://github.com/ALE-Psych-Crew/ALE-RuleScript-Wrapper)
+- [RuleParsers](https://github.com/Kriptel/RuleParsers)
+- [RuleParsers (WebosSan's fork; adds a JS parser)](https://github.com/WebosSan/RuleParsers)
+
 ---
 
 Full list of contributors [here](https://github.com/Kriptel/RuleScript/graphs/contributors).
