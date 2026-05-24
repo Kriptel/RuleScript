@@ -29,6 +29,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	public var imports:Map<String, Dynamic> = [];
 	public var usings:Map<String, Dynamic> = [];
+	public var finalVariables:Map<String, Bool> = [];
 
 	public var superInstance(default, set):Dynamic;
 
@@ -58,6 +59,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		imports = [];
 		usings = [];
 		typePaths = [];
+		finalVariables.clear();
 	}
 
 	override public function posInfos():haxe.PosInfos
@@ -119,11 +121,13 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		switch (hscript.Tools.expr(e1))
 		{
 			case EIdent(id):
-				var l = locals.get(id);
+				var l:Dynamic = locals.get(id);
 				if (l == null)
 					setVar(id, v);
 				else
 				{
+					if (l.isFinal) throw new haxe.Exception('Cannot reassign final variable: ' + id);
+					
 					if (l.r is Property)
 						cast(l.r, Property).value = v;
 					else
@@ -160,12 +164,14 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		switch (hscript.Tools.expr(e1))
 		{
 			case EIdent(id):
-				var l = locals.get(id);
+				var l:Dynamic = locals.get(id);
 				v = fop(expr(e1), expr(e2));
 				if (l == null)
 					setVar(id, v);
 				else
 				{
+					if (l.isFinal) throw new haxe.Exception('Cannot reassign final variable: ' + id);
+					
 					if (l.r is Property)
 						cast(l.r, Property).value = v;
 					else
@@ -209,7 +215,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		switch (e)
 		{
 			case EIdent(id):
-				var l = locals.get(id);
+				var l:Dynamic = locals.get(id);
+				if (l != null && l.isFinal) throw new haxe.Exception('Cannot increment/decrement final variable: ' + id);
+
 				var v:Dynamic = (l == null) ? resolve(id) : (l.r is Property ? cast(l.r, Property).value : l.r);
 
 				if (prefix)
@@ -285,6 +293,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	override function setVar(name:String, v:Dynamic)
 	{
+		if (finalVariables.exists(name)) throw new haxe.Exception('Cannot reassign global final variable: ' + name);
+
 		if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
 			Reflect.setProperty(superInstance, name, v);
 		else if (context != null && context.staticVariables.exists(name))
@@ -411,16 +421,20 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						(onMeta != null) ? onMeta(n, args, e) : exprMeta(n, args, e);
 				}
 
-			case EVar(n, _, e, global, _):
+			case EVar(n, _, e, global, isFinal):
 				if (global)
 				{
-					if (context == null || (!context.staticVariables.exists(n) && !context.publicVariables.exists(n)))
+					if (context == null || (!context.staticVariables.exists(n) && !context.publicVariables.exists(n))) {
 						variables.set(n, (e == null) ? null : this.expr(e));
+						if (isFinal) finalVariables.set(n, true);
+					}
 				}
 				else
 				{
 					declared.push({n: n, old: locals.get(n)});
-					locals.set(n, {r: (e == null) ? null : this.expr(e)});
+					var ref:Dynamic = {r: (e == null) ? null : this.expr(e)};
+					if (isFinal) ref.isFinal = true;
+					locals.set(n, ref);
 				}
 				return null;
 
