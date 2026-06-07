@@ -118,6 +118,11 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	override function assign(e1:Expr, e2:Expr):Dynamic
 	{
 		var v = expr(e2);
+
+		#if hscriptPos
+		curExpr = e1;
+		#end
+
 		switch (hscript.Tools.expr(e1))
 		{
 			case EIdent(id):
@@ -161,6 +166,11 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	override function evalAssignOp(op:String, fop:(Dynamic, Dynamic) -> Dynamic, e1:Expr, e2:Expr):Dynamic
 	{
 		var v;
+
+		#if hscriptPos
+		curExpr = e1;
+		#end
+
 		switch (hscript.Tools.expr(e1))
 		{
 			case EIdent(id):
@@ -321,6 +331,17 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			}
 			catch (exception:haxe.Exception)
 			{
+				#if hscriptPos
+				var pos = posInfos();
+
+				@:privateAccess
+				if (pos != null && pos.lineNumber > 0 && !Std.isOfType(exception.unwrap(), hscript.Expr.Error))
+				{
+					var msg = exception.message + ' (at ' + pos.fileName + ':' + pos.lineNumber + ')';
+					exception = new haxe.Exception(msg, exception.previous != null ? exception.previous : exception);
+				}
+				#end
+				
 				errorHandler(exception);
 			}
 		else
@@ -520,7 +541,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 							error(ECustom("Rest should only be used for the last function argument"));
 					}
 
-					if (p.opt)
+					if (p.opt || p.value != null)
 						hasOpt = true;
 					else if (!isRest)
 						minParams++;
@@ -539,17 +560,15 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						error(ECustom(str));
 					}
 
-					if (params.length != args.length || hasRest)
+					if (hasOpt || hasRest || params.length != args.length)
 					{
 						final args2:Array<Dynamic> = [];
 
 						var argId = 0;
 						var extraParams = args.length - minParams;
-
 						for (id => param in params)
 						{
 							var isRest = hasRest && id == params.length - 1 && Tools.isRest(param.t);
-
 							var arg:Dynamic = null;
 
 							if (isRest)
@@ -557,7 +576,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 								arg = args.slice(argId);
 								argId = args.length;
 							}
-							else if (param.opt)
+							else if (param.opt || param.value != null)
 							{
 								if (extraParams > 0 && argId < args.length)
 								{
@@ -575,7 +594,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 							}
 
 							if (arg == null && param.value != null)
-								arg = this.expr(param.value);
+								arg = me.expr(param.value);
 
 							args2.push(arg);
 						}
@@ -585,8 +604,19 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					var old = me.locals, depth = me.depth;
 					me.depth++;
 					me.locals = me.duplicate(capturedLocals);
+					
 					for (i in 0...params.length)
-						me.locals.set(params[i].name, {r: args[i]});
+					{
+						var pName = params[i].name;
+						if (pName != null) {
+							if (pName.indexOf(':') != -1) pName = pName.substring(0, pName.indexOf(':'));
+							if (pName.indexOf('=') != -1) pName = pName.substring(0, pName.indexOf('='));
+							pName = StringTools.trim(pName);
+						}
+						
+						me.locals.set(pName, {r: args[i]});
+					}
+
 					var r = null;
 					var oldDecl = declared.length;
 					if (inTry)
