@@ -331,17 +331,6 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			}
 			catch (exception:haxe.Exception)
 			{
-				#if hscriptPos
-				var pos = posInfos();
-
-				@:privateAccess
-				if (pos != null && pos.lineNumber > 0 && !Std.isOfType(exception.unwrap(), hscript.Expr.Error))
-				{
-					var msg = exception.message + ' (at ' + pos.fileName + ':' + pos.lineNumber + ')';
-					exception = new haxe.Exception(msg, exception.previous != null ? exception.previous : exception);
-				}
-				#end
-				
 				errorHandler(exception);
 			}
 		else
@@ -1042,7 +1031,29 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	{
 		hasErrorHandler = v != null;
 
-		return errorHandler = v;
+		if (v != null)
+		{
+			errorHandler = (exception:haxe.Exception) ->
+			{
+				#if hscriptPos
+				var pos = posInfos();
+				@:privateAccess
+				if (pos != null && pos.lineNumber > 0 && !Std.isOfType(exception.unwrap(), hscript.Expr.Error))
+				{
+					var msg = exception.message + ' (at ' + pos.fileName + ':' + pos.lineNumber + ')';
+					exception = new haxe.Exception(msg, exception.previous != null ? exception.previous : exception);
+				}
+				#end
+
+				v(exception);
+			};
+		}
+		else
+		{
+			errorHandler = null;
+		}
+
+		return v;
 	}
 
 	@:noCompletion
