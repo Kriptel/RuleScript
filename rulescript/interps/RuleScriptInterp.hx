@@ -94,11 +94,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 		if (v == null && !variables.exists(id))
 		{
-			if (superInstance != null)
-				v = get(superInstance, id);
-
-			// SHARED VARIABLES
-			if (v == null && context != null)
+			if (context != null)
 			{
 				if (context.staticVariables.exists(id))
 					v = context.staticVariables.get(id);
@@ -106,8 +102,11 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					v = context.publicVariables.get(id);
 			}
 
+			if (v == null && superInstance != null)
+				v = get(superInstance, id);
+			
 			if (v == null)
-				error(EUnknownVariable(id)); // fixes - orbl
+				error(EUnknownVariable(id));
 		}
 
 		return v;
