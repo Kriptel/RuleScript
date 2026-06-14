@@ -94,11 +94,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 		if (v == null && !variables.exists(id))
 		{
-			if (superInstance != null)
-				v = get(superInstance, id);
-
-			// SHARED VARIABLES
-			if (v == null && context != null)
+			if (context != null)
 			{
 				if (context.staticVariables.exists(id))
 					v = context.staticVariables.get(id);
@@ -106,8 +102,11 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					v = context.publicVariables.get(id);
 			}
 
+			if (v == null && superInstance != null)
+				v = get(superInstance, id);
+			
 			if (v == null)
-				error(EUnknownVariable(id)); // fixes - orbl
+				error(EUnknownVariable(id));
 		}
 
 		return v;
@@ -116,18 +115,30 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	override function assign(e1:Expr, e2:Expr):Dynamic
 	{
 		var v = expr(e2);
+
 		switch (hscript.Tools.expr(e1))
 		{
 			case EIdent(id):
 				var l = locals.get(id);
+
 				if (l == null)
 					setVar(id, v);
 				else
 				{
 					if (l.r is Property)
 						cast(l.r, Property).value = v;
-					else
+					else {
 						l.r = v;
+
+						if (context != null)
+						{
+							if (context.staticVariables.exists(id))
+								context.staticVariables.set(id, v);
+
+							if (context.publicVariables.exists(id))
+								context.publicVariables.set(id, v);
+						}
+					}
 				}
 			case EField(e, f):
 				v = set(expr(e), f, v);
