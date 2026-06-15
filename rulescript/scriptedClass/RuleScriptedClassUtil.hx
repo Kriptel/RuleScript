@@ -29,6 +29,18 @@ class RuleScriptedClassUtil
 
 	public static var buildBridge:(typePath:String, superInstance:Dynamic) -> RuleScript;
 
+	public static var autoWrappers:Map<String, Dynamic>;
+
+	public static function registerAutoWrapper(nativeName:String, wrapperClass:Dynamic):Void
+	{
+		if (autoWrappers == null) 
+		{
+			autoWrappers = new Map<String, Dynamic>();
+		}
+		
+		autoWrappers.set(nativeName, wrapperClass);
+	}
+
 	public static function buildRuleScript(typePath:String, superInstance:Dynamic):RuleScript
 	{
 		return if (buildBridge != null)

@@ -60,6 +60,14 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		usings = [];
 		typePaths = [];
 		finalVariables.clear();
+
+		if (rulescript.scriptedClass.RuleScriptedClassUtil.autoWrappers != null)
+		{
+			for (nativeName => wrapperClass in rulescript.scriptedClass.RuleScriptedClassUtil.autoWrappers)
+			{
+				variables.set(nativeName, wrapperClass);
+			}
+		}
 	}
 
 	override public function posInfos():haxe.PosInfos
@@ -83,8 +91,11 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	override function resolve(id:String):Dynamic
 	{
-		if (id == 'this')
-			return this;
+		if (id == 'this') 
+		{
+			if (superInstance != null) return superInstance;
+			return this; 
+		}
 
 		if (id == 'super' && superInstance != null)
 			return superInstance;

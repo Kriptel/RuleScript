@@ -97,7 +97,13 @@ class RuleScriptedClassMacro
 		{
 			final forceOverrideField = forceOverrideFields?.contains(name) ?? forceOverride;
 			if (!ignoredFields.contains(name))
-				fields.push(overrideField(field, forceOverrideField));
+			{
+				if (field.params.length > 0) continue; 
+
+				final overriden = overrideField(field, forceOverrideField);
+				if (overriden != null)
+					fields.push(overriden);
+			}
 		}
 
 		if (constructor.isFinal)
@@ -181,6 +187,22 @@ class RuleScriptedClassMacro
 				meta: (name == 'get___rulescript_type') ? [{name: ':noCompletion', pos: pos}] : []
 			});
 
+		var localClassName = curType.name;
+		var nativeClassName = curType.superClass.t.get().name;
+
+		fields.push({
+			name: '__init__',
+			access: [AStatic],
+			kind: FFun({
+				args: [],
+				ret: macro :Void,
+				expr: macro {
+					rulescript.scriptedClass.RuleScriptedClassUtil.registerAutoWrapper($v{nativeClassName}, $i{localClassName});
+				}
+			}),
+			pos: pos
+		});
+
 		return fields;
 	}
 
@@ -193,14 +215,18 @@ class RuleScriptedClassMacro
 			case TFun(_args, ret):
 				args = _args;
 			case TLazy(type):
-				switch (type())
-				{
-					case TFun(_args, ret):
-						args = _args;
-					default:
-				};
+				try {
+					switch (type())
+					{
+						case TFun(_args, ret):
+							args = _args;
+						default:
+					}
+				} catch (e:Dynamic) {}
 			default:
 		}
+
+		if (args == null) args = [];
 
 		var fieldArgs = strict ? [for (argument in args) macro $i{argument.name}] : [macro args];
 
@@ -307,28 +333,30 @@ class RuleScriptedClassMacro
 				ret: forceOverride ? (returnsVoid ? macro :StdTypes.Void : null) : getOverrideType(ret),
 				expr: macro
 				{
-					return if (!__rulescript.access.isSuperCall && __rulescript.access.variableExists($v{field.name}))
+					final _hasAccess = __rulescript != null && __rulescript.access != null;
+					
+					return if (_hasAccess && !__rulescript.access.isSuperCall && __rulescript.access.variableExists($v{field.name}))
 					{
 						__rulescript.access.getVariable($v{field.name})($a{fieldArgs});
 					}
 					else
 					{
-						final lastIsSuperCall:Bool = __rulescript.access.isSuperCall;
+						final lastIsSuperCall:Bool = _hasAccess ? __rulescript.access.isSuperCall : false;
 						$
 						{
 							if (returnsVoid)
 								macro
 								{
-									__rulescript.access.isSuperCall = false;
+									if (_hasAccess) __rulescript.access.isSuperCall = false;
 									super.$fieldName($a{fieldArgs});
-									__rulescript.access.isSuperCall = lastIsSuperCall;
+									if (_hasAccess) __rulescript.access.isSuperCall = lastIsSuperCall;
 								}
 							else
 								macro
 								{
-									__rulescript.access.isSuperCall = false;
+									if (_hasAccess) __rulescript.access.isSuperCall = false;
 									final value = cast super.$fieldName($a{fieldArgs});
-									__rulescript.access.isSuperCall = lastIsSuperCall;
+									if (_hasAccess) __rulescript.access.isSuperCall = lastIsSuperCall;
 									value;
 								}
 						}
@@ -349,14 +377,20 @@ class RuleScriptedClassMacro
 			case TFun(args, ret):
 				kind = tFunToExpr(args, ret);
 			case TLazy(type):
-				switch (type())
-				{
-					case TFun(args, ret):
-						kind = tFunToExpr(args, ret);
-					default:
-				};
+				try {
+					switch (type())
+					{
+						case TFun(args, ret):
+							kind = tFunToExpr(args, ret);
+						default:
+					}
+				} catch (e:Dynamic) {
+					return null; 
+				}
 			default:
 		}
+
+		if (kind == null) return null;
 
 		return {
 			name: field.name,
