@@ -135,6 +135,8 @@ abstract Access(RuleScriptedClass)
 			classImpl: impl
 		}));
 
+		rulescript.scriptedClass.RuleScriptedClassUtil.registerRuleScriptedClass(toString(), this);
+
 		if (impl.extend != null)
 		{
 			var type = Tools.typeToString(impl.extend);
@@ -167,7 +169,7 @@ abstract Access(RuleScriptedClass)
 		}
 
 		initialize = if (nativeClass == null && (superClass == null || superClass is ScriptedClass))
-			ScriptedInstance.new.bind(this, _)
+			function(args) { return new ScriptedInstance(this, args); }
 		else if (nativeClass != null)
 		{
 			var type = toString();
@@ -204,21 +206,51 @@ abstract Access(RuleScriptedClass)
 
 	public function getVariables():Map<String, Dynamic>
 	{
-		return interp.access.getVariables();
+		init();
+		var vars:Map<String, Dynamic> = [];
+		for (k => v in interp.access.getVariables()) vars.set(k, v);
+		
+		if (module.context != null) {
+			for (k => v in module.context.staticVariables) vars.set(k, v);
+			for (k => v in module.context.publicVariables) vars.set(k, v);
+		}
+		return vars;
 	}
 
 	public function variableExists(name:String):Bool
 	{
-		return interp.access.variableExists(name);
+		init();
+		return interp.access.variableExists(name) || (module.context != null && (module.context.staticVariables.exists(name) || module.context.publicVariables.exists(name)));
 	}
 
 	public function getVariable(name:String):Dynamic
 	{
-		return interp.access.getVariable(name);
+		init();
+		if (interp.access.variableExists(name))
+			return interp.access.getVariable(name);
+		
+		if (module.context != null) {
+			if (module.context.staticVariables.exists(name))
+				return module.context.staticVariables.get(name);
+			if (module.context.publicVariables.exists(name))
+				return module.context.publicVariables.get(name);
+		}
+		return null;
 	}
 
 	public function setVariable(name:String, value:Dynamic):Dynamic
 	{
+		init();
+		if (module.context != null) {
+			if (module.context.staticVariables.exists(name)) {
+				module.context.staticVariables.set(name, value);
+				return value;
+			}
+			if (module.context.publicVariables.exists(name)) {
+				module.context.publicVariables.set(name, value);
+				return value;
+			}
+		}
 		return interp.access.setVariable(name, value);
 	}
 
@@ -229,9 +261,54 @@ abstract Access(RuleScriptedClass)
 		return CLASS;
 	}
 
-	public function createInstance(args:Array<Dynamic>)
+	public function createInstance(args:Array<Dynamic>):Dynamic
 	{
-		return initialize(args ?? []);
+		init();
+
+		if (impl?.extend != null) 
+		{
+			final extendName = rulescript.Tools.typeToString(impl.extend);
+			final shortName = extendName.split(".").pop();
+					
+			if (rulescript.scriptedClass.RuleScriptedClassUtil.autoWrappers != null) 
+			{
+				final wrapperClass = rulescript.scriptedClass.RuleScriptedClassUtil.autoWrappers.get(extendName) 
+								?? rulescript.scriptedClass.RuleScriptedClassUtil.autoWrappers.get(shortName);
+								
+				if (wrapperClass != null) 
+				{
+					final isStrict:Bool = Reflect.field(wrapperClass, "__rulescript_strict") == true;
+					final scriptName = this.toString(); 
+					
+					try {
+						if (isStrict) {
+							final wrapperArgs:Array<Dynamic> = [scriptName];
+							if (args != null) for (a in args) wrapperArgs.push(a);
+							return Type.createInstance(wrapperClass, wrapperArgs);
+						} else {
+							return Type.createInstance(wrapperClass, [scriptName, args ?? []]);
+						}
+					} catch(e:Dynamic) {
+						trace('[RuleScript] Error: Failed to create wrapper for ' + shortName + ' -> ' + e);
+						return null;
+					}
+				} else {
+					trace('[RuleScript] Warning: Wrapper for ' + shortName + ' not found in registry. It might have been removed by Dead Code Elimination (DCE).');
+				}
+			}
+		}
+
+		if (nativeClass != null) {
+			try {
+				return Type.createInstance(nativeClass, args ?? []);
+			} catch(e:Dynamic) {
+				trace('[RuleScript] Error: Failed to create native fallback class for ' + toString() + ' -> ' + e);
+			}
+		}
+
+		initialize(args ?? []);
+		
+		return interp.access.superInstance ?? this; 
 	}
 
 	@:access(rulescript.RuleScriptAccess)
@@ -297,6 +374,8 @@ abstract Access(RuleScriptedClass)
 		}
 
 		interp.access.superInstance = this;
+
+		interp.access.setVariable("this", this);
 
 		if (args != null)
 			if (variableExists('new'))

@@ -83,6 +83,16 @@ class RuleScriptedClassUtil
 		return cast types[typePath];
 	}
 
+	public static function listScriptClasses():Array<String>
+	{
+		var result:Array<String> = [];
+		for (key in types.keys())
+		{
+			result.push(key);
+		}
+		return result;
+	}
+
 	public static function buildScriptedClass(cl:ScriptedClass, rulescript:RuleScript):Void
 	{
 		rulescript.access.setVariable('new', () -> {});

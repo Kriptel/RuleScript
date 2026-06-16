@@ -892,27 +892,25 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	override function call(o:Dynamic, f:Dynamic, args:Array<Dynamic>):Dynamic
 	{
-		if (o == superInstance)
-			isSuperCall = true;
-
 		if (f == superInstance)
 			return call(o, resolve('__super_new'), args);
 
 		#if rulescript_use_hl_fixes
-		final result:Dynamic = Tools.__hl_callMethod(f, args);
+		return Tools.__hl_callMethod(f, args);
 		#else
-		final result:Dynamic = super.call(o, f, args);
+		return super.call(o, f, args);
 		#end
-
-		isSuperCall = false;
-
-		return result;
 	}
 
 	override function fcall(o:Dynamic, f:String, args:Array<Dynamic>):Dynamic
 	{
-		return call(o, ((o == superInstance
-			&& (locals.exists('__super_$f') || variables.exists('__super_$f'))) ? (resolve('__super_$f')) : get(o, f)), args);
+		if (o == superInstance) 
+		{
+			final nativeSuper = Reflect.field(o, '__super_' + f);
+			if (nativeSuper != null) return call(o, nativeSuper, args);
+		}
+		
+		return call(o, get(o, f), args);
 	}
 
 	override function cnew(cl:String, args:Array<Dynamic>):Dynamic
@@ -1120,10 +1118,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						preExpr = rulescript.Tools.toExpr(EBlock(exprs.slice(0, superID)));
 						postExpr = rulescript.Tools.toExpr(EBlock(exprs.slice(superID + 1)));
 
-						superCallArgs = superID == exprs.length ? null : switch (rulescript.Tools.getExpr(exprs[superID]))
+						superCallArgs = superID == exprs.length ? [] : switch (rulescript.Tools.getExpr(exprs[superID]))
 						{
 							case ECall(_, params): params;
-							default: null;
+							default: [];
 						};
 					}
 				}
