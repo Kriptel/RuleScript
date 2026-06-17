@@ -27,9 +27,12 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	public var access:RuleScriptAccess;
 
+	public var strictMode:Bool = true;
+
 	public var imports:Map<String, Dynamic> = [];
 	public var usings:Map<String, Dynamic> = [];
 	public var finalVariables:Map<String, Bool> = [];
+	public var declaredVariableTypes:Map<String, String> = [];
 
 	public var superInstance(default, set):Dynamic;
 
@@ -60,6 +63,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		usings = [];
 		typePaths = [];
 		finalVariables.clear();
+		declaredVariableTypes.clear();
 
 		if (rulescript.scriptedClass.RuleScriptedClassUtil.autoWrappers != null)
 		{
@@ -138,6 +142,24 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		{
 			case EIdent(id):
 				var l:Dynamic = locals.get(id);
+
+				if (strictMode) {
+					if (l == null && !variables.exists(id) && !finalVariables.exists(id) &&
+						(context == null || (!context.staticVariables.exists(id) && !context.publicVariables.exists(id))) &&
+						(superInstance == null || (!superFields.contains(id) && !superFields.contains('set_' + id)))) 
+					{
+						throw new haxe.Exception('Strict Mode Error: Undeclared variable "$id". Did you forget to write "var $id"?');
+					}
+
+					if (declaredVariableTypes.exists(id)) {
+						var expected = declaredVariableTypes.get(id);
+						if (!checkRuntimeType(v, expected)) {
+							var got = Type.getClassName(Type.getClass(v)) ?? Std.string(Type.typeof(v));
+							throw new haxe.Exception('Type Mismatch Error: Variable "$id" expects type $expected, but got $got');
+						}
+					}
+				}
+
 				if (l == null)
 					setVar(id, v);
 				else
@@ -442,16 +464,15 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						(onMeta != null) ? onMeta(n, args, e) : exprMeta(n, args, e);
 				}
 
-			case EVar(n, _, e, global, isFinal):
-				if (global)
-				{
+			case EVar(n, tExpr, e, global, isFinal):
+				if (tExpr != null) declaredVariableTypes.set(n, rulescript.Tools.typeToString(tExpr));
+
+				if (global) {
 					if (context == null || (!context.staticVariables.exists(n) && !context.publicVariables.exists(n))) {
 						variables.set(n, (e == null) ? null : this.expr(e));
 						if (isFinal) finalVariables.set(n, true);
 					}
-				}
-				else
-				{
+				} else {
 					declared.push({n: n, old: locals.get(n)});
 					var ref:Dynamic = {r: (e == null) ? null : this.expr(e)};
 					if (isFinal) ref.isFinal = true;
@@ -460,19 +481,20 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				return null;
 
 			case EProp(n, g, s, type, e, global):
+				if (type != null) declaredVariableTypes.set(n, rulescript.Tools.typeToString(type));
+
 				var prop = createScriptProperty(n, g, s, type);
-				if (global)
-					variables.set(n, prop);
-				else
-				{
+				if (global) variables.set(n, prop);
+				else {
 					declared.push({n: n, old: locals.get(n)});
 					locals.set(n, {r: prop});
 				}
-				if (e != null)
-					prop._lazyValue = () -> this.expr(e);
+				if (e != null) prop._lazyValue = () -> this.expr(e);
 				return null;
+
 			case EIdent(id):
-				return resolve(id); // wuh
+				return resolve(id);
+
 			case ECall(e, params):
 				var args = new Array();
 				for (p in params)
@@ -804,6 +826,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	 */
 	override function get(o:Dynamic, f:String):Dynamic
 	{
+		if (strictMode) 
+			validateFieldAccess(o, f);
+
 		if (Tools.isEnum(o))
 		{
 			if (Type.getEnumConstructs(o).contains(f))
@@ -858,6 +883,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	override function set(o:Dynamic, f:String, v:Dynamic):Dynamic
 	{
+		if (strictMode) 
+			validateFieldAccess(o, f);
+
 		if (o == null)
 			error(EInvalidAccess(f));
 
@@ -943,6 +971,43 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		#else
 		return Reflect.isFunction(c) ? Reflect.callMethod(null, c, args) : Tools.isClass(c) ? Type.createInstance(c, args) : c;
 		#end
+	}
+
+	private function checkRuntimeType(value:Dynamic, expectedType:String):Bool {
+		if (value == null || expectedType == null || expectedType == "Dynamic" || expectedType == "Any") return true;
+		
+		switch(expectedType) {
+			case "Int": return Std.isOfType(value, Int);
+			case "Float": return Std.isOfType(value, Float) || Std.isOfType(value, Int);
+			case "Bool": return Std.isOfType(value, Bool);
+			case "String": return Std.isOfType(value, String);
+			default:
+				var cls = resolveType(expectedType);
+				return cls != null ? Std.isOfType(value, cls) : true;
+		}
+	}
+
+	private function validateFieldAccess(obj:Dynamic, field:String):Void {
+		if (obj == null || obj == this) return;
+		
+		if (obj is RuleScriptedClass || obj is ScriptedType || obj is haxe.Constraints.IMap) return;
+		
+		final cls = Type.getClass(obj);
+		if (cls == null) return;
+		
+		final className = Type.getClassName(cls);
+		if (className == null || ["String", "Array"].contains(className)) return;
+		
+		function checkField(c:Class<Dynamic>):Bool {
+			if (c == null) return false;
+			if (Type.getInstanceFields(c).contains(field) || Type.getClassFields(c).contains(field)) return true;
+			if (Type.getInstanceFields(c).contains('get_$field') || Type.getInstanceFields(c).contains('set_$field')) return true;
+			return checkField(Type.getSuperClass(c));
+		}
+		
+		if (!checkField(cls)) {
+			throw new haxe.Exception('Strict Mode Error: Field "$field" does not exist on class $className');
+		}
 	}
 
 	function caseMatch(ecase:Expr, evalue:Expr, value:Dynamic):Bool

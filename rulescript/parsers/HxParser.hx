@@ -220,11 +220,8 @@ class HScriptParser extends hscript.Parser
 	override function parseString(s:String, ?origin:String = "hscript", ?position:Int = 0):Expr
 	{
 		isMainBlock = true;
-
 		var e = super.parseString(s, origin, position);
-
 		isMainBlock = false;
-
 		return e;
 	}
 

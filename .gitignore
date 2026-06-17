@@ -6,3 +6,4 @@ hxformat.json
 /test/dump
 /.DS_Store
 /examples
+rulescript/vscode-project.hxml
