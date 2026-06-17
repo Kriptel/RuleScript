@@ -109,7 +109,8 @@ class RuleScriptedClassMacro
 			'variableExists' => macro function(name:String):Bool { return __rulescript?.variables.exists(name) || Reflect.hasField(this, name) || Reflect.getProperty(this, name) != null; },
 			'getVariable' => macro function(name:String):Dynamic { if (__rulescript.variables.exists(name)) return __rulescript.variables[name]; return Reflect.getProperty(this, name); },
 			'setVariable' => macro function(name:String, value:Dynamic):Dynamic { try { if (__rulescript.variables.exists(name) || (Reflect.getProperty(this, name) == null && !Reflect.hasField(this, name))) { return __rulescript.variables[name] = value; } Reflect.setProperty(this, name, value); return value; } catch(e:Dynamic) { return __rulescript.variables[name] = value; } },
-			'get___rulescript_type' => macro function():rulescript.types.ScriptedType.TypeID { return rulescript.types.ScriptedType.TypeID.CLASS; }
+			'get___rulescript_type' => macro function():rulescript.types.ScriptedType.TypeID { return rulescript.types.ScriptedType.TypeID.CLASS; },
+			'__super_new' => macro function(...args:Dynamic):Void {}
 		];
 
 		for (name => func in functions)
