@@ -1716,6 +1716,12 @@ class HScriptParser extends hscript.Parser
 		while (true)
 		{
 			var tk = token();
+			
+			if (tk == TApostr) {
+				parseStringInterpolation();
+				continue;
+			}
+
 			if (preprocStack[spos] != obj)
 			{
 				push(tk);
