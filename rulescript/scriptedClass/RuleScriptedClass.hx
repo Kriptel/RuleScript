@@ -289,11 +289,11 @@ abstract Access(RuleScriptedClass)
 							return Type.createInstance(wrapperClass, [scriptName, args ?? []]);
 						}
 					} catch(e:Dynamic) {
-						trace('[RuleScript] Error: Failed to create wrapper for ' + shortName + ' -> ' + e);
+						trace('Scripted Class Error: Failed to create wrapper for "' + shortName + '": ' + e);
 						return null;
 					}
 				} else {
-					trace('[RuleScript] Warning: Wrapper for ' + shortName + ' not found in registry. It might have been removed by Dead Code Elimination (DCE).');
+					trace('Scripted Class Warning: Wrapper for "' + shortName + '" not found in registry. It might have been removed by Dead Code Elimination (DCE).');
 				}
 			}
 		}
@@ -302,7 +302,7 @@ abstract Access(RuleScriptedClass)
 			try {
 				return Type.createInstance(nativeClass, args ?? []);
 			} catch(e:Dynamic) {
-				trace('[RuleScript] Error: Failed to create native fallback class for ' + toString() + ' -> ' + e);
+				trace('Scripted Class Error: Failed to create native fallback class for "' + toString() + '": ' + e);
 			}
 		}
 

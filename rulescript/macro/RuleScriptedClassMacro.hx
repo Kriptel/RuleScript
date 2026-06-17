@@ -187,7 +187,7 @@ class RuleScriptedClassMacro
 					try {
 						__rulescript.access.getVariable($v{fieldName})($a{fieldArgs});
 					} catch (e:Dynamic) {
-						trace("[RuleScript] Error: Purging broken function '" + $v{fieldName} + "' to prevent soft-lock -> " + e);
+						trace("Scripted Class Error: Purging broken function '" + $v{fieldName} + "' to prevent soft-lock: " + e);
 						__rulescript.variables.remove($v{fieldName});
 						super.$fieldName($a{fieldArgs});
 					}
@@ -199,7 +199,7 @@ class RuleScriptedClassMacro
 					try {
 						return cast __rulescript.access.getVariable($v{fieldName})($a{fieldArgs});
 					} catch (e:Dynamic) {
-						trace("[RuleScript] Error: Purging broken function '" + $v{fieldName} + "' to prevent soft-lock -> " + e);
+						trace("Scripted Class Error: Purging broken function '" + $v{fieldName} + "' to prevent soft-lock: " + e);
 						__rulescript.variables.remove($v{fieldName});
 						return cast super.$fieldName($a{fieldArgs});
 					}
