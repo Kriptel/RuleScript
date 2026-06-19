@@ -11,6 +11,8 @@ class ScriptedAbstract implements ScriptedType
 	public var module:ScriptedModule;
 	public var impl:AbstractDecl;
 
+	var opMap:Map<String, {field: String, isStatic: Bool}>;
+
 	var pack:String;
 
 	public function new(impl:AbstractDecl, module:ScriptedModule)
@@ -74,6 +76,53 @@ class ScriptedAbstract implements ScriptedType
 	{
 		return new ScriptedAbstractInstance(this, args);
 	}
+
+	function buildOpMap() {
+		if (opMap != null) return;
+		opMap = new Map();
+
+		for (field in impl.fields) {
+			if (field.meta != null) {
+				for (m in field.meta) {
+					if (m.name == ":op" || m.name == "op") {
+						if (m.params != null && m.params.length > 0) {
+							var exprDef = rulescript.Tools.getExpr(m.params[0]);
+							var opStr = null;
+							
+							switch (exprDef) {
+								case EBinop(o, _, _), EUnop(o, _, _): opStr = o;
+								default:
+							}
+							
+							if (opStr != null) {
+								var isStatic = field.access != null && field.access.contains(AStatic);
+								opMap.set(opStr, {field: field.name, isStatic: isStatic});
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	public function hasOperator(op:String):Bool {
+		if (opMap == null) buildOpMap();
+		return opMap.exists(op);
+	}
+
+	public function callOperator(op:String, a:Dynamic, b:Dynamic, isRight:Bool):Dynamic {
+		if (opMap == null) buildOpMap();
+		
+		final opData = opMap.get(op);
+		if (opData == null) throw new haxe.Exception('Operator overload for "$op" not found in abstract ${impl.name}');
+
+		final inst:ScriptedAbstractInstance = cast a;
+		
+		final func:Dynamic = __impl.getVariable(opData.field);
+		if (func == null) throw new haxe.Exception('Function "${opData.field}" for operator "$op" is null or not found.');
+
+		return opData.isStatic ? Reflect.callMethod(null, func, isRight ? [b, inst] : [inst, b]) : Reflect.callMethod(inst, func, [b]);
+	}
 }
 
 @:noBuild
@@ -89,29 +138,45 @@ class ScriptedAbstractInstance implements RuleScriptedClass
 		return ABSTRACT;
 	}
 
-	public function new(impl:ScriptedAbstract, value:Dynamic)
+	public function new(impl:ScriptedAbstract, args:Array<Dynamic>)
 	{
 		this.impl = impl;
-		this.value = value;
 	}
 
-	public function getVariables():Map<String, Dynamic>
-	{
-		return null;
-	}
+	public function getVariables():Map<String, Dynamic> return null;
 
 	public function variableExists(name:String):Bool
 	{
-		return impl.__impl.variableExists(name);
+		if (impl.__impl.variableExists(name)) return true;
+		if (value != null) {
+			try { return Reflect.hasField(value, name) || Reflect.getProperty(value, name) != null; } catch(e:Dynamic) {}
+		}
+		return false;
 	}
 
 	public function getVariable(name:String):Dynamic
 	{
-		return impl.__impl.getVariable(name);
+		if (impl.__impl.variableExists(name)) return impl.__impl.getVariable(name);
+		
+		if (value != null) {
+			try { return Reflect.getProperty(value, name); } catch(e:Dynamic) {}
+		}
+		return null;
 	}
 
-	public function setVariable(name:String, value:Dynamic):Dynamic
+	public function setVariable(name:String, val:Dynamic):Dynamic
 	{
-		return null;
+		if (impl.__impl.variableExists(name)) {
+			var field = impl.__impl.getVariable(name);
+			if (field is rulescript.types.Property) {
+				cast(field, rulescript.types.Property).value = val;
+				return val;
+			}
+		}
+
+		if (value != null) {
+			try { Reflect.setProperty(value, name, val); } catch(e:Dynamic) {}
+		}
+		return val;
 	}
 }

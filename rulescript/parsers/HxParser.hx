@@ -689,6 +689,136 @@ class HScriptParser extends hscript.Parser
 				parseContext(id, false);
 			case 'static' if (mode == DEFAULT && allowStaticVariables):
 				parseContext(id, true);
+			case "switch":
+				var e = parseExpr();
+				var def = null, cases = [];
+				ensure(TBrOpen);
+				while (true)
+				{
+					var tk = token();
+					switch (tk)
+					{
+						case TId("case"):
+							var c:Dynamic = {values: [], expr: null};
+							cases.push(c);
+
+							var guardCond:Expr = null;
+							
+							while (true)
+							{
+								var e = parseExpr();
+								c.values.push(e);
+								tk = token();
+								switch (tk)
+								{
+									case TComma:
+									case TId("if"):
+										ensure(TPOpen);
+										guardCond = parseExpr();
+										ensure(TPClose);
+										ensure(TDoubleDot);
+										break;
+									case TDoubleDot:
+										break;
+									default:
+										unexpected(tk);
+										break;
+								}
+								if (tk == TDoubleDot || Type.enumEq(tk, TId("if"))) break;
+							}
+							
+							var exprs = [];
+							while (true)
+							{
+								tk = token();
+								push(tk);
+								switch (tk)
+								{
+									case TId("case"), TId("default"), TBrClose:
+										break;
+									case TEof if (resumeErrors):
+										break;
+									default:
+										parseFullExpr(exprs);
+								}
+							}
+							
+							var caseExpr = if (exprs.length == 1)
+								exprs[0];
+							else if (exprs.length == 0)
+								mk(EBlock([]), tokenMin, tokenMin);
+							else
+								mk(EBlock(exprs), pmin(exprs[0]), pmax(exprs[exprs.length - 1]));
+								
+							if (guardCond != null)
+								caseExpr = mk(EMeta(":guard", [guardCond], caseExpr), pmin(caseExpr), pmax(caseExpr));
+							c.expr = caseExpr;
+							
+						case TId("default"):
+							if (def != null) unexpected(tk);
+							ensure(TDoubleDot);
+							var exprs = [];
+							while (true)
+							{
+								tk = token();
+								push(tk);
+								switch (tk)
+								{
+									case TId("case"), TId("default"), TBrClose:
+										break;
+									case TEof if (resumeErrors):
+										break;
+									default:
+										parseFullExpr(exprs);
+								}
+							}
+							def = if (exprs.length == 1)
+								exprs[0];
+							else if (exprs.length == 0)
+								mk(EBlock([]), tokenMin, tokenMin);
+							else
+								mk(EBlock(exprs), pmin(exprs[0]), pmax(exprs[exprs.length - 1]));
+						case TBrClose:
+							break;
+						default:
+							unexpected(tk);
+							break;
+					}
+				}
+				mk(ESwitch(e, cases, def), p1, tokenMax);
+
+			case "try":
+				var e = parseExpr();
+				var catches = [];
+
+				while (true) {
+					var tk = token();
+					if (!Type.enumEq(tk, TId("catch"))) {
+						push(tk);
+						break;
+					}
+					ensure(TPOpen);
+
+					var vname = getIdent();
+					ensure(TDoubleDot);
+
+					var t = allowTypes ? parseType() : null;
+					if (!allowTypes) ensureToken(TId("Dynamic"));
+
+					ensure(TPClose);
+
+					var ec = parseExpr();
+					catches.push(mk(EFunction([{name: vname, t: t}], ec, null, null)));
+				}
+				
+				if (catches.length == 0) unexpected(TId("try"));
+				
+				if (catches.length == 1) {
+					var f = switch (catches[0].getExpr()) { case EFunction(args, expr, _, _): {n: args[0].name, t: args[0].t, e: expr}; default: null; };
+					return mk(ETry(e, f.n, f.t, f.e), p1, tokenMax);
+				} else {
+					return mk(ETry(e, "__err__", null, mk(EMeta(":multiCatch", catches, mk(EBlock([]))))), p1, tokenMax);
+				}
 			default:
 				super.parseStructure(id);
 		}

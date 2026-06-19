@@ -89,8 +89,50 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	override function initOps()
 	{
 		super.initOps();
-		binops.set("??", (e1, e2) -> this.expr(e1) ?? this.expr(e2));
-		assignOp("??=", function(v1:Dynamic, v2:Dynamic) return v1 ?? v2);
+		
+		var me = this;
+		
+		function resolveOp(op:String, v1:Dynamic, v2:Dynamic):Dynamic {
+			if (v1 is rulescript.types.ScriptedAbstract.ScriptedAbstractInstance) {
+				var inst = cast(v1, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance);
+				if (inst.impl.hasOperator(op)) return inst.impl.callOperator(op, inst, v2, false);
+			}
+			if (v2 is rulescript.types.ScriptedAbstract.ScriptedAbstractInstance) {
+				var inst = cast(v2, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance);
+				if (inst.impl.hasOperator(op)) return inst.impl.callOperator(op, inst, v1, true); 
+			}
+			return null;
+		}
+		
+		binops.set("+", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1);
+			var v2:Dynamic = me.expr(e2);
+			var res:Dynamic = resolveOp("+", v1, v2);
+			if (res != null) return res;
+			if (Std.isOfType(v1, String) || Std.isOfType(v2, String)) return Std.string(v1) + Std.string(v2);
+			return v1 + v2;
+		});
+		
+		binops.set("-", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("-", v1, v2); if (res != null) return res; return v1 - v2; });
+		binops.set("*", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("*", v1, v2); if (res != null) return res; return v1 * v2; });
+		binops.set("/", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("/", v1, v2); if (res != null) return res; return v1 / v2; });
+		binops.set("%", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("%", v1, v2); if (res != null) return res; return v1 % v2; });
+		
+		binops.set("==", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("==", v1, v2); if (res != null) return res; return v1 == v2; });
+		binops.set("!=", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("!=", v1, v2); if (res != null) return res; return v1 != v2; });
+		binops.set(">", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp(">", v1, v2); if (res != null) return res; return v1 > v2; });
+		binops.set("<", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("<", v1, v2); if (res != null) return res; return v1 < v2; });
+		binops.set(">=", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp(">=", v1, v2); if (res != null) return res; return v1 >= v2; });
+		binops.set("<=", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("<=", v1, v2); if (res != null) return res; return v1 <= v2; });
+		
+		assignOp("+=", function(v1:Dynamic, v2:Dynamic):Dynamic { 
+			var res:Dynamic = resolveOp("+", v1, v2); 
+			if (res != null) return res; 
+			if (Std.isOfType(v1, String) || Std.isOfType(v2, String)) return Std.string(v1) + Std.string(v2);
+			return v1 + v2; 
+		});
+		
+		assignOp("-=", function(v1:Dynamic, v2:Dynamic):Dynamic { var res:Dynamic = resolveOp("-", v1, v2); if (res != null) return res; return v1 - v2; });
 	}
 
 	override function resolve(id:String):Dynamic
@@ -140,6 +182,11 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		switch (hscript.Tools.expr(e1))
 		{
 			case EIdent(id):
+				if (id == "this" && superInstance != null && Std.isOfType(superInstance, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance)) {
+					cast(superInstance, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance).value = v;
+					return v;
+				}
+
 				var l:Dynamic = locals.get(id);
 
 				if (strictMode) {
@@ -190,6 +237,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case EArray(e, index):
 				var arr:Dynamic = expr(e);
 				var index:Dynamic = expr(index);
+
+				if (Std.isOfType(arr, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance))
+					arr = cast(arr, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance).value;
+
 				if (isMap(arr))
 				{
 					setMapValue(arr, index, v);
@@ -242,6 +293,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case EArray(e, index):
 				var arr:Dynamic = expr(e);
 				var index:Dynamic = expr(index);
+
+				if (Std.isOfType(arr, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance))
+					arr = cast(arr, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance).value;
+
 				if (isMap(arr))
 				{
 					v = fop(getMapValue(arr, index), expr(e2));
@@ -312,6 +367,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case EArray(e, index):
 				var arr:Dynamic = expr(e);
 				var index:Dynamic = expr(index);
+				
+				if (Std.isOfType(arr, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance))
+					arr = cast(arr, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance).value;
+
 				if (isMap(arr))
 				{
 					var v = getMapValue(arr, index);
@@ -469,6 +528,29 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						}
 
 						null;
+					case ':multiCatch':
+						final errInfo = locals.get("__err__");
+						final err = errInfo?.r ?? null;
+
+						@:privateAccess
+						final unwrappedErr = Std.isOfType(err, haxe.Exception) ? cast(err, haxe.Exception).unwrap() : err;
+						
+						for (catchNode in args) {
+							switch (catchNode.getExpr()) {
+								case EFunction(fargs, catchExpr, _, _):
+									final cname = fargs[0].name;
+									final expectedTypeStr = fargs[0].t != null ? rulescript.Tools.typeToString(fargs[0].t) : "Dynamic";
+									
+									if (checkRuntimeType(unwrappedErr, expectedTypeStr)) {
+										declared.push({n: cname, old: locals.get(cname)});
+										locals.set(cname, {r: unwrappedErr});
+										return this.expr(catchExpr);
+									}
+								default:
+							}
+						}
+						#if hl hl.Api.rethrow(err); #else throw err; #end
+
 					default:
 						(onMeta != null) ? onMeta(n, args, e) : exprMeta(n, args, e);
 				}
@@ -704,20 +786,27 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				var match = false;
 				for (c in cases)
 				{
-					var old = declared.length;
+					final old = declared.length;
 
-					for (v in c.values)
+					final isGuard = c.expr != null && c.expr.getExpr().match(EMeta(":guard", _, _));
+					final guardCond = isGuard ? switch(c.expr.getExpr()) { case EMeta(_, args, _): args[0]; default: null; } : null;
+					final actualExpr = isGuard ? switch(c.expr.getExpr()) { case EMeta(_, _, e): e; default: null; } : c.expr;
+
+					for (v in c.values) {
 						if (caseMatch(v, e, val))
 						{
-							match = true;
-							break;
+							if (guardCond == null || this.expr(guardCond) == true) {
+								match = true;
+								break;
+							}
 						}
-						else
-							restore(old);
+						restore(old);
+					}
 
 					if (match)
 					{
-						val = this.expr(c.expr);
+						val = this.expr(actualExpr);
+						restore(old);
 						break;
 					}
 
@@ -971,7 +1060,20 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				case CLASS:
 					return cast(c, ScriptedClass).createInstance(args);
 				case ABSTRACT:
-					return cast(c, ScriptedAbstract).createInstance(args);
+					final inst = cast(c, ScriptedAbstract).createInstance(args);
+					
+					final ctor = inst.getVariable("new");
+					if (ctor != null) {
+						final oldSuper = this.superInstance;
+
+						this.superInstance = inst;
+						
+						Reflect.callMethod(inst, ctor, args);
+						
+						this.superInstance = oldSuper;
+					}
+					
+					return inst;
 				default:
 			}
 
@@ -1021,6 +1123,23 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	function caseMatch(ecase:Expr, evalue:Expr, value:Dynamic):Bool
 	{
+		if (ecase != null) {
+			switch (ecase.getExpr()) {
+				case EIdent("_"): 
+					return true;
+				case EIdent(id):
+					if (id != "true" && id != "false" && id != "null") {
+						final charCode = id.charCodeAt(0);
+						if (charCode >= 97 && charCode <= 122) {
+							declared.push({n: id, old: locals.get(id)});
+							locals.set(id, {r: value});
+							return true;
+						}
+					}
+				default:
+			}
+		}
+
 		if (value is ScriptedEnumInstance || Reflect.isEnumValue(value))
 		{
 			final isEnumValue:Bool = Reflect.isEnumValue(value);
