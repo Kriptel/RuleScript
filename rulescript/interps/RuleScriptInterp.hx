@@ -949,14 +949,17 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		if (o is IRuleScriptCustomAccessor)
 			return cast(o, IRuleScriptCustomAccessor).getField(f);
 
+		if (o is RuleScriptedClass)
+		{
+			var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
+			if (cl.variableExists(f))
+				return getScriptProp(cl.getVariable(f));
+		}
+
 		if (o is ScriptedType)
 		{
 			switch (cast(o, ScriptedType).__rulescript_type)
 			{
-				case CLASS, ABSTRACT:
-					var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
-					if (cl.variableExists(f))
-						return getScriptProp(cl.getVariable(f));
 				case ENUM:
 					var en:ScriptedEnum = cast(o, ScriptedEnum);
 					return en.getEnumConstructor(f);
@@ -1060,17 +1063,27 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				case CLASS:
 					return cast(c, ScriptedClass).createInstance(args);
 				case ABSTRACT:
-					final inst = cast(c, ScriptedAbstract).createInstance(args);
+					var abs = cast(c, rulescript.types.ScriptedAbstract);
+					final inst = abs.createInstance(args);
 					
 					final ctor = inst.getVariable("new");
 					if (ctor != null) {
-						final oldSuper = this.superInstance;
-
-						this.superInstance = inst;
-						
-						Reflect.callMethod(inst, ctor, args);
-						
-						this.superInstance = oldSuper;
+						@:privateAccess {
+							final targetInterp:RuleScriptInterp = cast abs.__impl.interp;
+							
+							final oldSuper = targetInterp.superInstance;
+							targetInterp.superInstance = inst;
+							
+							final oldThis = targetInterp.variables.exists("this") ? targetInterp.variables.get("this") : null;
+							targetInterp.variables.set("this", inst);
+							
+							Reflect.callMethod(inst, ctor, args);
+							
+							if (oldThis != null) targetInterp.variables.set("this", oldThis);
+							else targetInterp.variables.remove("this");
+							
+							targetInterp.superInstance = oldSuper;
+						}
 					}
 					
 					return inst;

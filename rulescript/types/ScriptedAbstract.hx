@@ -18,6 +18,7 @@ class ScriptedAbstract implements ScriptedType
 	public function new(impl:AbstractDecl, module:ScriptedModule)
 	{
 		this.module = module;
+		this.impl = impl;
 
 		var classImpl:ClassDecl = {
 			name: impl.name,
@@ -37,6 +38,14 @@ class ScriptedAbstract implements ScriptedType
 	function init()
 	{
 		__impl.init();
+
+		__impl.interp.access.execute(rulescript.Tools.toExpr(EBlock([
+			rulescript.Tools.moduleDeclsToExpr(module.sharedDecls, {
+				isScriptedClass: true,
+				fieldFilter: f -> !f.access.contains(AStatic),
+				classImpl: __impl.impl
+			})
+		])));
 	}
 
 	public function compatibleWith(t:Dynamic):Bool
@@ -156,16 +165,23 @@ class ScriptedAbstractInstance implements RuleScriptedClass
 
 	public function getVariable(name:String):Dynamic
 	{
+		if (value != null) {
+			try { 
+				var v = Reflect.getProperty(value, name);
+				if (v != null) return v;
+			} catch(e:Dynamic) {}
+		}
+		
 		if (impl.__impl.variableExists(name)) return impl.__impl.getVariable(name);
 		
-		if (value != null) {
-			try { return Reflect.getProperty(value, name); } catch(e:Dynamic) {}
-		}
 		return null;
 	}
 
 	public function setVariable(name:String, val:Dynamic):Dynamic
 	{
+		if (value != null)
+			try { Reflect.setProperty(value, name, val); return val; } catch(e:Dynamic) {}
+
 		if (impl.__impl.variableExists(name)) {
 			var field = impl.__impl.getVariable(name);
 			if (field is rulescript.types.Property) {
@@ -174,9 +190,6 @@ class ScriptedAbstractInstance implements RuleScriptedClass
 			}
 		}
 
-		if (value != null) {
-			try { Reflect.setProperty(value, name, val); } catch(e:Dynamic) {}
-		}
 		return val;
 	}
 }
