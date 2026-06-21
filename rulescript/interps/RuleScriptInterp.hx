@@ -27,7 +27,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	public var access:RuleScriptAccess;
 
-	public var strictMode:Bool = true;
+	// compatibility with old scripts
+	// i recommend you to turn on this, cuz it's peak for doing haxe-accurate scripts
+	public var strictMode:Bool = false;
 
 	public var imports:Map<String, Dynamic> = [];
 	public var usings:Map<String, Dynamic> = [];
