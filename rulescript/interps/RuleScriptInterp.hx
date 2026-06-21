@@ -220,7 +220,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					setVar(id, v);
 				else
 				{
-					if (l.isFinal) throw new haxe.Exception('Cannot reassign final variable: ' + id);
+					if (l.isFinal) {
+						if (l.isInitialized) throw new haxe.Exception('Cannot reassign final variable: ' + id);
+						l.isInitialized = true;
+					}
 					
 					if (l.r is Property)
 						cast(l.r, Property).value = v;
@@ -283,7 +286,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					setVar(id, v);
 				else
 				{
-					if (l.isFinal) throw new haxe.Exception('Cannot reassign final variable: ' + id);
+					if (l.isFinal) {
+						if (l.isInitialized) throw new haxe.Exception('Cannot reassign final variable: ' + id);
+						l.isInitialized = true;
+					}
 					
 					if (l.r is Property)
 						cast(l.r, Property).value = v;
@@ -414,7 +420,12 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	override function setVar(name:String, v:Dynamic)
 	{
-		if (finalVariables.exists(name)) throw new haxe.Exception('Cannot reassign global final variable: ' + name);
+		if (finalVariables.exists(name)) {
+			if (finalVariables.get(name) == true)
+				throw new haxe.Exception('Cannot reassign global final variable: ' + name);
+			else
+				finalVariables.set(name, true);
+		}
 
 		if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
 			Reflect.setProperty(superInstance, name, v);
@@ -571,12 +582,15 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				if (global) {
 					if (context == null || (!context.staticVariables.exists(n) && !context.publicVariables.exists(n))) {
 						variables.set(n, (e == null) ? null : this.expr(e));
-						if (isFinal) finalVariables.set(n, true);
+						if (isFinal) finalVariables.set(n, e != null);
 					}
 				} else {
 					declared.push({n: n, old: locals.get(n)});
 					var ref:Dynamic = {r: (e == null) ? null : this.expr(e)};
-					if (isFinal) ref.isFinal = true;
+					if (isFinal) {
+						ref.isFinal = true;
+						ref.isInitialized = e != null;
+					}
 					locals.set(n, ref);
 				}
 				return null;
