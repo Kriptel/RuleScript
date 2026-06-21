@@ -133,6 +133,16 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		});
 		
 		assignOp("-=", function(v1:Dynamic, v2:Dynamic):Dynamic { var res:Dynamic = resolveOp("-", v1, v2); if (res != null) return res; return v1 - v2; });
+
+		binops.set("??", function(e1, e2):Dynamic { 
+    		var v1:Dynamic = me.expr(e1); 
+			if (v1 != null) return v1; 
+			return me.expr(e2); 
+		});
+
+		assignOp("??=", function(v1:Dynamic, v2:Dynamic):Dynamic { 
+			return v1 != null ? v1 : v2; 
+		});
 	}
 
 	override function resolve(id:String):Dynamic
