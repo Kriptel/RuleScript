@@ -421,7 +421,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	override function setVar(name:String, v:Dynamic)
 	{
 		if (finalVariables.exists(name)) {
-			if (finalVariables.get(name) == true)
+			if (finalVariables.get(name))
 				throw new haxe.Exception('Cannot reassign global final variable: ' + name);
 			else
 				finalVariables.set(name, true);
