@@ -158,9 +158,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		if (id == 'super' && superInstance != null)
 			return superInstance;
 
-		var l:Dynamic = locals.get(id);
+		final l:Dynamic = locals.get(id);
 		if (l != null)
 			return getScriptProp(l.r);
+
 		var v:Dynamic = getScriptProp(variables.get(id));
 
 		if (v == null && !variables.exists(id))
@@ -175,6 +176,12 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 			if (v == null && superInstance != null)
 				v = get(superInstance, id);
+
+			if (v == null && scriptName != null) {
+				final cl = rulescript.scriptedClass.RuleScriptedClassUtil.getClass(scriptName);
+				if (cl != null && cl.variableExists(id))
+					v = cl.getVariable(id);
+			}
 			
 			if (v == null)
 				error(EUnknownVariable(id));
@@ -437,7 +444,13 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			context.publicVariables.set(name, v);
 		else
 		{
-			var lastValue = variables.get(name);
+			final cl = rulescript.scriptedClass.RuleScriptedClassUtil.getClass(scriptName);
+			if (cl != null && cl.variableExists(name)) {
+				cl.setVariable(name, v);
+				return;
+			}
+
+			final lastValue = variables.get(name);
 
 			if (lastValue is Property)
 				cast(lastValue, Property).value = v;
