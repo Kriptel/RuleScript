@@ -1021,7 +1021,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	override function call(o:Dynamic, f:Dynamic, args:Array<Dynamic>):Dynamic
 	{
-		if (f == superInstance)
+		if (f != null && f == superInstance)
 			return call(o, resolve('__super_new'), args);
 
 		#if rulescript_use_hl_fixes
