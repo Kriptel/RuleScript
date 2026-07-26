@@ -841,7 +841,8 @@ class HScriptParser extends hscript.Parser
 		var parts:Array<Expr> = [];
 		var backslash = false, dollar = false;
 		var old = line;
-		var currentString:String = '';
+		
+		var currentString:StringBuf = new StringBuf();
 
 		#if hscriptPos
 		var p1 = currentPos - 1;
@@ -849,10 +850,10 @@ class HScriptParser extends hscript.Parser
 
 		inline function pushString()
 		{
-			if (currentString != '')
+			if (currentString.length > 0)
 			{
-				parts.push(mk(EConst(CString(currentString)), p1, tokenMax));
-				currentString = '';
+				parts.push(mk(EConst(CString(currentString.toString())), p1, tokenMax));
+				currentString = new StringBuf();
 			}
 		}
 
@@ -879,22 +880,15 @@ class HScriptParser extends hscript.Parser
 				backslash = false;
 				switch (c)
 				{
-					case 'n'.code:
-						currentString += '\n';
-					case 'r'.code:
-						currentString += '\r';
-					case 't'.code:
-						currentString += '\t';
-					case "'".code, '"'.code, '\\'.code:
-						currentString += String.fromCharCode(c);
+					case 'n'.code: currentString.addChar('\n'.code);
+					case 'r'.code: currentString.addChar('\r'.code);
+					case 't'.code: currentString.addChar('\t'.code);
+					case "'".code, '"'.code, '\\'.code: currentString.addChar(c);
 					case '/'.code:
-						if (allowJSON)
-							currentString += String.fromCharCode(c);
-						else
-							invalidChar(c);
+						if (allowJSON) currentString.addChar(c);
+						else invalidChar(c);
 					case "u".code:
-						if (!allowJSON)
-							invalidChar(c);
+						if (!allowJSON) invalidChar(c);
 						var k = 0;
 						for (i in 0...4)
 						{
@@ -902,12 +896,9 @@ class HScriptParser extends hscript.Parser
 							var char = readChar();
 							switch (char)
 							{
-								case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57: // 0-9
-									k += char - 48;
-								case 65, 66, 67, 68, 69, 70: // A-F
-									k += char - 55;
-								case 97, 98, 99, 100, 101, 102: // a-f
-									k += char - 87;
+								case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57: k += char - 48;
+								case 65, 66, 67, 68, 69, 70: k += char - 55;
+								case 97, 98, 99, 100, 101, 102: k += char - 87;
 								default:
 									if (StringTools.isEof(char))
 									{
@@ -917,7 +908,7 @@ class HScriptParser extends hscript.Parser
 									invalidChar(char);
 							}
 						}
-						currentString += String.fromCharCode(k);
+						currentString.addChar(k);
 					default:
 						invalidChar(c);
 				}
@@ -930,41 +921,39 @@ class HScriptParser extends hscript.Parser
 				{
 					case '{'.code:
 						pushString();
-
 						parts.push(parseExpr());
 						ensure(TBrClose);
 					case 48, 49, 50, 51, 52, 53, 54, 55, 56, 57: // 0-9
-						currentString += '$' + String.fromCharCode(c);
+						currentString.addChar('$'.code);
+						currentString.addChar(c);
 					case "'".code:
-						currentString += '$';
+						currentString.addChar('$'.code);
 						break;
 					default:
 						if (idents[c])
 						{
 							pushString();
-
-							currentString = '';
-
-							var id:String = String.fromCharCode(c);
+							
+							var idBuf = new StringBuf();
+							idBuf.addChar(c);
 
 							var char:Int = 0;
 							while (true)
 							{
 								char = readChar();
-								if (StringTools.isEof(char))
-									char = 0;
+								if (StringTools.isEof(char)) char = 0;
 								if (!idents[char])
 								{
 									this.char = char;
 									break;
 								}
-								id += String.fromCharCode(char);
+								idBuf.addChar(char);
 							}
 
-							parts.push(EIdent(id).toExpr());
+							parts.push(EIdent(idBuf.toString()).toExpr());
 						}
 						else
-							currentString += String.fromCharCode(c);
+							currentString.addChar(c);
 				}
 			}
 			else if (c == '\\'.code)
@@ -975,9 +964,8 @@ class HScriptParser extends hscript.Parser
 				break;
 			else
 			{
-				if (c == '\n'.code)
-					line++;
-				currentString += String.fromCharCode(c);
+				if (c == '\n'.code) line++;
+				currentString.addChar(c);
 			}
 		}
 
@@ -1687,16 +1675,17 @@ class HScriptParser extends hscript.Parser
 					char = readChar();
 					if (idents[char] || char == ':'.code)
 					{
-						var id = String.fromCharCode(char);
+						var idBuf = new StringBuf();
+						idBuf.addChar(char);
 						while (true)
 						{
 							char = readChar();
 							if (!idents[char])
 							{
 								this.char = char;
-								return TMeta(id);
+								return TMeta(idBuf.toString());
 							}
-							id += String.fromCharCode(char);
+							idBuf.addChar(char);
 						}
 					}
 					invalidChar(char);
@@ -1704,23 +1693,27 @@ class HScriptParser extends hscript.Parser
 					char = readChar();
 					if (idents[char])
 					{
-						var id = String.fromCharCode(char);
+						var idBuf = new StringBuf();
+						idBuf.addChar(char);
 						while (true)
 						{
 							char = readChar();
 							if (!idents[char])
 							{
 								this.char = char;
-								return preprocess(id);
+								return preprocess(idBuf.toString());
 							}
-							id += String.fromCharCode(char);
+							idBuf.addChar(char);
 						}
 					}
 					invalidChar(char);
 				default:
 					if (ops[char])
 					{
-						var op = String.fromCharCode(char);
+						var opBuf = new StringBuf();
+						opBuf.addChar(char);
+						var op = opBuf.toString();
+						
 						while (true)
 						{
 							char = readChar();
@@ -1732,7 +1725,8 @@ class HScriptParser extends hscript.Parser
 								return TOp(op);
 							}
 							var pop = op;
-							op += String.fromCharCode(char);
+							opBuf.addChar(char);
+							op = opBuf.toString();
 							if (!opPriority.exists(op) && opPriority.exists(pop))
 							{
 								if (op == "//" || op == "/*")
@@ -1744,7 +1738,8 @@ class HScriptParser extends hscript.Parser
 					}
 					if (idents[char])
 					{
-						var id = String.fromCharCode(char);
+						var idBuf = new StringBuf();
+						idBuf.addChar(char);
 
 						while (true)
 						{
@@ -1754,9 +1749,9 @@ class HScriptParser extends hscript.Parser
 							if (!idents[char])
 							{
 								this.char = char;
-								return TId(id);
+								return TId(idBuf.toString());
 							}
-							id += String.fromCharCode(char);
+							idBuf.addChar(char);
 						}
 					}
 					invalidChar(char);

@@ -111,6 +111,38 @@ class RuleScriptedClassUtil
 				currentClass = null;
 		}
 
+		var superFields:Array<String> = [];
+		
+		if (cl.nativeClass != null) {
+			var nativeFields = Type.getInstanceFields(cast cl.nativeClass);
+			if (nativeFields != null)
+				for (f in nativeFields) superFields.push(f);
+		}
+		
+		var currentSuper = cl.superClass;
+		while (currentSuper != null && currentSuper is ScriptedClass) {
+			var sc:ScriptedClass = cast currentSuper;
+			if (sc.impl != null && sc.impl.fields != null) {
+				for (f in sc.impl.fields)
+					if (!superFields.contains(f.name)) superFields.push(f.name);
+			}
+			currentSuper = sc.superClass;
+		}
+
+		if (cl.impl != null && cl.impl.fields != null) {
+			for (field in cl.impl.fields) {
+				if (field.name == "new" || field.access.contains(AStatic)) continue;
+				
+				var isOverride = field.access.contains(AOverride);
+				var parentHasField = superFields.contains(field.name);
+
+				if (isOverride && !parentHasField)
+					throw new haxe.Exception('Field "' + field.name + '" is declared as override, but overrides nothing in class "' + cl.className + '".');
+				else if (!isOverride && parentHasField)
+					throw new haxe.Exception('Method "' + field.name + '" overrides a parent field, but is missing the "override" keyword in class "' + cl.className + '".');
+			}
+		}
+
 		var exprList:Array<Expr> = [];
 
 		for (cl in list)

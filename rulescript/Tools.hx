@@ -170,9 +170,6 @@ class Tools
 				switch (field.kind)
 				{
 					case KFunction(f):
-						if (parameters?.isScriptedClass && (field.access.contains(AOverride) || (field.name == 'new' && hasExtend)))
-							pushExpr(EVar('__super_${field.name}', null, toExpr(EIdent(field.name)), false));
-
 						pushExpr(EFunction(f.args, f.expr, field.name, f.ret));
 					case KVar(v):
 						if (v.get == null && v.set == null)

@@ -28,7 +28,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	public var access:RuleScriptAccess;
 
 	// compatibility with old scripts
-	// i recommend you to turn on this, cuz it's peak for doing haxe-accurate scripts
+	// i recommend you to turn on this cuz it's peak for making haxe-accurate scripts
 	public var strictMode:Bool = false;
 
 	public var imports:Map<String, Dynamic> = [];
@@ -107,34 +107,122 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		}
 		
 		binops.set("+", function(e1, e2):Dynamic { 
-			var v1:Dynamic = me.expr(e1);
+			var v1:Dynamic = me.expr(e1); 
 			var v2:Dynamic = me.expr(e2);
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) + (v2 : Float);
+			
 			var res:Dynamic = resolveOp("+", v1, v2);
 			if (res != null) return res;
 			if (Std.isOfType(v1, String) || Std.isOfType(v2, String)) return Std.string(v1) + Std.string(v2);
 			return v1 + v2;
 		});
 		
-		binops.set("-", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("-", v1, v2); if (res != null) return res; return v1 - v2; });
-		binops.set("*", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("*", v1, v2); if (res != null) return res; return v1 * v2; });
-		binops.set("/", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("/", v1, v2); if (res != null) return res; return v1 / v2; });
-		binops.set("%", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("%", v1, v2); if (res != null) return res; return v1 % v2; });
+		binops.set("-", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) - (v2 : Float);
+			
+			var res:Dynamic = resolveOp("-", v1, v2); 
+			if (res != null) return res; 
+			return v1 - v2; 
+		});
 		
-		binops.set("==", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("==", v1, v2); if (res != null) return res; return v1 == v2; });
-		binops.set("!=", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("!=", v1, v2); if (res != null) return res; return v1 != v2; });
-		binops.set(">", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp(">", v1, v2); if (res != null) return res; return v1 > v2; });
-		binops.set("<", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("<", v1, v2); if (res != null) return res; return v1 < v2; });
-		binops.set(">=", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp(">=", v1, v2); if (res != null) return res; return v1 >= v2; });
-		binops.set("<=", function(e1, e2):Dynamic { var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); var res:Dynamic = resolveOp("<=", v1, v2); if (res != null) return res; return v1 <= v2; });
+		binops.set("*", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) * (v2 : Float);
+			
+			var res:Dynamic = resolveOp("*", v1, v2); 
+			if (res != null) return res; 
+			return v1 * v2; 
+		});
+		
+		binops.set("/", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) / (v2 : Float);
+			
+			var res:Dynamic = resolveOp("/", v1, v2); 
+			if (res != null) return res; 
+			return v1 / v2; 
+		});
+		
+		binops.set("%", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) % (v2 : Float);
+			
+			var res:Dynamic = resolveOp("%", v1, v2); 
+			if (res != null) return res; 
+			return v1 % v2; 
+		});
+		
+		binops.set("==", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return v1 == v2;
+			
+			var res:Dynamic = resolveOp("==", v1, v2); 
+			if (res != null) return res; 
+			return v1 == v2; 
+		});
+		
+		binops.set("!=", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return v1 != v2;
+			
+			var res:Dynamic = resolveOp("!=", v1, v2); 
+			if (res != null) return res; 
+			return v1 != v2; 
+		});
+		
+		binops.set(">", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) > (v2 : Float);
+			
+			var res:Dynamic = resolveOp(">", v1, v2); 
+			if (res != null) return res; 
+			return v1 > v2; 
+		});
+		
+		binops.set("<", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) < (v2 : Float);
+			
+			var res:Dynamic = resolveOp("<", v1, v2); 
+			if (res != null) return res; 
+			return v1 < v2; 
+		});
+		
+		binops.set(">=", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) >= (v2 : Float);
+			
+			var res:Dynamic = resolveOp(">=", v1, v2); 
+			if (res != null) return res; 
+			return v1 >= v2; 
+		});
+		
+		binops.set("<=", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) <= (v2 : Float);
+			
+			var res:Dynamic = resolveOp("<=", v1, v2); 
+			if (res != null) return res; 
+			return v1 <= v2; 
+		});
 		
 		assignOp("+=", function(v1:Dynamic, v2:Dynamic):Dynamic { 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) + (v2 : Float);
+			
 			var res:Dynamic = resolveOp("+", v1, v2); 
 			if (res != null) return res; 
 			if (Std.isOfType(v1, String) || Std.isOfType(v2, String)) return Std.string(v1) + Std.string(v2);
 			return v1 + v2; 
 		});
 		
-		assignOp("-=", function(v1:Dynamic, v2:Dynamic):Dynamic { var res:Dynamic = resolveOp("-", v1, v2); if (res != null) return res; return v1 - v2; });
+		assignOp("-=", function(v1:Dynamic, v2:Dynamic):Dynamic { 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) - (v2 : Float);
+			
+			var res:Dynamic = resolveOp("-", v1, v2); 
+			if (res != null) return res; 
+			return v1 - v2; 
+		});
 
 		binops.set("??", function(e1, e2):Dynamic { 
     		var v1:Dynamic = me.expr(e1); 
@@ -958,24 +1046,13 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	#end
 
 	/**
-	 * hasField not works for properties
+	 * hasField doesn't work for properties
 	 * If getProperty object is null, interp tries to get prop from usings
 	 */
 	override function get(o:Dynamic, f:String):Dynamic
 	{
 		if (strictMode) 
 			validateFieldAccess(o, f);
-
-		if (Tools.isEnum(o))
-		{
-			if (Type.getEnumConstructs(o).contains(f))
-			{
-				return if (Type.allEnums(o).map(_ -> Std.string(_)).contains(f))
-					Type.createEnum(o, f);
-				else
-					Reflect.makeVarArgs((args:Array<Dynamic>) -> Type.createEnum(o, f, args));
-			}
-		}
 
 		if (o == this)
 		{
@@ -995,6 +1072,21 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				return getScriptProp(cl.getVariable(f));
 		}
 
+		var prop:Dynamic = super.get(o, f);
+		if (prop != null)
+			return getScriptProp(prop);
+
+		if (Tools.isEnum(o))
+		{
+			if (Type.getEnumConstructs(o).contains(f))
+			{
+				return if (Type.allEnums(o).map(_ -> Std.string(_)).contains(f))
+					Type.createEnum(o, f);
+				else
+					Reflect.makeVarArgs((args:Array<Dynamic>) -> Type.createEnum(o, f, args));
+			}
+		}
+
 		if (o is ScriptedType)
 		{
 			switch (cast(o, ScriptedType).__rulescript_type)
@@ -1005,11 +1097,6 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				default:
 			}
 		}
-
-		var prop:Dynamic = super.get(o, f);
-
-		if (prop != null)
-			return getScriptProp(prop);
 
 		for (cl in usings)
 		{
@@ -1076,6 +1163,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		{
 			final nativeSuper = Reflect.field(o, '__super_' + f);
 			if (nativeSuper != null) return call(o, nativeSuper, args);
+			
+			final localSuper = locals.get('__super_' + f);
+			if (localSuper != null && localSuper.r != null) return call(o, localSuper.r, args);
 		}
 		
 		return call(o, get(o, f), args);
@@ -1139,6 +1229,35 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	private function checkRuntimeType(value:Dynamic, expectedType:String):Bool {
 		if (value == null || expectedType == null || expectedType == "Dynamic" || expectedType == "Any") return true;
 		
+		if (expectedType.indexOf("<") != -1) {
+			var baseType = expectedType.substring(0, expectedType.indexOf("<"));
+			var paramType = expectedType.substring(expectedType.indexOf("<") + 1, expectedType.lastIndexOf(">"));
+			
+			if (baseType == "Array" && Std.isOfType(value, Array)) {
+				var arr:Array<Dynamic> = cast value;
+				if (arr.length > 0)
+					return checkRuntimeType(arr[0], paramType);
+
+				return true;
+			}
+			
+			if ((baseType == "Map" || baseType == "haxe.ds.Map") && Std.isOfType(value, haxe.Constraints.IMap)) {
+				var params = paramType.split(",");
+				if (params.length == 2) {
+					var mapVal:haxe.Constraints.IMap<Dynamic, Dynamic> = cast value;
+					var key = mapVal.keys().next();
+					if (key != null) {
+						var val = mapVal.get(key);
+						return checkRuntimeType(key, StringTools.trim(params[0])) && 
+						       checkRuntimeType(val, StringTools.trim(params[1]));
+					}
+				}
+				return true;
+			}
+			
+			expectedType = baseType;
+		}
+
 		switch(expectedType) {
 			case "Int": return Std.isOfType(value, Int);
 			case "Float": return Std.isOfType(value, Float) || Std.isOfType(value, Int);
