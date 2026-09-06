@@ -22,6 +22,8 @@ import haxe.ds.StringMap;
 
 class RuleScriptInterp extends hscript.Interp implements IInterp
 {
+	public static var globalVariables:Map<String, Dynamic> = new Map();
+
 	public var scriptName:String;
 	public var scriptPackage(default, set):String = '';
 
@@ -66,6 +68,11 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		typePaths = [];
 		finalVariables.clear();
 		declaredVariableTypes.clear();
+
+		for (key => value in globalVariables)
+		{
+			variables.set(key, value);
+		}
 
 		if (rulescript.scriptedClass.RuleScriptedClassUtil.autoWrappers != null)
 		{
