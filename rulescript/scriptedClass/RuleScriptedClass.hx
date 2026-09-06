@@ -130,12 +130,13 @@ abstract Access(RuleScriptedClass)
 			interp.access.setVariable(name, type);
 		}
 
-		interp.access.execute(Tools.moduleDeclsToExpr(module.sharedDecls, {
+		var decls = RuleScriptedClassUtil.injectImportHx(module.sharedDecls);
+		interp.access.execute(Tools.moduleDeclsToExpr(decls, {
 			fieldFilter: f -> f.access.contains(AStatic),
 			classImpl: impl
 		}));
 
-		rulescript.scriptedClass.RuleScriptedClassUtil.registerRuleScriptedClass(toString(), this);
+		RuleScriptedClassUtil.registerRuleScriptedClass(toString(), this);
 
 		if (impl.extend != null)
 		{
@@ -270,10 +271,10 @@ abstract Access(RuleScriptedClass)
 			final extendName = rulescript.Tools.typeToString(impl.extend);
 			final shortName = extendName.split(".").pop();
 					
-			if (rulescript.scriptedClass.RuleScriptedClassUtil.autoWrappers != null) 
+			if (RuleScriptedClassUtil.autoWrappers != null) 
 			{
-				final wrapperClass = rulescript.scriptedClass.RuleScriptedClassUtil.autoWrappers.get(extendName) 
-								?? rulescript.scriptedClass.RuleScriptedClassUtil.autoWrappers.get(shortName);
+				final wrapperClass = RuleScriptedClassUtil.autoWrappers.get(extendName) 
+								?? RuleScriptedClassUtil.autoWrappers.get(shortName);
 								
 				if (wrapperClass != null) 
 				{
@@ -364,8 +365,9 @@ abstract Access(RuleScriptedClass)
 
 		for (cl in list)
 		{
+			var decls = RuleScriptedClassUtil.injectImportHx(cl.module.sharedDecls);
 			interp.access.execute(Tools.toExpr(EBlock([
-				Tools.moduleDeclsToExpr(cl.module.sharedDecls, {
+				Tools.moduleDeclsToExpr(decls, {
 					isScriptedClass: true,
 					fieldFilter: f -> !f.access.contains(AStatic),
 					classImpl: cl.impl

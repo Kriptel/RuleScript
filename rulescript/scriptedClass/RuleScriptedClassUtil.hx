@@ -31,6 +31,8 @@ class RuleScriptedClassUtil
 
 	public static var autoWrappers:Map<String, Dynamic>;
 
+	public static var importHxDecls:Map<String, Array<hscript.Expr.ModuleDecl>> = new Map();
+
 	public static function registerAutoWrapper(nativeName:String, wrapperClass:Dynamic):Void
 	{
 		if (autoWrappers == null) 
@@ -147,7 +149,9 @@ class RuleScriptedClassUtil
 
 		for (cl in list)
 		{
-			final exprs = Tools.moduleDeclsToExpr(cl.module.sharedDecls,
+			var decls = injectImportHx(cl.module.sharedDecls);
+
+			final exprs = Tools.moduleDeclsToExpr(decls,
 				{classImpl: cl.impl, isScriptedClass: true, fieldFilter: f -> !f.access.contains(AStatic)});
 
 			final exprs:Array<Expr> = switch (exprs.getExpr())
@@ -165,5 +169,54 @@ class RuleScriptedClassUtil
 		}
 
 		rulescript.execute(EBlock(exprList).toExpr());
+	}
+
+	public static function getImportHxDecls(pack:String):Array<hscript.Expr.ModuleDecl>
+	{
+		var decls:Array<hscript.Expr.ModuleDecl> = [];
+		
+		if (importHxDecls.exists("")) 
+			decls = decls.concat(importHxDecls.get(""));
+			
+		if (pack == null || pack == "") 
+			return decls;
+
+		var currentPack = "";
+		for (part in pack.split(".")) 
+		{
+			if (part == "") continue;
+			currentPack += (currentPack == "" ? "" : ".") + part;
+			if (importHxDecls.exists(currentPack)) 
+				decls = decls.concat(importHxDecls.get(currentPack));
+		}
+		
+		return decls;
+	}
+
+	public static function injectImportHx(moduleDecls:Array<hscript.Expr.ModuleDecl>):Array<hscript.Expr.ModuleDecl>
+	{
+		if (moduleDecls == null) return [];
+		var decls = moduleDecls.copy();
+		var insertIndex = 0;
+		var pack = "";
+		
+		for (i in 0...decls.length)
+		{
+			if (Type.enumConstructor(decls[i]) == "DPackage")
+			{
+				var path:Array<String> = Type.enumParameters(decls[i])[0];
+				pack = path.join(".");
+				insertIndex = i + 1;
+				break;
+			}
+		}
+
+		var importDecls = getImportHxDecls(pack);
+		for (i in 0...importDecls.length)
+		{
+			decls.insert(insertIndex + i, importDecls[i]);
+		}
+		
+		return decls;
 	}
 }
