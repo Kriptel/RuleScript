@@ -6,6 +6,7 @@ import rulescript.Tools.getScriptProp;
 import rulescript.interps.interp.RSInterpAccess;
 import rulescript.interps.interp.RSInterpConstructor;
 import rulescript.scriptedClass.RuleScriptedClass;
+import rulescript.scriptedClass.RuleScriptedClassUtil;
 import rulescript.types.IRuleScriptCustomAccessor;
 import rulescript.types.Property;
 import rulescript.types.ScriptedAbstract;
@@ -39,16 +40,13 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	public var declaredVariableTypes:Map<String, String> = [];
 
 	public var superInstance(default, set):Dynamic;
-
 	public var onMeta:(name:String, args:Array<Expr>, e:Expr) -> Expr;
-
 	public var isSuperCall:Bool = false;
 
 	public var hasErrorHandler:Bool = false;
 	public var errorHandler(default, set):haxe.Exception->Void;
 
 	public var context:Context;
-
 	var typePaths:Map<String, Dynamic> = [];
 
 	public function new()
@@ -69,17 +67,17 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		finalVariables.clear();
 		declaredVariableTypes.clear();
 
-		for (key => value in globalVariables)
+		if (RuleScriptedClassUtil.autoWrappers != null)
 		{
-			variables.set(key, value);
-		}
-
-		if (rulescript.scriptedClass.RuleScriptedClassUtil.autoWrappers != null)
-		{
-			for (nativeName => wrapperClass in rulescript.scriptedClass.RuleScriptedClassUtil.autoWrappers)
+			for (nativeName => wrapperClass in RuleScriptedClassUtil.autoWrappers)
 			{
 				variables.set(nativeName, wrapperClass);
 			}
+		}
+
+		for (key => value in globalVariables)
+		{
+			variables.set(key, value);
 		}
 	}
 
@@ -232,7 +230,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		});
 
 		binops.set("??", function(e1, e2):Dynamic { 
-    		var v1:Dynamic = me.expr(e1); 
+			var v1:Dynamic = me.expr(e1); 
 			if (v1 != null) return v1; 
 			return me.expr(e2); 
 		});
@@ -240,6 +238,21 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		assignOp("??=", function(v1:Dynamic, v2:Dynamic):Dynamic { 
 			return v1 != null ? v1 : v2; 
 		});
+	}
+
+	#if rulescript_is_git_hscript override #end function resolveType(path:String):Dynamic
+	{
+		if (imports.exists(path))
+			return imports.get(path);
+
+		if (variables.exists(path) && (Tools.isClass(variables.get(path)) || Std.isOfType(variables.get(path), ScriptedType)))
+			return variables.get(path);
+
+		var t:Dynamic = (context != null) ? context.resolveType(path) : Tools.resolveType(path);
+		if (t == null)
+			t = ScriptedTypeUtil.resolveScript(path);
+
+		return t;
 	}
 
 	override function resolve(id:String):Dynamic
@@ -276,6 +289,12 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				final cl = rulescript.scriptedClass.RuleScriptedClassUtil.getClass(scriptName);
 				if (cl != null && cl.variableExists(id))
 					v = cl.getVariable(id);
+			}
+
+			if (v == null) {
+				v = resolveType(id);
+				if (v != null)
+					variables.set(id, v);
 			}
 			
 			if (v == null)
@@ -602,7 +621,6 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						t;
 
 					imports.set(name, value);
-
 					variables.set(name, value);
 				}
 				else
@@ -650,7 +668,6 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						else if (depth == 0)
 						{
 							this.expr(e);
-
 							(isStatic ? context.staticVariables : context.publicVariables).set(n, resolve(n));
 						}
 						else
@@ -990,16 +1007,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		}
 
 		var prop = new Property(getter, setter);
-
 		return prop;
-	}
-
-	#if rulescript_is_git_hscript override #end function resolveType(path:String):Dynamic
-	{
-		if (context != null)
-			return context.resolveType(path)
-		else
-			return Tools.resolveType(path);
 	}
 
 	function resolveTypeOrValue(path:Array<String>):Dynamic
@@ -1022,7 +1030,6 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				else
 				{
 					final field = typePath.substring(typePath.lastIndexOf('.') + 1);
-
 					return typePaths[typePath] = get(resolveType(typePath.substring(0, typePath.lastIndexOf('.'))), field);
 				}
 			}
@@ -1183,8 +1190,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		if (cl == "Map" || cl == "haxe.ds.Map")
 			return new Map<Dynamic, Dynamic>();
 
-		var c:Dynamic = Type.resolveClass(cl);
-
+		var c:Dynamic = resolveType(cl);
+		c ??= Type.resolveClass(cl);
 		c ??= ScriptedTypeUtil.resolveScript(cl);
 		c ??= resolve(cl);
 
