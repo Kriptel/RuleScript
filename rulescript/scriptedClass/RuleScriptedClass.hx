@@ -130,10 +130,15 @@ abstract Access(RuleScriptedClass)
 			interp.access.setVariable(name, type);
 		}
 
+		if (interp is RuleScriptInterp)
+			RuleScriptedClassUtil.applyImportsFromDecls(cast interp, module.sharedDecls);
+
 		interp.access.execute(Tools.moduleDeclsToExpr(module.sharedDecls, {
 			fieldFilter: f -> f.access.contains(AStatic),
 			classImpl: impl
 		}));
+
+		RuleScriptedClassUtil.registerRuleScriptedClass(toString(), this);
 
 		if (impl.extend != null)
 		{
@@ -157,7 +162,6 @@ abstract Access(RuleScriptedClass)
 			if (superClass is ScriptedClass)
 			{
 				superClass.init();
-
 				nativeClass = superClass.nativeClass;
 			}
 			else
@@ -167,21 +171,17 @@ abstract Access(RuleScriptedClass)
 		}
 
 		initialize = if (nativeClass == null && (superClass == null || superClass is ScriptedClass))
-			ScriptedInstance.new.bind(this, _)
+			function(args) { return new ScriptedInstance(this, args); }
 		else if (nativeClass != null)
 		{
 			var type = toString();
-
 			var strict = Reflect.getProperty(nativeClass, '__rulescript_strict');
 
 			if (strict)
 				args ->
 				{
 					var strictArgs:Array<Dynamic> = [type];
-
-					for (arg in args)
-						strictArgs.push(arg);
-
+					for (arg in args) strictArgs.push(arg);
 					#if rulescript_use_hl_fixes
 					Tools.__hl_createInstance(nativeClass, strictArgs);
 					#else
@@ -204,21 +204,51 @@ abstract Access(RuleScriptedClass)
 
 	public function getVariables():Map<String, Dynamic>
 	{
-		return interp.access.getVariables();
+		init();
+		var vars:Map<String, Dynamic> = [];
+		for (k => v in interp.access.getVariables()) vars.set(k, v);
+		
+		if (module.context != null) {
+			for (k => v in module.context.staticVariables) vars.set(k, v);
+			for (k => v in module.context.publicVariables) vars.set(k, v);
+		}
+		return vars;
 	}
 
 	public function variableExists(name:String):Bool
 	{
-		return interp.access.variableExists(name);
+		init();
+		return interp.access.variableExists(name) || (module.context != null && (module.context.staticVariables.exists(name) || module.context.publicVariables.exists(name)));
 	}
 
 	public function getVariable(name:String):Dynamic
 	{
-		return interp.access.getVariable(name);
+		init();
+		if (interp.access.variableExists(name))
+			return interp.access.getVariable(name);
+		
+		if (module.context != null) {
+			if (module.context.staticVariables.exists(name))
+				return module.context.staticVariables.get(name);
+			if (module.context.publicVariables.exists(name))
+				return module.context.publicVariables.get(name);
+		}
+		return null;
 	}
 
 	public function setVariable(name:String, value:Dynamic):Dynamic
 	{
+		init();
+		if (module.context != null) {
+			if (module.context.staticVariables.exists(name)) {
+				module.context.staticVariables.set(name, value);
+				return value;
+			}
+			if (module.context.publicVariables.exists(name)) {
+				module.context.publicVariables.set(name, value);
+				return value;
+			}
+		}
 		return interp.access.setVariable(name, value);
 	}
 
@@ -229,9 +259,51 @@ abstract Access(RuleScriptedClass)
 		return CLASS;
 	}
 
-	public function createInstance(args:Array<Dynamic>)
+	public function createInstance(args:Array<Dynamic>):Dynamic
 	{
-		return initialize(args ?? []);
+		init();
+
+		if (impl?.extend != null) 
+		{
+			final extendName = rulescript.Tools.typeToString(impl.extend);
+			final shortName = extendName.split(".").pop();
+					
+			if (RuleScriptedClassUtil.autoWrappers != null) 
+			{
+				final wrapperClass = RuleScriptedClassUtil.autoWrappers.get(extendName) 
+								?? RuleScriptedClassUtil.autoWrappers.get(shortName);
+								
+				if (wrapperClass != null) 
+				{
+					final isStrict:Bool = Reflect.field(wrapperClass, "__rulescript_strict") == true;
+					final scriptName = this.toString(); 
+					
+					try {
+						if (isStrict) {
+							final wrapperArgs:Array<Dynamic> = [scriptName];
+							if (args != null) for (a in args) wrapperArgs.push(a);
+							return Type.createInstance(wrapperClass, wrapperArgs);
+						} else {
+							return Type.createInstance(wrapperClass, [scriptName, args ?? []]);
+						}
+					} catch(e:Dynamic) {
+						trace('Scripted Class Error: Failed to create wrapper for "' + shortName + '": ' + e);
+						return null;
+					}
+				}
+			}
+		}
+
+		if (nativeClass != null) {
+			try {
+				return Type.createInstance(nativeClass, args ?? []);
+			} catch(e:Dynamic) {
+				trace('Scripted Class Error: Failed to create native fallback class for "' + toString() + '": ' + e);
+			}
+		}
+
+		initialize(args ?? []);
+		return interp.access.superInstance ?? this; 
 	}
 
 	@:access(rulescript.RuleScriptAccess)
@@ -251,9 +323,7 @@ abstract Access(RuleScriptedClass)
 @:noBuild class ScriptedInstance implements RuleScriptedClass
 {
 	var cl:ScriptedClass;
-
 	public var interp:IInterp;
-
 	public var variables(get, set):Map<String, Dynamic>;
 
 	public function new(cl:ScriptedClass, args:Array<Dynamic>)
@@ -264,7 +334,6 @@ abstract Access(RuleScriptedClass)
 		interp.access.scriptName = cl.toString();
 
 		final list:Array<Dynamic> = [];
-
 		var currentClass:Dynamic = cl;
 
 		while (currentClass != null)
@@ -274,29 +343,31 @@ abstract Access(RuleScriptedClass)
 				final sc:ScriptedClass = cast currentClass;
 				list.insert(0, sc);
 				setVariable(sc.className, sc);
-
 				currentClass = sc.superClass;
 			}
 			else
 			{
 				setVariable(Type.getClassName(currentClass), currentClass);
-
 				break;
 			}
 		}
 
-		for (cl in list)
+		for (targetClass in list)
 		{
+			if (interp is RuleScriptInterp)
+				RuleScriptedClassUtil.applyImportsFromDecls(cast interp, targetClass.module.sharedDecls);
+
 			interp.access.execute(Tools.toExpr(EBlock([
-				Tools.moduleDeclsToExpr(cl.module.sharedDecls, {
+				Tools.moduleDeclsToExpr(targetClass.module.sharedDecls, {
 					isScriptedClass: true,
 					fieldFilter: f -> !f.access.contains(AStatic),
-					classImpl: cl.impl
+					classImpl: targetClass.impl
 				})
 			])));
 		}
 
 		interp.access.superInstance = this;
+		interp.access.setVariable("this", this);
 
 		if (args != null)
 			if (variableExists('new'))

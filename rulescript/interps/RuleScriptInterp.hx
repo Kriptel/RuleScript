@@ -6,6 +6,7 @@ import rulescript.Tools.getScriptProp;
 import rulescript.interps.interp.RSInterpAccess;
 import rulescript.interps.interp.RSInterpConstructor;
 import rulescript.scriptedClass.RuleScriptedClass;
+import rulescript.scriptedClass.RuleScriptedClassUtil;
 import rulescript.types.IRuleScriptCustomAccessor;
 import rulescript.types.Property;
 import rulescript.types.ScriptedAbstract;
@@ -22,25 +23,30 @@ import haxe.ds.StringMap;
 
 class RuleScriptInterp extends hscript.Interp implements IInterp
 {
+	public static var globalVariables:Map<String, Dynamic> = new Map();
+
 	public var scriptName:String;
 	public var scriptPackage(default, set):String = '';
 
 	public var access:RuleScriptAccess;
 
+	// compatibility with old scripts
+	// i recommend you to turn on this cuz it's peak for making haxe-accurate scripts
+	public var strictMode:Bool = false;
+
 	public var imports:Map<String, Dynamic> = [];
 	public var usings:Map<String, Dynamic> = [];
+	public var finalVariables:Map<String, Bool> = [];
+	public var declaredVariableTypes:Map<String, String> = [];
 
 	public var superInstance(default, set):Dynamic;
-
 	public var onMeta:(name:String, args:Array<Expr>, e:Expr) -> Expr;
-
 	public var isSuperCall:Bool = false;
 
 	public var hasErrorHandler:Bool = false;
 	public var errorHandler(default, set):haxe.Exception->Void;
 
 	public var context:Context;
-
 	var typePaths:Map<String, Dynamic> = [];
 
 	public function new()
@@ -58,6 +64,21 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		imports = [];
 		usings = [];
 		typePaths = [];
+		finalVariables.clear();
+		declaredVariableTypes.clear();
+
+		if (RuleScriptedClassUtil.autoWrappers != null)
+		{
+			for (nativeName => wrapperClass in RuleScriptedClassUtil.autoWrappers)
+			{
+				variables.set(nativeName, wrapperClass);
+			}
+		}
+
+		for (key => value in globalVariables)
+		{
+			variables.set(key, value);
+		}
 	}
 
 	override public function posInfos():haxe.PosInfos
@@ -75,21 +96,180 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	override function initOps()
 	{
 		super.initOps();
-		binops.set("??", (e1, e2) -> this.expr(e1) ?? this.expr(e2));
-		assignOp("??=", function(v1:Dynamic, v2:Dynamic) return v1 ?? v2);
+		
+		var me = this;
+		
+		function resolveOp(op:String, v1:Dynamic, v2:Dynamic):Dynamic {
+			if (v1 is rulescript.types.ScriptedAbstract.ScriptedAbstractInstance) {
+				final inst = cast(v1, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance);
+				if (inst.impl.hasOperator(op)) return inst.impl.callOperator(op, inst, v2, false);
+			}
+			if (v2 is rulescript.types.ScriptedAbstract.ScriptedAbstractInstance) {
+				final inst = cast(v2, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance);
+				if (inst.impl.hasOperator(op)) return inst.impl.callOperator(op, inst, v1, true); 
+			}
+			return null;
+		}
+		
+		binops.set("+", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); 
+			var v2:Dynamic = me.expr(e2);
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) + (v2 : Float);
+			
+			var res:Dynamic = resolveOp("+", v1, v2);
+			if (res != null) return res;
+			if (Std.isOfType(v1, String) || Std.isOfType(v2, String)) return Std.string(v1) + Std.string(v2);
+			return v1 + v2;
+		});
+		
+		binops.set("-", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) - (v2 : Float);
+			
+			var res:Dynamic = resolveOp("-", v1, v2); 
+			if (res != null) return res; 
+			return v1 - v2; 
+		});
+		
+		binops.set("*", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) * (v2 : Float);
+			
+			var res:Dynamic = resolveOp("*", v1, v2); 
+			if (res != null) return res; 
+			return v1 * v2; 
+		});
+		
+		binops.set("/", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) / (v2 : Float);
+			
+			var res:Dynamic = resolveOp("/", v1, v2); 
+			if (res != null) return res; 
+			return v1 / v2; 
+		});
+		
+		binops.set("%", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) % (v2 : Float);
+			
+			var res:Dynamic = resolveOp("%", v1, v2); 
+			if (res != null) return res; 
+			return v1 % v2; 
+		});
+		
+		binops.set("==", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return v1 == v2;
+			
+			var res:Dynamic = resolveOp("==", v1, v2); 
+			if (res != null) return res; 
+			return v1 == v2; 
+		});
+		
+		binops.set("!=", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return v1 != v2;
+			
+			var res:Dynamic = resolveOp("!=", v1, v2); 
+			if (res != null) return res; 
+			return v1 != v2; 
+		});
+		
+		binops.set(">", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) > (v2 : Float);
+			
+			var res:Dynamic = resolveOp(">", v1, v2); 
+			if (res != null) return res; 
+			return v1 > v2; 
+		});
+		
+		binops.set("<", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) < (v2 : Float);
+			
+			var res:Dynamic = resolveOp("<", v1, v2); 
+			if (res != null) return res; 
+			return v1 < v2; 
+		});
+		
+		binops.set(">=", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) >= (v2 : Float);
+			
+			var res:Dynamic = resolveOp(">=", v1, v2); 
+			if (res != null) return res; 
+			return v1 >= v2; 
+		});
+		
+		binops.set("<=", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); var v2:Dynamic = me.expr(e2); 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) <= (v2 : Float);
+			
+			var res:Dynamic = resolveOp("<=", v1, v2); 
+			if (res != null) return res; 
+			return v1 <= v2; 
+		});
+		
+		assignOp("+=", function(v1:Dynamic, v2:Dynamic):Dynamic { 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) + (v2 : Float);
+			
+			var res:Dynamic = resolveOp("+", v1, v2); 
+			if (res != null) return res; 
+			if (Std.isOfType(v1, String) || Std.isOfType(v2, String)) return Std.string(v1) + Std.string(v2);
+			return v1 + v2; 
+		});
+		
+		assignOp("-=", function(v1:Dynamic, v2:Dynamic):Dynamic { 
+			if ((v1 is Float || v1 is Int) && (v2 is Float || v2 is Int)) return (v1 : Float) - (v2 : Float);
+			
+			var res:Dynamic = resolveOp("-", v1, v2); 
+			if (res != null) return res; 
+			return v1 - v2; 
+		});
+
+		binops.set("??", function(e1, e2):Dynamic { 
+			var v1:Dynamic = me.expr(e1); 
+			if (v1 != null) return v1; 
+			return me.expr(e2); 
+		});
+
+		assignOp("??=", function(v1:Dynamic, v2:Dynamic):Dynamic { 
+			return v1 != null ? v1 : v2; 
+		});
+	}
+
+	#if rulescript_is_git_hscript override #end function resolveType(path:String):Dynamic
+	{
+		if (imports.exists(path))
+			return imports.get(path);
+
+		if (variables.exists(path) && (Tools.isClass(variables.get(path)) || Std.isOfType(variables.get(path), ScriptedType)))
+			return variables.get(path);
+
+		var t:Dynamic = (context != null) ? context.resolveType(path) : Tools.resolveType(path);
+		if (t == null)
+			t = ScriptedTypeUtil.resolveScript(path);
+
+		return t;
 	}
 
 	override function resolve(id:String):Dynamic
 	{
-		if (id == 'this')
-			return this;
+		if (id == 'this') 
+		{
+			if (superInstance != null) return superInstance;
+			return this; 
+		}
 
 		if (id == 'super' && superInstance != null)
 			return superInstance;
 
-		var l:Dynamic = locals.get(id);
+		final l:Dynamic = locals.get(id);
 		if (l != null)
 			return getScriptProp(l.r);
+
 		var v:Dynamic = getScriptProp(variables.get(id));
 
 		if (v == null && !variables.exists(id))
@@ -104,6 +284,18 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 			if (v == null && superInstance != null)
 				v = get(superInstance, id);
+
+			if (v == null && scriptName != null) {
+				final cl = RuleScriptedClassUtil.getClass(scriptName);
+				if (cl != null && cl.variableExists(id))
+					v = cl.getVariable(id);
+			}
+
+			if (v == null) {
+				v = resolveType(id);
+				if (v != null)
+					variables.set(id, v);
+			}
 			
 			if (v == null)
 				error(EUnknownVariable(id));
@@ -116,15 +308,48 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	{
 		var v = expr(e2);
 
+		#if hscriptPos
+		curExpr = e1;
+		#end
+
 		switch (hscript.Tools.expr(e1))
 		{
 			case EIdent(id):
-				var l = locals.get(id);
+				if (id == "this" && superInstance != null && Std.isOfType(superInstance, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance)) {
+					cast(superInstance, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance).value = v;
+					return v;
+				}
+
+				final l:Dynamic = locals.get(id);
+
+				if (strictMode) {
+					if (l == null && !variables.exists(id) && !finalVariables.exists(id) &&
+						(context == null || (!context.staticVariables.exists(id) && !context.publicVariables.exists(id))) &&
+						(superInstance == null || (!superFields.contains(id) && !superFields.contains('set_' + id)))) 
+					{
+						throw new haxe.Exception('Strict Mode Error: Undeclared variable "$id". Did you forget to write "var $id"?');
+					}
+
+					if (declaredVariableTypes.exists(id)) {
+						final expected = declaredVariableTypes.get(id);
+						if (!checkRuntimeType(v, expected)) {
+							final got = Type.getClassName(Type.getClass(v)) ?? Std.string(Type.typeof(v));
+							final pos = posInfos();
+							final posStr = pos != null ? ' [Line ' + pos.lineNumber + ']' : '';
+							throw new haxe.Exception('Type Mismatch Error: Variable "$id" expects type $expected, but got $got $posStr');
+						}
+					}
+				}
 
 				if (l == null)
 					setVar(id, v);
 				else
 				{
+					if (l.isFinal) {
+						if (l.isInitialized) throw new haxe.Exception('Cannot reassign final variable: ' + id);
+						l.isInitialized = true;
+					}
+					
 					if (l.r is Property)
 						cast(l.r, Property).value = v;
 					else {
@@ -150,6 +375,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case EArray(e, index):
 				var arr:Dynamic = expr(e);
 				var index:Dynamic = expr(index);
+
+				if (Std.isOfType(arr, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance))
+					arr = cast(arr, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance).value;
+
 				if (isMap(arr))
 				{
 					setMapValue(arr, index, v);
@@ -168,15 +397,25 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	override function evalAssignOp(op:String, fop:(Dynamic, Dynamic) -> Dynamic, e1:Expr, e2:Expr):Dynamic
 	{
 		var v;
+
+		#if hscriptPos
+		curExpr = e1;
+		#end
+
 		switch (hscript.Tools.expr(e1))
 		{
 			case EIdent(id):
-				var l = locals.get(id);
+				var l:Dynamic = locals.get(id);
 				v = fop(expr(e1), expr(e2));
 				if (l == null)
 					setVar(id, v);
 				else
 				{
+					if (l.isFinal) {
+						if (l.isInitialized) throw new haxe.Exception('Cannot reassign final variable: ' + id);
+						l.isInitialized = true;
+					}
+					
 					if (l.r is Property)
 						cast(l.r, Property).value = v;
 					else
@@ -195,6 +434,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case EArray(e, index):
 				var arr:Dynamic = expr(e);
 				var index:Dynamic = expr(index);
+
+				if (Std.isOfType(arr, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance))
+					arr = cast(arr, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance).value;
+
 				if (isMap(arr))
 				{
 					v = fop(getMapValue(arr, index), expr(e2));
@@ -220,7 +463,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		switch (e)
 		{
 			case EIdent(id):
-				var l = locals.get(id);
+				var l:Dynamic = locals.get(id);
+				if (l != null && l.isFinal) throw new haxe.Exception('Cannot increment/decrement final variable: ' + id);
+
 				var v:Dynamic = (l == null) ? resolve(id) : (l.r is Property ? cast(l.r, Property).value : l.r);
 
 				if (prefix)
@@ -263,6 +508,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case EArray(e, index):
 				var arr:Dynamic = expr(e);
 				var index:Dynamic = expr(index);
+				
+				if (Std.isOfType(arr, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance))
+					arr = cast(arr, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance).value;
+
 				if (isMap(arr))
 				{
 					var v = getMapValue(arr, index);
@@ -296,6 +545,13 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	override function setVar(name:String, v:Dynamic)
 	{
+		if (finalVariables.exists(name)) {
+			if (finalVariables.get(name))
+				throw new haxe.Exception('Cannot reassign global final variable: ' + name);
+			else
+				finalVariables.set(name, true);
+		}
+
 		if (superInstance != null && (superFields.contains(name) || superFields.contains('set_' + name)))
 			Reflect.setProperty(superInstance, name, v);
 		else if (context != null && context.staticVariables.exists(name))
@@ -304,7 +560,13 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			context.publicVariables.set(name, v);
 		else
 		{
-			var lastValue = variables.get(name);
+			final cl = RuleScriptedClassUtil.getClass(scriptName);
+			if (cl != null && cl.variableExists(name)) {
+				cl.setVariable(name, v);
+				return;
+			}
+
+			final lastValue = variables.get(name);
 
 			if (lastValue is Property)
 				cast(lastValue, Property).value = v;
@@ -361,7 +623,6 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						t;
 
 					imports.set(name, value);
-
 					variables.set(name, value);
 				}
 				else
@@ -409,7 +670,6 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						else if (depth == 0)
 						{
 							this.expr(e);
-
 							(isStatic ? context.staticVariables : context.publicVariables).set(n, resolve(n));
 						}
 						else
@@ -418,37 +678,67 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						}
 
 						null;
+					case ':multiCatch':
+						final errInfo = locals.get("__err__");
+						final err = errInfo?.r ?? null;
+
+						@:privateAccess
+						final unwrappedErr = Std.isOfType(err, haxe.Exception) ? cast(err, haxe.Exception).unwrap() : err;
+						
+						for (catchNode in args) {
+							switch (catchNode.getExpr()) {
+								case EFunction(fargs, catchExpr, _, _):
+									final cname = fargs[0].name;
+									final expectedTypeStr = fargs[0].t != null ? Tools.typeToString(fargs[0].t) : "Dynamic";
+									
+									if (checkRuntimeType(unwrappedErr, expectedTypeStr)) {
+										declared.push({n: cname, old: locals.get(cname)});
+										locals.set(cname, {r: unwrappedErr});
+										return this.expr(catchExpr);
+									}
+								default:
+							}
+						}
+						#if hl hl.Api.rethrow(err); #else throw err; #end
+
 					default:
 						(onMeta != null) ? onMeta(n, args, e) : exprMeta(n, args, e);
 				}
 
-			case EVar(n, _, e, global, _):
-				if (global)
-				{
-					if (context == null || (!context.staticVariables.exists(n) && !context.publicVariables.exists(n)))
+			case EVar(n, tExpr, e, global, isFinal):
+				if (tExpr != null) declaredVariableTypes.set(n, Tools.typeToString(tExpr));
+
+				if (global) {
+					if (context == null || (!context.staticVariables.exists(n) && !context.publicVariables.exists(n))) {
 						variables.set(n, (e == null) ? null : this.expr(e));
-				}
-				else
-				{
+						if (isFinal) finalVariables.set(n, e != null);
+					}
+				} else {
 					declared.push({n: n, old: locals.get(n)});
-					locals.set(n, {r: (e == null) ? null : this.expr(e)});
+					var ref:Dynamic = {r: (e == null) ? null : this.expr(e)};
+					if (isFinal) {
+						ref.isFinal = true;
+						ref.isInitialized = e != null;
+					}
+					locals.set(n, ref);
 				}
 				return null;
 
 			case EProp(n, g, s, type, e, global):
+				if (type != null) declaredVariableTypes.set(n, Tools.typeToString(type));
+
 				var prop = createScriptProperty(n, g, s, type);
-				if (global)
-					variables.set(n, prop);
-				else
-				{
+				if (global) variables.set(n, prop);
+				else {
 					declared.push({n: n, old: locals.get(n)});
 					locals.set(n, {r: prop});
 				}
-				if (e != null)
-					prop._lazyValue = () -> this.expr(e);
+				if (e != null) prop._lazyValue = () -> this.expr(e);
 				return null;
+
 			case EIdent(id):
-				return resolve(id); // wuh
+				return resolve(id);
+
 			case ECall(e, params):
 				var args = new Array();
 				for (p in params)
@@ -517,7 +807,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 							error(ECustom("Rest should only be used for the last function argument"));
 					}
 
-					if (p.opt)
+					if (p.opt || p.value != null)
 						hasOpt = true;
 					else if (!isRest)
 						minParams++;
@@ -536,17 +826,15 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 						error(ECustom(str));
 					}
 
-					if (params.length != args.length || hasRest)
+					if (hasOpt || hasRest || params.length != args.length)
 					{
 						final args2:Array<Dynamic> = [];
 
 						var argId = 0;
 						var extraParams = args.length - minParams;
-
 						for (id => param in params)
 						{
 							var isRest = hasRest && id == params.length - 1 && Tools.isRest(param.t);
-
 							var arg:Dynamic = null;
 
 							if (isRest)
@@ -554,7 +842,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 								arg = args.slice(argId);
 								argId = args.length;
 							}
-							else if (param.opt)
+							else if (param.opt || param.value != null)
 							{
 								if (extraParams > 0 && argId < args.length)
 								{
@@ -572,7 +860,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 							}
 
 							if (arg == null && param.value != null)
-								arg = this.expr(param.value);
+								arg = me.expr(param.value);
 
 							args2.push(arg);
 						}
@@ -582,8 +870,29 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					var old = me.locals, depth = me.depth;
 					me.depth++;
 					me.locals = me.duplicate(capturedLocals);
+					
 					for (i in 0...params.length)
-						me.locals.set(params[i].name, {r: args[i]});
+					{
+						var pName = params[i].name;
+						if (pName != null) {
+							if (pName.indexOf(':') != -1) pName = pName.substring(0, pName.indexOf(':'));
+							if (pName.indexOf('=') != -1) pName = pName.substring(0, pName.indexOf('='));
+							pName = StringTools.trim(pName);
+						}
+						
+						if (me.strictMode && params[i].t != null) {
+							final expectedType = Tools.typeToString(params[i].t);
+							if (!me.checkRuntimeType(args[i], expectedType)) {
+								final got = Type.getClassName(Type.getClass(args[i])) ?? Std.string(Type.typeof(args[i]));
+								final pos = me.posInfos();
+								final posStr = pos != null ? ' [Line ' + pos.lineNumber + ']' : '';
+								throw new haxe.Exception('Type Mismatch Error: Argument "$pName" expects type $expectedType, but got $got $posStr');
+							}
+						}
+
+						me.locals.set(pName, {r: args[i]});
+					}
+
 					var r = null;
 					var oldDecl = declared.length;
 					if (inTry)
@@ -640,20 +949,27 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				var match = false;
 				for (c in cases)
 				{
-					var old = declared.length;
+					final old = declared.length;
 
-					for (v in c.values)
+					final isGuard = c.expr != null && c.expr.getExpr().match(EMeta(":guard", _, _));
+					final guardCond = isGuard ? switch(c.expr.getExpr()) { case EMeta(_, args, _): args[0]; default: null; } : null;
+					final actualExpr = isGuard ? switch(c.expr.getExpr()) { case EMeta(_, _, e): e; default: null; } : c.expr;
+
+					for (v in c.values) {
 						if (caseMatch(v, e, val))
 						{
-							match = true;
-							break;
+							if (guardCond == null || this.expr(guardCond) == true) {
+								match = true;
+								break;
+							}
 						}
-						else
-							restore(old);
+						restore(old);
+					}
 
 					if (match)
 					{
-						val = this.expr(c.expr);
+						val = this.expr(actualExpr);
+						restore(old);
 						break;
 					}
 
@@ -703,16 +1019,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		}
 
 		var prop = new Property(getter, setter);
-
 		return prop;
-	}
-
-	#if rulescript_is_git_hscript override #end function resolveType(path:String):Dynamic
-	{
-		if (context != null)
-			return context.resolveType(path)
-		else
-			return Tools.resolveType(path);
 	}
 
 	function resolveTypeOrValue(path:Array<String>):Dynamic
@@ -735,7 +1042,6 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				else
 				{
 					final field = typePath.substring(typePath.lastIndexOf('.') + 1);
-
 					return typePaths[typePath] = get(resolveType(typePath.substring(0, typePath.lastIndexOf('.'))), field);
 				}
 			}
@@ -766,21 +1072,13 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	#end
 
 	/**
-	 * hasField not works for properties
+	 * hasField doesn't work for properties
 	 * If getProperty object is null, interp tries to get prop from usings
 	 */
 	override function get(o:Dynamic, f:String):Dynamic
 	{
-		if (Tools.isEnum(o))
-		{
-			if (Type.getEnumConstructs(o).contains(f))
-			{
-				return if (Type.allEnums(o).map(_ -> Std.string(_)).contains(f))
-					Type.createEnum(o, f);
-				else
-					Reflect.makeVarArgs((args:Array<Dynamic>) -> Type.createEnum(o, f, args));
-			}
-		}
+		if (strictMode) 
+			validateFieldAccess(o, f);
 
 		if (o == this)
 		{
@@ -793,25 +1091,38 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		if (o is IRuleScriptCustomAccessor)
 			return cast(o, IRuleScriptCustomAccessor).getField(f);
 
+		if (o is RuleScriptedClass)
+		{
+			var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
+			if (cl.variableExists(f))
+				return getScriptProp(cl.getVariable(f));
+		}
+
+		var prop:Dynamic = super.get(o, f);
+		if (prop != null)
+			return getScriptProp(prop);
+
+		if (Tools.isEnum(o))
+		{
+			if (Type.getEnumConstructs(o).contains(f))
+			{
+				return if (Type.allEnums(o).map(_ -> Std.string(_)).contains(f))
+					Type.createEnum(o, f);
+				else
+					Reflect.makeVarArgs((args:Array<Dynamic>) -> Type.createEnum(o, f, args));
+			}
+		}
+
 		if (o is ScriptedType)
 		{
 			switch (cast(o, ScriptedType).__rulescript_type)
 			{
-				case CLASS, ABSTRACT:
-					var cl:RuleScriptedClass = cast(o, RuleScriptedClass);
-					if (cl.variableExists(f))
-						return getScriptProp(cl.getVariable(f));
 				case ENUM:
 					var en:ScriptedEnum = cast(o, ScriptedEnum);
 					return en.getEnumConstructor(f);
 				default:
 			}
 		}
-
-		var prop:Dynamic = super.get(o, f);
-
-		if (prop != null)
-			return getScriptProp(prop);
 
 		for (cl in usings)
 		{
@@ -825,6 +1136,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	override function set(o:Dynamic, f:String, v:Dynamic):Dynamic
 	{
+		if (strictMode) 
+			validateFieldAccess(o, f);
+
 		if (o == null)
 			error(EInvalidAccess(f));
 
@@ -859,27 +1173,28 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	override function call(o:Dynamic, f:Dynamic, args:Array<Dynamic>):Dynamic
 	{
-		if (o == superInstance)
-			isSuperCall = true;
-
-		if (f == superInstance)
+		if (f != null && f == superInstance)
 			return call(o, resolve('__super_new'), args);
 
 		#if rulescript_use_hl_fixes
-		final result:Dynamic = Tools.__hl_callMethod(f, args);
+		return Tools.__hl_callMethod(f, args);
 		#else
-		final result:Dynamic = super.call(o, f, args);
+		return super.call(o, f, args);
 		#end
-
-		isSuperCall = false;
-
-		return result;
 	}
 
 	override function fcall(o:Dynamic, f:String, args:Array<Dynamic>):Dynamic
 	{
-		return call(o, ((o == superInstance
-			&& (locals.exists('__super_$f') || variables.exists('__super_$f'))) ? (resolve('__super_$f')) : get(o, f)), args);
+		if (o == superInstance) 
+		{
+			final nativeSuper = Reflect.field(o, '__super_' + f);
+			if (nativeSuper != null) return call(o, nativeSuper, args);
+			
+			final localSuper = locals.get('__super_' + f);
+			if (localSuper != null && localSuper.r != null) return call(o, localSuper.r, args);
+		}
+		
+		return call(o, get(o, f), args);
 	}
 
 	override function cnew(cl:String, args:Array<Dynamic>):Dynamic
@@ -887,8 +1202,8 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		if (cl == "Map" || cl == "haxe.ds.Map")
 			return new Map<Dynamic, Dynamic>();
 
-		var c:Dynamic = Type.resolveClass(cl);
-
+		var c:Dynamic = resolveType(cl);
+		c ??= Type.resolveClass(cl);
 		c ??= ScriptedTypeUtil.resolveScript(cl);
 		c ??= resolve(cl);
 
@@ -903,7 +1218,30 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				case CLASS:
 					return cast(c, ScriptedClass).createInstance(args);
 				case ABSTRACT:
-					return cast(c, ScriptedAbstract).createInstance(args);
+					var abs = cast(c, ScriptedAbstract);
+					final inst = abs.createInstance(args);
+					
+					final ctor = inst.getVariable("new");
+					if (ctor != null) {
+						@:privateAccess {
+							final targetInterp:RuleScriptInterp = cast abs.__impl.interp;
+							
+							final oldSuper = targetInterp.superInstance;
+							targetInterp.superInstance = inst;
+							
+							final oldThis = targetInterp.variables.exists("this") ? targetInterp.variables.get("this") : null;
+							targetInterp.variables.set("this", inst);
+							
+							Reflect.callMethod(inst, ctor, args);
+							
+							if (oldThis != null) targetInterp.variables.set("this", oldThis);
+							else targetInterp.variables.remove("this");
+							
+							targetInterp.superInstance = oldSuper;
+						}
+					}
+					
+					return inst;
 				default:
 			}
 
@@ -914,8 +1252,101 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		#end
 	}
 
+	private function checkRuntimeType(value:Dynamic, expectedType:String):Bool {
+		if (value == null || expectedType == null || expectedType == "Dynamic" || expectedType == "Any") return true;
+		
+		if (expectedType.indexOf("<") != -1) {
+			var baseType = expectedType.substring(0, expectedType.indexOf("<"));
+			var paramType = expectedType.substring(expectedType.indexOf("<") + 1, expectedType.lastIndexOf(">"));
+			
+			if (baseType == "Array" && Std.isOfType(value, Array)) {
+				var arr:Array<Dynamic> = cast value;
+				if (arr.length > 0)
+					return checkRuntimeType(arr[0], paramType);
+
+				return true;
+			}
+			
+			if ((baseType == "Map" || baseType == "haxe.ds.Map") && Std.isOfType(value, haxe.Constraints.IMap)) {
+				var params = paramType.split(",");
+				if (params.length == 2) {
+					var mapVal:haxe.Constraints.IMap<Dynamic, Dynamic> = cast value;
+					var key = mapVal.keys().next();
+					if (key != null) {
+						var val = mapVal.get(key);
+						return checkRuntimeType(key, StringTools.trim(params[0])) && 
+						       checkRuntimeType(val, StringTools.trim(params[1]));
+					}
+				}
+				return true;
+			}
+			
+			expectedType = baseType;
+		}
+
+		switch(expectedType) {
+			case "Int": return Std.isOfType(value, Int);
+			case "Float": return Std.isOfType(value, Float) || Std.isOfType(value, Int);
+			case "Bool": return Std.isOfType(value, Bool);
+			case "String": return Std.isOfType(value, String);
+			default:
+				if (Std.isOfType(value, Int) || Std.isOfType(value, Float) || Std.isOfType(value, Bool) || Std.isOfType(value, String))
+					return true;
+
+				final cls = resolveType(expectedType);
+				if (cls == null || Std.isOfType(cls, ScriptedAbstract) || Std.isOfType(cls, ScriptedEnum) || Std.isOfType(cls, RuleScriptedClass)) 
+					return true;
+				
+				try {
+					return Std.isOfType(value, cls);
+				} catch(e:Dynamic) {
+					return true;
+				}
+		}
+	}
+
+	private function validateFieldAccess(obj:Dynamic, field:String):Void {
+		if (obj == null || obj == this) return;
+		
+		if (obj is RuleScriptedClass || obj is ScriptedType || obj is haxe.Constraints.IMap) return;
+		
+		final cls = Type.getClass(obj);
+		if (cls == null) return;
+		
+		final className = Type.getClassName(cls);
+		if (className == null || ["String", "Array"].contains(className)) return;
+		
+		function checkField(c:Class<Dynamic>):Bool {
+			if (c == null) return false;
+			if (Type.getInstanceFields(c).contains(field) || Type.getClassFields(c).contains(field)) return true;
+			if (Type.getInstanceFields(c).contains('get_$field') || Type.getInstanceFields(c).contains('set_$field')) return true;
+			return checkField(Type.getSuperClass(c));
+		}
+		
+		if (!checkField(cls)) {
+			throw new haxe.Exception('Strict Mode Error: Field "$field" does not exist on class $className');
+		}
+	}
+
 	function caseMatch(ecase:Expr, evalue:Expr, value:Dynamic):Bool
 	{
+		if (ecase != null) {
+			switch (ecase.getExpr()) {
+				case EIdent("_"): 
+					return true;
+				case EIdent(id):
+					if (id != "true" && id != "false" && id != "null") {
+						final charCode = id.charCodeAt(0);
+						if (charCode >= 97 && charCode <= 122) {
+							declared.push({n: id, old: locals.get(id)});
+							locals.set(id, {r: value});
+							return true;
+						}
+					}
+				default:
+			}
+		}
+
 		if (value is ScriptedEnumInstance || Reflect.isEnumValue(value))
 		{
 			final isEnumValue:Bool = Reflect.isEnumValue(value);
@@ -1009,7 +1440,29 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 	{
 		hasErrorHandler = v != null;
 
-		return errorHandler = v;
+		if (v != null)
+		{
+			errorHandler = (exception:haxe.Exception) ->
+			{
+				#if hscriptPos
+				var pos = posInfos();
+				@:privateAccess
+				if (pos != null && pos.lineNumber > 0 && !Std.isOfType(exception.unwrap(), hscript.Expr.Error))
+				{
+					final msg = exception.message + ' (at ' + pos.fileName + ':' + pos.lineNumber + ')';
+					exception = new haxe.Exception(msg, exception.previous != null ? exception.previous : exception);
+				}
+				#end
+
+				v(exception);
+			};
+		}
+		else
+		{
+			errorHandler = null;
+		}
+
+		return v;
 	}
 
 	@:noCompletion
@@ -1029,15 +1482,15 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	public function createConstructor(expr:Expr, superConstructor:RSInterpConstructor):Dynamic
 	{
-		return switch (rulescript.Tools.getExpr(expr))
+		return switch (Tools.getExpr(expr))
 		{
 			case EFunction(params, fexpr, name, _):
-				final exprs:Array<Expr> = switch (rulescript.Tools.getExpr(fexpr))
+				final exprs:Array<Expr> = switch (Tools.getExpr(fexpr))
 				{
 					case EBlock(exprs):
 						exprs;
 					default:
-						null;
+						[fexpr];
 				}
 
 				var preExpr:Expr = fexpr;
@@ -1050,9 +1503,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 					for (expr in exprs)
 					{
-						switch (rulescript.Tools.getExpr(expr))
+						switch (Tools.getExpr(expr))
 						{
-							case ECall(e, _) if (rulescript.Tools.getExpr(e).match(EIdent('super'))):
+							case ECall(e, _) if (Tools.getExpr(e).match(EIdent('super'))):
 								break;
 							default:
 								null;
@@ -1062,13 +1515,13 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 					if (superID != exprs.length)
 					{
-						preExpr = rulescript.Tools.toExpr(EBlock(exprs.slice(0, superID)));
-						postExpr = rulescript.Tools.toExpr(EBlock(exprs.slice(superID + 1)));
+						preExpr = Tools.toExpr(EBlock(exprs.slice(0, superID)));
+						postExpr = Tools.toExpr(EBlock(exprs.slice(superID + 1)));
 
-						superCallArgs = superID == exprs.length ? null : switch (rulescript.Tools.getExpr(exprs[superID]))
+						superCallArgs = superID == exprs.length ? [] : switch (Tools.getExpr(exprs[superID]))
 						{
 							case ECall(_, params): params;
-							default: null;
+							default: [];
 						};
 					}
 				}

@@ -6,7 +6,7 @@
   "version": "0.3.0-alpha",
   "releasenote": "RuleScripted Classes, Script Properties, Rest and more.",
   "dependencies": {
-      "hscript":""
+      "hscript": ""
   },
   "contributors": ["Kriptel"]
 }
