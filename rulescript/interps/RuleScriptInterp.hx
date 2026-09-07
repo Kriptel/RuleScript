@@ -101,11 +101,11 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 		
 		function resolveOp(op:String, v1:Dynamic, v2:Dynamic):Dynamic {
 			if (v1 is rulescript.types.ScriptedAbstract.ScriptedAbstractInstance) {
-				var inst = cast(v1, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance);
+				final inst = cast(v1, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance);
 				if (inst.impl.hasOperator(op)) return inst.impl.callOperator(op, inst, v2, false);
 			}
 			if (v2 is rulescript.types.ScriptedAbstract.ScriptedAbstractInstance) {
-				var inst = cast(v2, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance);
+				final inst = cast(v2, rulescript.types.ScriptedAbstract.ScriptedAbstractInstance);
 				if (inst.impl.hasOperator(op)) return inst.impl.callOperator(op, inst, v1, true); 
 			}
 			return null;
@@ -286,7 +286,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				v = get(superInstance, id);
 
 			if (v == null && scriptName != null) {
-				final cl = rulescript.scriptedClass.RuleScriptedClassUtil.getClass(scriptName);
+				final cl = RuleScriptedClassUtil.getClass(scriptName);
 				if (cl != null && cl.variableExists(id))
 					v = cl.getVariable(id);
 			}
@@ -320,7 +320,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					return v;
 				}
 
-				var l:Dynamic = locals.get(id);
+				final l:Dynamic = locals.get(id);
 
 				if (strictMode) {
 					if (l == null && !variables.exists(id) && !finalVariables.exists(id) &&
@@ -331,10 +331,12 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 					}
 
 					if (declaredVariableTypes.exists(id)) {
-						var expected = declaredVariableTypes.get(id);
+						final expected = declaredVariableTypes.get(id);
 						if (!checkRuntimeType(v, expected)) {
-							var got = Type.getClassName(Type.getClass(v)) ?? Std.string(Type.typeof(v));
-							throw new haxe.Exception('Type Mismatch Error: Variable "$id" expects type $expected, but got $got');
+							final got = Type.getClassName(Type.getClass(v)) ?? Std.string(Type.typeof(v));
+							final pos = posInfos();
+							final posStr = pos != null ? ' [Line ' + pos.lineNumber + ']' : '';
+							throw new haxe.Exception('Type Mismatch Error: Variable "$id" expects type $expected, but got $got $posStr');
 						}
 					}
 				}
@@ -558,7 +560,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			context.publicVariables.set(name, v);
 		else
 		{
-			final cl = rulescript.scriptedClass.RuleScriptedClassUtil.getClass(scriptName);
+			final cl = RuleScriptedClassUtil.getClass(scriptName);
 			if (cl != null && cl.variableExists(name)) {
 				cl.setVariable(name, v);
 				return;
@@ -687,7 +689,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 							switch (catchNode.getExpr()) {
 								case EFunction(fargs, catchExpr, _, _):
 									final cname = fargs[0].name;
-									final expectedTypeStr = fargs[0].t != null ? rulescript.Tools.typeToString(fargs[0].t) : "Dynamic";
+									final expectedTypeStr = fargs[0].t != null ? Tools.typeToString(fargs[0].t) : "Dynamic";
 									
 									if (checkRuntimeType(unwrappedErr, expectedTypeStr)) {
 										declared.push({n: cname, old: locals.get(cname)});
@@ -704,7 +706,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				}
 
 			case EVar(n, tExpr, e, global, isFinal):
-				if (tExpr != null) declaredVariableTypes.set(n, rulescript.Tools.typeToString(tExpr));
+				if (tExpr != null) declaredVariableTypes.set(n, Tools.typeToString(tExpr));
 
 				if (global) {
 					if (context == null || (!context.staticVariables.exists(n) && !context.publicVariables.exists(n))) {
@@ -723,7 +725,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				return null;
 
 			case EProp(n, g, s, type, e, global):
-				if (type != null) declaredVariableTypes.set(n, rulescript.Tools.typeToString(type));
+				if (type != null) declaredVariableTypes.set(n, Tools.typeToString(type));
 
 				var prop = createScriptProperty(n, g, s, type);
 				if (global) variables.set(n, prop);
@@ -878,6 +880,16 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 							pName = StringTools.trim(pName);
 						}
 						
+						if (me.strictMode && params[i].t != null) {
+							final expectedType = Tools.typeToString(params[i].t);
+							if (!me.checkRuntimeType(args[i], expectedType)) {
+								final got = Type.getClassName(Type.getClass(args[i])) ?? Std.string(Type.typeof(args[i]));
+								final pos = me.posInfos();
+								final posStr = pos != null ? ' [Line ' + pos.lineNumber + ']' : '';
+								throw new haxe.Exception('Type Mismatch Error: Argument "$pName" expects type $expectedType, but got $got $posStr');
+							}
+						}
+
 						me.locals.set(pName, {r: args[i]});
 					}
 
@@ -1206,7 +1218,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				case CLASS:
 					return cast(c, ScriptedClass).createInstance(args);
 				case ABSTRACT:
-					var abs = cast(c, rulescript.types.ScriptedAbstract);
+					var abs = cast(c, ScriptedAbstract);
 					final inst = abs.createInstance(args);
 					
 					final ctor = inst.getVariable("new");
@@ -1278,8 +1290,18 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 			case "Bool": return Std.isOfType(value, Bool);
 			case "String": return Std.isOfType(value, String);
 			default:
-				var cls = resolveType(expectedType);
-				return cls != null ? Std.isOfType(value, cls) : true;
+				if (Std.isOfType(value, Int) || Std.isOfType(value, Float) || Std.isOfType(value, Bool) || Std.isOfType(value, String))
+					return true;
+
+				final cls = resolveType(expectedType);
+				if (cls == null || Std.isOfType(cls, ScriptedAbstract) || Std.isOfType(cls, ScriptedEnum) || Std.isOfType(cls, RuleScriptedClass)) 
+					return true;
+				
+				try {
+					return Std.isOfType(value, cls);
+				} catch(e:Dynamic) {
+					return true;
+				}
 		}
 	}
 
@@ -1427,7 +1449,7 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 				@:privateAccess
 				if (pos != null && pos.lineNumber > 0 && !Std.isOfType(exception.unwrap(), hscript.Expr.Error))
 				{
-					var msg = exception.message + ' (at ' + pos.fileName + ':' + pos.lineNumber + ')';
+					final msg = exception.message + ' (at ' + pos.fileName + ':' + pos.lineNumber + ')';
 					exception = new haxe.Exception(msg, exception.previous != null ? exception.previous : exception);
 				}
 				#end
@@ -1460,15 +1482,15 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 	public function createConstructor(expr:Expr, superConstructor:RSInterpConstructor):Dynamic
 	{
-		return switch (rulescript.Tools.getExpr(expr))
+		return switch (Tools.getExpr(expr))
 		{
 			case EFunction(params, fexpr, name, _):
-				final exprs:Array<Expr> = switch (rulescript.Tools.getExpr(fexpr))
+				final exprs:Array<Expr> = switch (Tools.getExpr(fexpr))
 				{
 					case EBlock(exprs):
 						exprs;
 					default:
-						null;
+						[fexpr];
 				}
 
 				var preExpr:Expr = fexpr;
@@ -1481,9 +1503,9 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 					for (expr in exprs)
 					{
-						switch (rulescript.Tools.getExpr(expr))
+						switch (Tools.getExpr(expr))
 						{
-							case ECall(e, _) if (rulescript.Tools.getExpr(e).match(EIdent('super'))):
+							case ECall(e, _) if (Tools.getExpr(e).match(EIdent('super'))):
 								break;
 							default:
 								null;
@@ -1493,10 +1515,10 @@ class RuleScriptInterp extends hscript.Interp implements IInterp
 
 					if (superID != exprs.length)
 					{
-						preExpr = rulescript.Tools.toExpr(EBlock(exprs.slice(0, superID)));
-						postExpr = rulescript.Tools.toExpr(EBlock(exprs.slice(superID + 1)));
+						preExpr = Tools.toExpr(EBlock(exprs.slice(0, superID)));
+						postExpr = Tools.toExpr(EBlock(exprs.slice(superID + 1)));
 
-						superCallArgs = superID == exprs.length ? [] : switch (rulescript.Tools.getExpr(exprs[superID]))
+						superCallArgs = superID == exprs.length ? [] : switch (Tools.getExpr(exprs[superID]))
 						{
 							case ECall(_, params): params;
 							default: [];

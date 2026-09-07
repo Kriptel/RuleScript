@@ -88,6 +88,25 @@ class RuleScriptedClassUtil
 		return accumulatedDecls;
 	}
 
+	public static function applyImportsFromDecls(interp:RuleScriptInterp, decls:Array<hscript.Expr.ModuleDecl>):Void {
+		if (decls == null || decls.length == 0) return;
+		var importDecls:Array<hscript.Expr.ModuleDecl> = [];
+		for (decl in decls) {
+			var cname = Type.enumConstructor(decl);
+			if (cname == "DImport" || cname == "DUsing" || cname == "DPackage") {
+				importDecls.push(decl);
+			}
+		}
+		if (importDecls.length > 0) {
+			try {
+				var expr = Tools.moduleDeclsToExpr(importDecls, {isScriptedClass: false});
+				interp.expr(expr);
+			} catch(e:Dynamic) {
+				trace("Error applying imports: " + e);
+			}
+		}
+	}
+
 	public static function registerRuleScriptedClass(typePath:String, classType:ScriptedClassType):ScriptedClassType return types[typePath] = classType;
 	public static function getClass(typePath:String):ScriptedClass return cast types[typePath];
 	public static function listScriptClasses():Array<String> return [for (key in types.keys()) key];
@@ -152,6 +171,9 @@ class RuleScriptedClassUtil
 
 		var exprList:Array<Expr> = [];
 		for (targetClass in list) {
+			if (rulescript.interp is RuleScriptInterp)
+				applyImportsFromDecls(cast rulescript.interp, targetClass.module.sharedDecls);
+
 			final exprs = Tools.moduleDeclsToExpr(targetClass.module.sharedDecls, {
 				classImpl: targetClass.impl,
 				isScriptedClass: true,

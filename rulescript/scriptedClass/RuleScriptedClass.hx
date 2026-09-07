@@ -130,6 +130,9 @@ abstract Access(RuleScriptedClass)
 			interp.access.setVariable(name, type);
 		}
 
+		if (interp is RuleScriptInterp)
+			RuleScriptedClassUtil.applyImportsFromDecls(cast interp, module.sharedDecls);
+
 		interp.access.execute(Tools.moduleDeclsToExpr(module.sharedDecls, {
 			fieldFilter: f -> f.access.contains(AStatic),
 			classImpl: impl
@@ -351,6 +354,9 @@ abstract Access(RuleScriptedClass)
 
 		for (targetClass in list)
 		{
+			if (interp is RuleScriptInterp)
+				RuleScriptedClassUtil.applyImportsFromDecls(cast interp, targetClass.module.sharedDecls);
+
 			interp.access.execute(Tools.toExpr(EBlock([
 				Tools.moduleDeclsToExpr(targetClass.module.sharedDecls, {
 					isScriptedClass: true,
