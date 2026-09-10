@@ -76,18 +76,31 @@ class RSInterpConstructor extends ScriptedConstructor
 					args2.push([for (i in pos...args.length) args[i]]);
 				else
 				{
+					var arg:Dynamic = null;
+
 					if (p.opt)
 					{
 						if (extraParams > 0)
 						{
-							args2.push(args[pos++]);
+							arg = args[pos++];
 							extraParams--;
 						}
 						else
-							args2.push(null);
+						{
+							arg = null;
+						}
 					}
 					else
-						args2.push(args[pos++]);
+					{
+						arg = args[pos++];
+					}
+
+					if (arg == null && p.value != null)
+					{
+						arg = interp.expr(p.value);
+					}
+
+					args2.push(arg);
 				}
 			}
 			args = args2;
